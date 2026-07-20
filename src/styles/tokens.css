@@ -24,6 +24,12 @@
   --input-bg:      #fbf8f1;
   --input-border:  #e2d8c6;
 
+  /* Aliases & overlays for component styling */
+  --dark:          #1b1a17;
+  --dark-70:       rgba(27, 26, 23, 0.75);
+  --dark-10:       rgba(27, 26, 23, 0.08);
+  --gold-dark:     #a07d3d;
+
   /* Derived / utility (still spec colors) */
   --scrim: linear-gradient(rgba(20,19,16,.35), rgba(20,19,16,.65));
   --error: #b0563c;

@@ -90,6 +90,7 @@ export default function Header() {
           <ul className="nav__list">
             <li className="nav__item"><NavLink to="/" end className="nav__link">Home</NavLink></li>
             <li className="nav__item"><NavLink to="/about-us" className="nav__link">About</NavLink></li>
+            <li className="nav__item"><NavLink to="/virtual-tour" className="nav__link">Virtual Tour</NavLink></li>
             <li className="nav__item"><NavLink to="/gallery" className="nav__link">Gallery</NavLink></li>
             <Dropdown label="Hotels" items={HOTEL_MENU} />
             <Dropdown label="Banquet" items={BANQUET_MENU} />
@@ -118,6 +119,7 @@ export default function Header() {
         <ul className="drawer__list">
           <li><Link to="/" className="drawer__link">Home</Link></li>
           <li><Link to="/about-us" className="drawer__link">About</Link></li>
+          <li><Link to="/virtual-tour" className="drawer__link">Virtual Tour</Link></li>
           <li><Link to="/gallery" className="drawer__link">Gallery</Link></li>
           <MobileGroup id="hotels" label="Hotels" items={HOTEL_MENU} open={openMobile} setOpen={setOpenMobile} />
           <MobileGroup id="banquet" label="Banquet" items={BANQUET_MENU} open={openMobile} setOpen={setOpenMobile} />
