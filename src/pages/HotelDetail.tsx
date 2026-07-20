@@ -175,6 +175,13 @@ export default function HotelDetail() {
                   Located at {hotel.address}, the property is well connected for both leisure and business travellers
                   across Delhi NCR.
                 </p>
+
+                <div className="quote-block mt-8">
+                  <blockquote className="quote-block__text">
+                    &ldquo;Every stay in {hotel.name} is underpinned by our commitment to attentive human warmth, spotless rooms, and effortless booking.&rdquo;
+                  </blockquote>
+                  <cite className="quote-block__cite">— Quadis Guest Satisfaction Standard</cite>
+                </div>
               </section>
 
               <section className="detail-block">

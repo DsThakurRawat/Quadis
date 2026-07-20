@@ -66,6 +66,26 @@ export default function Home() {
           <div className="card-grid card-grid--anim" key={filter}>
             {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
           </div>
+
+          <div className="quote-block mt-16">
+            <blockquote className="quote-block__text">
+              &ldquo;Whether staying for a night or celebrating for a lifetime, every detail across our 10 hotels is designed around calm, considered comfort.&rdquo;
+            </blockquote>
+            <cite className="quote-block__cite">— Quadis Hospitality Promise</cite>
+          </div>
+        </div>
+      </section>
+
+      {/* Ecosystem banner */}
+      <section className="section bg-cream">
+        <div className="container center-col">
+          <SectionHeader overline="THE QUADIS ECOSYSTEM" title="A Vision Beyond Room Count" />
+          <Reveal className="prose center-col mb-8">
+            <p>
+              As Delhi NCR&rsquo;s leading hospitality brand, our leadership is anchored in genuine guest satisfaction, rigorous employee welfare, and ambitious future horizons including <strong>Quadis Airlines</strong> and <strong>Quadis Homes</strong>.
+            </p>
+          </Reveal>
+          <Button to="/about-us" variant="primary">EXPLORE OUR VISION &amp; ROADMAP</Button>
         </div>
       </section>
 

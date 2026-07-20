@@ -2,6 +2,8 @@ import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout.tsx'
 import Home from './pages/Home.tsx'
 import About from './pages/About.tsx'
+import VirtualTour from './pages/VirtualTour.tsx'
+import GalleryPage from './pages/GalleryPage.tsx'
 import HotelsList from './pages/HotelsList.tsx'
 import HotelDetail from './pages/HotelDetail.tsx'
 import BanquetsList from './pages/BanquetsList.tsx'
@@ -20,6 +22,8 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<About />} />
+        <Route path="/virtual-tour" element={<VirtualTour />} />
+        <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/hotels" element={<HotelsList />} />
         <Route path="/hotels/:slug" element={<HotelDetail />} />
         <Route path="/banquets" element={<BanquetsList />} />

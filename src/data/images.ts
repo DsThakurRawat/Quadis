@@ -39,26 +39,24 @@ for (const [dir, entries] of Object.entries(buckets)) {
 
 const at = (key: string): string[] => groups[key] ?? []
 
-// Dynamic pools of real photos from public/images/** (excluding small PNG partner logos)
-const allPhotos = Object.values(buckets)
+// Categorized collections from public/images/**
+export const galleryDeluxe: string[] = at('rooms/deluxe')
+export const gallerySuperior: string[] = at('rooms/superior')
+export const galleryRoyal: string[] = at('rooms/royal')
+export const galleryFacade: string[] = at('facade')
+export const galleryDining: string[] = at('restaurant/dining')
+
+// Master unique gallery list across all categories
+export const galleryAll: string[] = Object.values(buckets)
   .flat()
   .filter((e) => !e.name.toLowerCase().endsWith('.png'))
   .map((e) => e.url)
 
-const deluxePhotos = Object.values(buckets)
-  .flat()
-  .filter((e) => e.name.toLowerCase().includes('deluxe'))
-  .map((e) => e.url)
+const allPhotos = galleryAll
 
-const superiorPhotos = Object.values(buckets)
-  .flat()
-  .filter((e) => e.name.toLowerCase().includes('superior'))
-  .map((e) => e.url)
-
-const suitePhotos = Object.values(buckets)
-  .flat()
-  .filter((e) => e.name.toLowerCase().includes('suite'))
-  .map((e) => e.url)
+const deluxePhotos = galleryDeluxe.length ? galleryDeluxe : allPhotos
+const superiorPhotos = gallerySuperior.length ? gallerySuperior : allPhotos
+const suitePhotos = galleryRoyal.length ? galleryRoyal : allPhotos
 
 // Simple deterministic hash for slug-to-photo indexing
 function hashSlug(str: string): number {
@@ -73,7 +71,7 @@ function hashSlug(str: string): number {
 // Per-entity photo sets (arrays of real photo URLs with smart production fallbacks).
 export const hotelImages = (slug: string): string[] => {
   const explicit = at(`hotels/${slug}`)
-  const pool = allPhotos.length ? allPhotos : ['/images/home/hero.jpg']
+  const pool = galleryFacade.length ? galleryFacade : (allPhotos.length ? allPhotos : ['/images/home/hero.jpg'])
   const idx = hashSlug(slug)
 
   // Fallback 5 distinct photos from available pool
@@ -117,24 +115,39 @@ export const roomImages = (hotelSlug: string, roomId: string): string[] => {
     if (matched.length) return matched
   }
 
-  // Fallback 2: fallback room tier photos directly from real room assets
-  const idx = hashSlug(hotelSlug)
-  if (roomId.includes('suite')) {
-    const pool = suitePhotos.length ? suitePhotos : allPhotos
-    return [pool[idx % pool.length] ?? pool[0]!]
+  // Fallback 2: fallback room tier photos directly from categorized room collections
+  const idx = hashSlug(`${hotelSlug}-${roomId}`)
+  if (roomId.includes('suite') || roomId.includes('royal')) {
+    const pool = suitePhotos
+    return [
+      pool[idx % pool.length] ?? pool[0]!,
+      pool[(idx + 1) % pool.length] ?? pool[0]!,
+      pool[(idx + 2) % pool.length] ?? pool[0]!,
+      pool[(idx + 3) % pool.length] ?? pool[0]!,
+    ]
   }
   if (roomId.includes('superior')) {
-    const pool = superiorPhotos.length ? superiorPhotos : allPhotos
-    return [pool[idx % pool.length] ?? pool[0]!]
+    const pool = superiorPhotos
+    return [
+      pool[idx % pool.length] ?? pool[0]!,
+      pool[(idx + 1) % pool.length] ?? pool[0]!,
+      pool[(idx + 2) % pool.length] ?? pool[0]!,
+      pool[(idx + 3) % pool.length] ?? pool[0]!,
+    ]
   }
-  const pool = deluxePhotos.length ? deluxePhotos : allPhotos
-  return [pool[idx % pool.length] ?? pool[0]!]
+  const pool = deluxePhotos
+  return [
+    pool[idx % pool.length] ?? pool[0]!,
+    pool[(idx + 1) % pool.length] ?? pool[0]!,
+    pool[(idx + 2) % pool.length] ?? pool[0]!,
+    pool[(idx + 3) % pool.length] ?? pool[0]!,
+  ]
 }
 
 export const banquetImages = (slug: string): string[] => {
   const explicit = at(`banquets/${slug}`)
   if (explicit.length) return explicit
-  const pool = allPhotos.length ? allPhotos : ['/images/home/hero.jpg']
+  const pool = galleryDining.length ? galleryDining : (allPhotos.length ? allPhotos : ['/images/home/hero.jpg'])
   const idx = hashSlug(slug)
   return [
     pool[(idx + 1) % pool.length] ?? pool[0]!,
@@ -146,7 +159,7 @@ export const banquetImages = (slug: string): string[] => {
 export const restaurantImages = (): string[] => {
   const explicit = at('restaurant')
   if (explicit.length) return explicit
-  const pool = allPhotos.length ? allPhotos : ['/images/home/hero.jpg']
+  const pool = galleryDining.length ? galleryDining : (allPhotos.length ? allPhotos : ['/images/home/hero.jpg'])
   return [pool[0]!, pool[1 % pool.length] ?? pool[0]!, pool[2 % pool.length] ?? pool[0]!]
 }
 
