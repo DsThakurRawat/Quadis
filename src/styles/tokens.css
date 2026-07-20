@@ -1,0 +1,52 @@
+/* ============================================================
+   Quadis design tokens — §2 of the build spec.
+   --gold is the single retheme knob. Approved alternates only:
+   #a8734a (terracotta), #7a8a5c (olive), #4a6a7a (slate blue).
+   No hex values are allowed anywhere outside this file.
+   ============================================================ */
+:root {
+  /* Color */
+  --bg-cream:      #f6f1e8;
+  --bg-warm:       #efe7d6;
+  --bg-dark:       #1b1a17;
+  --bg-darkest:    #141310;
+  --text-primary:  #211f1b;
+  --text-body:     #2b2721;
+  --text-muted:    #7a7261;
+  --text-muted-2:  #5a5346;
+  --text-on-dark:  #f4efe4;
+  --text-on-dark-2:#cbc3b2;
+  --gold:          #c8a24a;
+  --gold-deep:     #a07d3d;
+  --gold-deepest:  #8a6d2f;
+  --border-card:   #ece3d3;
+  --border-card-2: #e6dcca;
+  --input-bg:      #fbf8f1;
+  --input-border:  #e2d8c6;
+
+  /* Derived / utility (still spec colors) */
+  --scrim: linear-gradient(rgba(20,19,16,.35), rgba(20,19,16,.65));
+  --error: #b0563c;
+  --whatsapp: #25d366;
+
+  /* Type families */
+  --font-display: 'Marcellus', Georgia, serif;
+  --font-script:  'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Manrope', system-ui, -apple-system, sans-serif;
+
+  /* Spacing scale: 4,8,12,16,24,32,48,64,96,120 */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 120px;
+
+  --maxw: 1440px;
+  --pad-x: 56px;
+  --radius: 8px;
+
+  --shadow-card:  0 12px 32px rgba(33,31,27,.10);
+  --shadow-bar:   0 24px 48px rgba(20,19,16,.18);
+  --ring-gold:    0 0 0 3px rgba(200,162,74,.25);
+}
+
+@media (max-width: 768px) {
+  :root { --pad-x: 24px; }
+}

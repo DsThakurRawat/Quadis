@@ -1,0 +1,130 @@
+/* ===================== Buttons (§4) ===================== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--font-body); font-weight: 600; font-size: 13.5px;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: 14px 28px; border-radius: 4px; border: 1px solid transparent;
+  cursor: pointer; transition: background .16s ease, color .16s ease, border-color .16s ease;
+  white-space: nowrap;
+}
+.btn--primary { background: var(--bg-dark); color: var(--text-on-dark); }
+.btn--primary:hover { background: var(--gold); color: var(--bg-dark); }
+.btn--ghost { background: transparent; color: currentColor; border-color: currentColor; }
+.btn--ghost:hover { border-color: var(--gold); color: var(--gold); }
+.btn--gold { background: var(--gold); color: var(--bg-dark); }
+.btn--gold:hover { background: var(--gold-deep); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ===================== Section header (§4) ===================== */
+.section-header { display: flex; flex-direction: column; gap: var(--s-4); }
+.section-header.center-col { align-items: center; text-align: center; }
+.section-header__flanked { display: flex; align-items: center; gap: var(--s-5); }
+.section-header__flanked .rule { width: 64px; height: 1px; background: var(--border-card-2); flex: none; }
+.bg-dark .section-header__flanked .rule,
+.bg-darkest .section-header__flanked .rule { background: rgba(203,195,178,.28); }
+@media (max-width: 560px){ .section-header__flanked .rule { width: 28px; } }
+
+/* ===================== Fields (§4) ===================== */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field__label { font-weight: 600; font-size: 13px; color: var(--text-body); }
+.bg-dark .field__label { color: var(--text-on-dark-2); }
+.field__input {
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 5px; padding: 14px 16px; font-size: 15px; color: var(--text-body);
+  width: 100%; transition: border-color .16s ease, box-shadow .16s ease;
+}
+textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
+.field__input::placeholder { color: var(--text-muted); }
+.field__input:focus { outline: none; border-color: var(--gold); box-shadow: var(--ring-gold); }
+.field__input.is-error { border-color: var(--error); }
+.field__error { font-size: 13px; color: var(--error); }
+.field__hint { font-size: 13px; color: var(--text-muted); }
+.field__pw { position: relative; }
+.field__pw .field__input { padding-right: 46px; }
+.field__eye {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: 0; padding: 8px; color: var(--text-muted); cursor: pointer; border-radius: 4px;
+}
+.field__eye:hover { color: var(--gold-deep); }
+
+/* ===================== Filter pills (§4) ===================== */
+.pills { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.pill {
+  padding: 10px 22px; border-radius: 999px; border: 1px solid var(--border-card-2);
+  background: transparent; font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
+  font-weight: 600; color: var(--text-muted-2); cursor: pointer;
+  transition: background .16s ease, color .16s ease, border-color .16s ease;
+}
+.pill:hover { border-color: var(--gold); color: var(--gold-deep); }
+.pill.is-active { background: var(--gold); color: var(--bg-dark); border-color: var(--gold); }
+
+/* ===================== Card grid ===================== */
+.card-grid { display: grid; gap: 30px; grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 1199px){ .card-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 767px){ .card-grid { grid-template-columns: 1fr; gap: 24px; } }
+.card-grid--anim > * { animation: cardIn .28s ease both; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ===================== Hotel card (§4) ===================== */
+.hcard {
+  display: flex; flex-direction: column; background: #fff;
+  border: 1px solid var(--border-card); border-radius: 8px; overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.hcard:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
+.hcard__media { position: relative; display: block; aspect-ratio: 4 / 3; }
+.hcard__media img { width: 100%; height: 100%; object-fit: cover; }
+.hcard__chip {
+  position: absolute; top: 12px; left: 12px; z-index: 1;
+  background: rgba(27,26,23,.86); color: var(--text-on-dark);
+  font-size: 12px; letter-spacing: .04em; padding: 5px 12px; border-radius: 999px;
+}
+.hcard__body { display: flex; flex-direction: column; gap: 10px; padding: 24px; }
+.hcard__name { margin: 0; }
+.hcard__addr { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+.hcard__addr svg { flex: none; margin-top: 2px; color: var(--gold-deep); }
+.hcard__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+.hcard__price { font-family: var(--font-display); font-size: 20px; color: var(--text-primary); }
+.hcard__rating { display: inline-flex; align-items: center; gap: 5px; color: var(--gold); font-weight: 600; font-size: 14px; }
+.hcard__cta { width: 100%; margin-top: 6px; }
+
+/* generic content card (experiences etc.) */
+.card {
+  background: #fff; border: 1px solid var(--border-card); border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column; transition: transform .2s ease, box-shadow .2s ease;
+}
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
+.card__media { aspect-ratio: 4 / 3; }
+.card__media img { width: 100%; height: 100%; object-fit: cover; }
+.card__body { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ===================== Photo slot + placeholder (§5) ===================== */
+.photo { position: relative; width: 100%; overflow: hidden; background: var(--bg-warm); }
+.photo__img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo__ph {
+  position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+  background: var(--bg-warm);
+  background-image: linear-gradient(135deg, rgba(200,162,74,.06), rgba(27,26,23,.05));
+  padding: 16px;
+}
+.photo__ph::after {
+  content: ''; position: absolute; inset: 12px; border: 1px solid var(--border-card-2); border-radius: 4px; pointer-events: none;
+}
+.photo__ph-label {
+  font-family: var(--font-display); font-size: clamp(15px, 2.2vw, 20px);
+  color: var(--text-muted); letter-spacing: .02em; max-width: 80%; line-height: 1.25; position: relative;
+}
+
+/* ===================== Hero / scrim shared ===================== */
+.scrim::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(15,14,11,.5) 0%, rgba(15,14,11,.55) 40%, rgba(15,14,11,.7) 100%); z-index: 1;
+}
+.hero-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+/* Photo-slot placeholder: solid warm block (readme-3 §1/§3). The parent's
+   .scrim darkens it and hero text carries a soft shadow for legibility until a
+   real photo lands. */
+.hero-media--ph {
+  background: var(--bg-warm);
+  background-image: linear-gradient(135deg, rgba(200,162,74,.06), rgba(27,26,23,.06));
+}
