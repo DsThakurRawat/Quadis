@@ -8,8 +8,9 @@ dist/
 dist-ssr/
 *.local
 
-# Vite / TS caches
+# Vite / TS / Vercel caches
 .vite/
+.vercel/
 *.tsbuildinfo
 
 # Logs
