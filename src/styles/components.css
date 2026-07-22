@@ -854,3 +854,91 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   text-overflow: ellipsis;
 }
 
+/* ===================== Great Sleep & Showers Guarantee Section ===================== */
+.stay-promise-section {
+  padding: 96px 0;
+  border-top: 1px solid rgba(200, 162, 74, 0.15);
+  border-bottom: 1px solid rgba(200, 162, 74, 0.15);
+  background: radial-gradient(circle at center, #24221e 0%, #1b1a17 100%);
+}
+.gold-text {
+  color: var(--gold);
+  font-style: italic;
+}
+.gold-accent {
+  color: var(--gold);
+  letter-spacing: 0.2em;
+}
+.stay-promise__title {
+  margin: 12px 0 16px;
+}
+.stay-promise__sub {
+  color: var(--text-on-dark-2);
+  max-width: 640px;
+  margin: 0 auto 48px;
+  font-size: 1.1rem;
+}
+.stay-essentials-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+@media (max-width: 992px) {
+  .stay-essentials-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+}
+@media (max-width: 640px) {
+  .stay-essentials-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+.stay-essential-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(200, 162, 74, 0.18);
+  border-radius: var(--radius-md, 8px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
+}
+.stay-essential-card:hover {
+  background: rgba(200, 162, 74, 0.08);
+  border-color: var(--gold);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+.stay-essential-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(200, 162, 74, 0.12);
+  border-radius: 50%;
+  color: var(--gold);
+  transition: transform 0.25s ease;
+}
+.stay-essential-card:hover .stay-essential-icon {
+  transform: scale(1.1);
+  background: var(--gold);
+  color: var(--bg-dark);
+}
+.stay-essential-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-on-dark);
+  letter-spacing: 0.03em;
+}
+
+

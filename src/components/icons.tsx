@@ -27,3 +27,10 @@ export const IconStar = (p: P) => (<svg width={16} height={16} viewBox="0 0 24 2
 export const IconArrowLeft = (p: P) => (<svg {...base} {...p}><path d="M19 12H5M11 6l-6 6 6 6" /></svg>)
 export const IconArrowRight = (p: P) => (<svg {...base} {...p}><path d="M5 12h14M13 6l6 6-6 6" /></svg>)
 export const IconCheck = (p: P) => (<svg {...base} {...p}><path d="M20 6 9 17l-5-5" /></svg>)
+export const IconTv = (p: P) => (<svg {...base} {...p}><rect x="2" y="7" width="20" height="13" rx="2" /><path d="m17 2-5 5-5-5" /></svg>)
+export const IconShield = (p: P) => (<svg {...base} {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg>)
+export const IconShower = (p: P) => (<svg {...base} {...p}><path d="M4 4h7a2 2 0 0 1 2 2v2" /><path d="M12 8a3 3 0 0 1 3 3v1H9v-1a3 3 0 0 1 3-3Z" /><path d="M10 16v1M14 16v1M12 19v1" /></svg>)
+export const IconTowel = (p: P) => (<svg {...base} {...p}><path d="M4 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Z" /><path d="M4 9h16M8 14h8" /></svg>)
+export const IconToiletries = (p: P) => (<svg {...base} {...p}><path d="M9 3h6v3H9zM10 6v3h4V6M8 9h8v12H8z" /></svg>)
+export const IconBell = (p: P) => (<svg {...base} {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" /></svg>)
+

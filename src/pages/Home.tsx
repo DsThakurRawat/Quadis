@@ -7,6 +7,7 @@ import Testimonials from '../components/Testimonials.tsx'
 import { HotelCard, FilterPills, Button } from '../components/ui.tsx'
 import { Photo, HeroMedia } from '../components/media.tsx'
 import { SectionHeader, StatsStrip, CtaBand, Reveal } from '../components/blocks.tsx'
+import { IconWifi, IconTv, IconAc, IconShield, IconTowel, IconShower, IconToiletries, IconBell } from '../components/icons.tsx'
 
 interface Experience { title: string; blurb: string; to: string; img: () => string | undefined }
 const EXPERIENCES: Experience[] = [
@@ -66,13 +67,52 @@ export default function Home() {
           <div className="card-grid card-grid--anim" key={filter}>
             {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
           </div>
+        </div>
+      </section>
 
-          <div className="quote-block mt-16">
-            <blockquote className="quote-block__text">
-              &ldquo;Whether staying for a night or celebrating for a lifetime, every detail across our 10 hotels is designed around calm, considered comfort.&rdquo;
-            </blockquote>
-            <cite className="quote-block__cite">— Quadis Hospitality Promise</cite>
-          </div>
+      {/* Great Sleep & Refreshing Showers Guarantee */}
+      <section className="section stay-promise-section bg-dark text-on-dark">
+        <div className="container">
+          <Reveal className="stay-promise center-col">
+            <span className="overline gold-accent">FABULOUS STAYS, GUARANTEED</span>
+            <h2 className="h2 on-dark stay-promise__title">Great <span className="gold-text">sleep.</span> Refreshing <span className="gold-text">showers.</span></h2>
+            <p className="lead stay-promise__sub">Hassle-free stay across all 10 Quadis properties in Delhi NCR.</p>
+            
+            <div className="stay-essentials-grid">
+              <div className="stay-essential-card">
+                <div className="stay-essential-icon"><IconWifi /></div>
+                <span className="stay-essential-label">Free Wi-Fi</span>
+              </div>
+              <div className="stay-essential-card">
+                <div className="stay-essential-icon"><IconTv /></div>
+                <span className="stay-essential-label">HD Smart TV</span>
+              </div>
+              <div className="stay-essential-card">
+                <div className="stay-essential-icon"><IconAc /></div>
+                <span className="stay-essential-label">Climate AC</span>
+              </div>
+              <div className="stay-essential-card">
+                <div className="stay-essential-icon"><IconShield /></div>
+                <span className="stay-essential-label">24x7 Security</span>
+              </div>
+              <div className="stay-essential-card">
+                <div className="stay-essential-icon"><IconTowel /></div>
+                <span className="stay-essential-label">Clean Towels</span>
+              </div>
+              <div className="stay-essential-card">
+                <div className="stay-essential-icon"><IconShower /></div>
+                <span className="stay-essential-label">Hot Water</span>
+              </div>
+              <div className="stay-essential-card">
+                <div className="stay-essential-icon"><IconToiletries /></div>
+                <span className="stay-essential-label">Toiletries</span>
+              </div>
+              <div className="stay-essential-card">
+                <div className="stay-essential-icon"><IconBell /></div>
+                <span className="stay-essential-label">Room Service</span>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 

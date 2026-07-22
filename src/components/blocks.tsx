@@ -31,6 +31,7 @@ const STATS = [
   { n: '2', label: 'Cities' },
   { n: '8+', label: 'Years' },
   { n: '4.5★', label: 'Average Rating' },
+  { n: '95%', label: 'Repeat Guests' },
 ] as const
 export function StatsStrip() {
   const ref = useReveal()
