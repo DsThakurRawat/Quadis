@@ -9,16 +9,41 @@ export interface ChatTurnResult {
 }
 
 export class AIService {
-  private groq: Groq | null = null
+  private groqClients: Groq[] = []
+  private currentKeyIndex = 0
 
   constructor() {
-    if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'dummy_groq_key' && process.env.GROQ_API_KEY !== 'gsk_YOUR_GROQ_KEY_HERE') {
-      try {
-        this.groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-      } catch (err) {
-        console.warn('Failed to initialize Groq SDK:', err)
-      }
+    // Collect keys from GROQ_API_KEYS (comma separated), GROQ_API_KEY, and GROQ_API_KEY_1..10
+    const keysSet = new Set<string>()
+    if (process.env.GROQ_API_KEYS) {
+      process.env.GROQ_API_KEYS.split(',').map(k => k.trim()).filter(k => k && k.startsWith('gsk_')).forEach(k => keysSet.add(k))
     }
+    if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY.startsWith('gsk_')) {
+      keysSet.add(process.env.GROQ_API_KEY.trim())
+    }
+    for (let i = 1; i <= 10; i++) {
+      const k = process.env[`GROQ_API_KEY_${i}`]
+      if (k && k.startsWith('gsk_')) keysSet.add(k.trim())
+    }
+
+    keysSet.forEach(apiKey => {
+      try {
+        this.groqClients.push(new Groq({ apiKey }))
+      } catch (err) {
+        console.warn('Failed to initialize Groq client for key:', err)
+      }
+    })
+
+    if (this.groqClients.length > 0) {
+      console.log(`🤖 AIService initialized with ${this.groqClients.length} rotating Groq API key(s).`)
+    }
+  }
+
+  private getNextGroqClient(): Groq | null {
+    if (this.groqClients.length === 0) return null
+    const client = this.groqClients[this.currentKeyIndex]
+    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.groqClients.length
+    return client
   }
 
   // Build a rich live system prompt injecting ALL hotel, room, and pricing data
@@ -333,8 +358,12 @@ INSTRUCTIONS:
     let handoffTriggered = false
     let reply = ''
 
-    // 1. Try Groq API with full live context injection
-    if (this.groq) {
+    // 1. Try Groq API with full live context injection and multi-key rotation fallback
+    const totalClients = this.groqClients.length
+    for (let attempt = 0; attempt < totalClients; attempt++) {
+      const groqClient = this.getNextGroqClient()
+      if (!groqClient) break
+
       try {
         const systemPrompt = await this.buildSystemPromptWithContext()
 
@@ -344,7 +373,7 @@ INSTRUCTIONS:
           { role: 'user', content: userMessage },
         ]
 
-        const completion = await this.groq.chat.completions.create({
+        const completion = await groqClient.chat.completions.create({
           model: 'llama-3.3-70b-versatile',
           messages,
           tools: this.getGroqTools(),
@@ -372,8 +401,8 @@ INSTRUCTIONS:
             })
           }
 
-          // Follow-up completion with tool results
-          const followUp = await this.groq.chat.completions.create({
+          // Follow-up completion with tool results using the same rotated client
+          const followUp = await groqClient.chat.completions.create({
             model: 'llama-3.3-70b-versatile',
             messages,
             temperature: 0.3,
@@ -386,7 +415,11 @@ INSTRUCTIONS:
 
         return { reply, toolsInvoked, handoffTriggered }
       } catch (groqErr: any) {
-        console.warn('Groq API error, falling back to simulated engine:', groqErr?.message || groqErr)
+        const errMsg = groqErr?.message || String(groqErr)
+        console.warn(`Groq API key attempt ${attempt + 1}/${totalClients} failed (${errMsg}). Rotating to next key...`)
+        if (attempt === totalClients - 1) {
+          console.warn('All Groq API keys exhausted or rate-limited. Falling back to deterministic engine.')
+        }
       }
     }
 
