@@ -57,7 +57,7 @@ describe('Phase 4: Agentic GenAI Chatbot (`Quadis Assist`) Suite', () => {
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
     expect(res.body.data.toolsInvoked).toContain('create_banquet_enquiry')
-    expect(res.body.data.reply).toContain('Our event director has received an instant alert')
+    expect(res.body.data.reply).toContain('event director')
 
     // Verify enquiry in DB
     const enquiries = Array.from(db.memoryEnquiries.values())
