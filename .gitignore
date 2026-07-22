@@ -42,3 +42,10 @@ Thumbs.db
 Reference-images/
 scrape_quadis.py
 .aider*
+
+# Local documentation, PR bodies, specs, and root video (kept locally, not pushed to GitHub)
+AWS_DEPLOYMENT_GUIDE.md
+Quadis-Frontend-Spec*
+quadis-readme-*
+pr_*_body.md
+/Quadis.mp4
