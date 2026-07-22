@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { HOTELS } from '../data/hotels.ts'
-import { homeImages, hotelImages, banquetHero, restaurantImages } from '../data/images.ts'
+import { hotelImages, banquetHero, restaurantImages, heroShowcaseImages } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
 import BookingBar from '../components/BookingBar.tsx'
 import Testimonials from '../components/Testimonials.tsx'
 import { HotelCard, FilterPills, Button } from '../components/ui.tsx'
-import { Photo, HeroMedia } from '../components/media.tsx'
+import { Photo, HeroShowcase } from '../components/media.tsx'
 import { SectionHeader, StatsStrip, CtaBand, Reveal } from '../components/blocks.tsx'
 import { IconWifi, IconTv, IconAc, IconShield, IconTowel, IconShower, IconToiletries, IconBell } from '../components/icons.tsx'
 
@@ -25,7 +25,6 @@ const CITY_FILTERS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi', 'Upcom
 
 export default function Home() {
   const [filter, setFilter] = useState<CityFilter>('All')
-  const hero = homeImages[0]
 
   const filtered = useMemo(
     () => (filter === 'All' ? HOTELS : HOTELS.filter((h) => h.city === filter)),
@@ -36,7 +35,7 @@ export default function Home() {
     <>
       {/* 1. Hero + Booking bar */}
       <section className="home-hero scrim">
-        <HeroMedia src={hero} />
+        <HeroShowcase images={heroShowcaseImages} intervalMs={3000} />
         <div className="container home-hero__content">
           <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE 2017</span>
           <h1 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h1>
