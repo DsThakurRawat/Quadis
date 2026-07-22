@@ -37,14 +37,9 @@ export default function Home() {
 
   return (
     <>
-      {/* 1. Hero with Full-Screen Video Background (Pure, unobstructed) */}
+      {/* 1. Master Welcome Hero: Video + Headline + Floating Booking Bar */}
       <section className="home-hero scrim" style={{ minHeight: '560px', height: 'clamp(560px, 75vh, 700px)' }}>
         <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
-      </section>
-
-      {/* 2. Photo Showcase + Brand Promise (Comfort you can book in seconds) */}
-      <section className="home-hero scrim" style={{ minHeight: '520px', height: 'clamp(500px, 68vh, 620px)' }}>
-        <HeroShowcase images={heroShowcaseImages} intervalMs={3000} />
         <div className="container home-hero__content">
           <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE 2017</span>
           <h2 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h2>
@@ -52,12 +47,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. Floating Booking Bar overlapping threshold between Photo Showcase and Stats */}
+      {/* Booking Bar floating across bottom edge of Master Hero */}
       <div className="container" style={{ position: 'relative', zIndex: 10 }}>
         <BookingBar overlap={true} />
       </div>
 
-      {/* 4. Stats strip (5 columns wide) */}
+      {/* 2. Photo Showcase (Rotating photos) right under Booking Bar */}
+      <section className="home-hero scrim" style={{ minHeight: '480px', height: 'clamp(460px, 62vh, 580px)', marginTop: '24px' }}>
+        <HeroShowcase images={heroShowcaseImages} intervalMs={3000} />
+        <div className="container home-hero__content">
+          <span className="overline on-dark">A WAY OF BEING · CONSIDERED COMFORT</span>
+          <h2 className="h1 on-dark home-hero__title">Refined rooms &amp;<br /><span className="script on-dark">grand banquets.</span></h2>
+          <p className="lead home-hero__sub">Step into spaces crafted for calm, confident stays and unforgettable celebrations across our 10 premier locations.</p>
+        </div>
+      </section>
+
+      {/* 3. Stats Strip ("and 2nd one below photos") directly beneath Photo Showcase */}
       <StatsStrip />
 
       {/* 3. Intro statement */}
