@@ -41,3 +41,4 @@ Thumbs.db
 # Exclude design reference screenshots and scraper scripts
 Reference-images/
 scrape_quadis.py
+.aider*
