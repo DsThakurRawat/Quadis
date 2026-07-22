@@ -129,6 +129,46 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   background-image: linear-gradient(135deg, rgba(200,162,74,.06), rgba(27,26,23,.06));
 }
 
+/* Hero Carousel Indicator Dots */
+.hero-dots {
+  position: absolute;
+  bottom: 24px;
+  right: 36px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(20, 19, 16, 0.45);
+  backdrop-filter: blur(8px);
+  border-radius: 20px;
+  border: 1px solid rgba(203, 195, 178, 0.15);
+}
+@media (max-width: 768px) {
+  .hero-dots {
+    bottom: 16px;
+    right: 20px;
+  }
+}
+.hero-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(244, 239, 228, 0.4);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.hero-dot:hover {
+  background: rgba(244, 239, 228, 0.8);
+}
+.hero-dot.is-active {
+  width: 24px;
+  border-radius: 4px;
+  background: var(--gold);
+}
+
 /* Gallery Page & Vision Showcase components */
 .gallery-page__filters {
   display: flex;

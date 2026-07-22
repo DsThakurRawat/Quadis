@@ -176,6 +176,14 @@ export const restaurantHero: string[] = at('restaurant').length ? at('restaurant
 export const banquetHero: string[] = at('banquets').length ? at('banquets') : homeImages
 export const hotelsHero: string[] = at('hotels').length ? at('hotels') : homeImages
 
+export const heroShowcaseImages: string[] = [
+  '/images/home/hero.jpg',
+  '/images/facade/facade.png',
+  '/images/facade/exterior-evening.png',
+  '/images/facade/exterior-night.png',
+  '/images/restaurant/dining/banquet-2-.png',
+].filter(Boolean)
+
 const authSet: string[] = at('')
 export const loginImages: string[] = authSet.length ? authSet : homeImages
 export const registerImages: string[] = authSet.length ? authSet : homeImages

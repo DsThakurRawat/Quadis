@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface PhotoProps {
   src?: string | undefined
@@ -46,4 +46,80 @@ export function HeroMedia({ src, alt = '' }: HeroMediaProps) {
     return <img className="hero-media" src={src} alt={alt} aria-hidden={alt ? undefined : true} onError={() => setFailed(true)} />
   }
   return <div className="hero-media hero-media--ph" aria-hidden="true" />
+}
+
+interface HeroShowcaseProps {
+  images?: string[]
+  intervalMs?: number
+}
+
+/**
+ * HeroShowcase — dynamic full-bleed hero carousel with smooth 3s crossfades
+ * and smart sequential rotation on refresh.
+ */
+export function HeroShowcase({ images = [], intervalMs = 3000 }: HeroShowcaseProps) {
+  const [index, setIndex] = useState(() => {
+    if (typeof window === 'undefined' || !images.length) return 0
+    const saved = Number(localStorage.getItem('quadis_hero_last_idx') || 0)
+    const next = (saved + 1) % images.length
+    localStorage.setItem('quadis_hero_last_idx', String(next))
+    return next
+  })
+  const [prevIndex, setPrevIndex] = useState(index)
+
+  useEffect(() => {
+    if (!images.length || images.length <= 1) return
+    const timer = setInterval(() => {
+      setIndex((current) => {
+        setPrevIndex(current)
+        return (current + 1) % images.length
+      })
+    }, intervalMs)
+    return () => clearInterval(timer)
+  }, [images.length, intervalMs])
+
+  const handleDotClick = (i: number) => {
+    if (i === index) return
+    setPrevIndex(index)
+    setIndex(i)
+  }
+
+  if (!images.length) {
+    return <div className="hero-media hero-media--ph" aria-hidden="true" />
+  }
+
+  return (
+    <>
+      {images.map((img, i) => {
+        const isActive = i === index
+        const isPrev = i === prevIndex && !isActive
+        return (
+          <img
+            key={img}
+            className="hero-media"
+            src={img}
+            alt={`Quadis property showcase ${i + 1}`}
+            style={{
+              opacity: isActive || isPrev ? 1 : 0,
+              transition: isActive ? 'opacity 1s ease-in-out' : 'none',
+              zIndex: isActive ? 0 : isPrev ? -1 : -2,
+            }}
+          />
+        )
+      })}
+      {images.length > 1 && (
+        <div className="hero-dots">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`Show photo ${i + 1}`}
+              className={`hero-dot ${i === index ? 'is-active' : ''}`}
+              onClick={() => handleDotClick(i)}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  )
 }
