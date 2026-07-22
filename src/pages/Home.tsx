@@ -5,7 +5,7 @@ import type { CityFilter } from '../types.ts'
 import BookingBar from '../components/BookingBar.tsx'
 import Testimonials from '../components/Testimonials.tsx'
 import { HotelCard, FilterPills, Button } from '../components/ui.tsx'
-import { Photo, HeroVideoShowcase } from '../components/media.tsx'
+import { Photo, HeroShowcase, HeroVideoShowcase } from '../components/media.tsx'
 import { SectionHeader, StatsStrip, CtaBand, Reveal } from '../components/blocks.tsx'
 import { IconWifi, IconTv, IconAc, IconShield, IconTowel, IconShower, IconToiletries, IconBell } from '../components/icons.tsx'
 
@@ -37,20 +37,26 @@ export default function Home() {
 
   return (
     <>
-      {/* 1. Hero with Full-Screen Video Background + Booking bar (§1) */}
+      {/* 1. Hero with Full-Screen Video Background + Booking bar (Clean, no text overlay) */}
       <section className="home-hero scrim">
         <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
-        <div className="container home-hero__content">
-          <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE 2017</span>
-          <h1 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h1>
-          <p className="lead home-hero__sub">Ten thoughtfully run hotels across Noida &amp; Delhi — refined rooms, warm service, and grand banquets, all a few taps from your stay.</p>
-        </div>
-        <div className="container home-hero__bar">
+        <div className="container home-hero__bar" style={{ marginTop: 'auto', marginBottom: '40px', zIndex: 3 }}>
           <BookingBar overlap={false} />
         </div>
       </section>
+
       {/* 2. Stats strip */}
       <StatsStrip />
+
+      {/* 3. Photo Showcase + Brand Promise (Comfort you can book in seconds) */}
+      <section className="home-hero scrim" style={{ minHeight: '520px', height: 'clamp(500px, 68vh, 620px)' }}>
+        <HeroShowcase images={heroShowcaseImages} intervalMs={3000} />
+        <div className="container home-hero__content">
+          <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE 2017</span>
+          <h2 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h2>
+          <p className="lead home-hero__sub">Ten thoughtfully run hotels across Noida &amp; Delhi — refined rooms, warm service, and grand banquets, all a few taps from your stay.</p>
+        </div>
+      </section>
 
       {/* 3. Intro statement */}
       <section className="section bg-cream">
