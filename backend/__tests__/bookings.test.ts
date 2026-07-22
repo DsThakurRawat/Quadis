@@ -91,4 +91,38 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
     expect(lookupRes.body.success).toBe(true)
     expect(lookupRes.body.data.guest_name).toBe('Vikram Singh')
   })
+
+  test('POST /api/bookings/initiate rejects when check-out date is equal to or before check-in date', async () => {
+    const payload = {
+      propertySlug: 'hotel-cladis-sector-51-noida',
+      roomTypeSlug: 'deluxe-room',
+      checkIn: '2026-11-14',
+      checkOut: '2026-11-12', // Check-out before check-in
+      roomsCount: 1,
+      guestsCount: 2,
+      guestName: 'Invalid Date Tester',
+      guestPhone: '9876543210',
+    }
+
+    const res = await request(app).post('/api/bookings/initiate').send(payload)
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+
+  test('POST /api/bookings/initiate rejects when check-in date is in the past', async () => {
+    const payload = {
+      propertySlug: 'hotel-cladis-sector-51-noida',
+      roomTypeSlug: 'deluxe-room',
+      checkIn: '2020-01-01',
+      checkOut: '2020-01-03',
+      roomsCount: 1,
+      guestsCount: 2,
+      guestName: 'Past Date Tester',
+      guestPhone: '9876543210',
+    }
+
+    const res = await request(app).post('/api/bookings/initiate').send(payload)
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
 })

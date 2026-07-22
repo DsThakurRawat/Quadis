@@ -5,16 +5,26 @@ import { db } from '../db'
 export const bookingsRouter = Router()
 
 const initiateBookingSchema = z.object({
-  propertySlug: z.string().min(1, 'Property slug is required'),
-  roomTypeSlug: z.string().min(1, 'Room category slug is required'),
-  checkIn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Check-in must be YYYY-MM-DD format'),
-  checkOut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Check-out must be YYYY-MM-DD format'),
-  roomsCount: z.number().int().min(1, 'At least 1 room required'),
-  guestsCount: z.number().int().min(1, 'At least 1 guest required'),
-  guestName: z.string().min(2, 'Guest name must be at least 2 characters'),
-  guestPhone: z.string().min(10, 'Valid 10-digit mobile number required'),
-  guestEmail: z.string().email('Invalid email address').optional(),
-})
+  propertySlug: z.string().trim().min(1, 'Property slug is required'),
+  roomTypeSlug: z.string().trim().min(1, 'Room category slug is required'),
+  checkIn: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, 'Check-in must be YYYY-MM-DD format'),
+  checkOut: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, 'Check-out must be YYYY-MM-DD format'),
+  roomsCount: z.number().int().min(1, 'At least 1 room required').max(20, 'Maximum 20 rooms per booking'),
+  guestsCount: z.number().int().min(1, 'At least 1 guest required').max(80, 'Maximum 80 guests per booking'),
+  guestName: z.string().trim().min(2, 'Guest name must be at least 2 characters'),
+  guestPhone: z.string().trim().min(10, 'Valid 10-digit mobile number required'),
+  guestEmail: z.string().trim().email('Invalid email address').optional(),
+}).refine(
+  (data) => new Date(data.checkOut).getTime() > new Date(data.checkIn).getTime(),
+  { message: 'Check-out date must be strictly after check-in date', path: ['checkOut'] }
+).refine(
+  (data) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return new Date(data.checkIn).getTime() >= today.getTime()
+  },
+  { message: 'Check-in date cannot be in the past', path: ['checkIn'] }
+)
 
 // POST /api/bookings/initiate - create 15-minute soft hold
 bookingsRouter.post('/initiate', async (req: Request, res: Response) => {
