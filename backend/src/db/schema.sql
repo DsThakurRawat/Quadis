@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS room_types (
   price_offset NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
   total_units INTEGER NOT NULL DEFAULT 5,
   available_units INTEGER NOT NULL DEFAULT 5,
+  is_available BOOLEAN DEFAULT TRUE,
   CONSTRAINT check_available_positive CHECK (available_units >= 0 AND available_units <= total_units)
 );
 
