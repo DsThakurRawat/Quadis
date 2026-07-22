@@ -134,7 +134,7 @@ interface HeroVideoShowcaseProps {
  * Features smooth autoPlay loop and high-res poster fallback.
  */
 export function HeroVideoShowcase({
-  videoUrl = 'https://assets.mixkit.co/videos/preview/mixkit-luxury-hotel-lobby-and-reception-42681-large.mp4',
+  videoUrl = '/videos/Quadis.mp4',
   posterUrl = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80'
 }: HeroVideoShowcaseProps) {
   const [videoFailed, setVideoFailed] = useState(false)
