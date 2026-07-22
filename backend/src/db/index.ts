@@ -71,6 +71,10 @@ export class DatabaseEngine {
     guestPhone: string
     guestEmail?: string
   }): Promise<{ success: boolean; booking?: BookingRecord; error?: string }> {
+    if (new Date(payload.checkOut).getTime() <= new Date(payload.checkIn).getTime()) {
+      return { success: false, error: 'Check-out date must be strictly after check-in date' }
+    }
+
     if (!this.useInMemory && this.pool) {
       const client = await this.pool.connect()
       try {
@@ -196,14 +200,14 @@ export class DatabaseEngine {
       try {
         await client.query('BEGIN')
         const expiredRes = await client.query(
-          `SELECT * FROM bookings WHERE booking_status = 'PENDING_PAYMENT' AND created_at < $1 FOR UPDATE`,
+          `SELECT * FROM bookings WHERE booking_status = 'PENDING_PAYMENT' AND created_at < $1 FOR UPDATE SKIP LOCKED`,
           [thresholdDate]
         )
         let count = 0
         for (const booking of expiredRes.rows) {
           await client.query(`UPDATE bookings SET booking_status = 'EXPIRED' WHERE id = $1`, [booking.id])
           await client.query(
-            `UPDATE room_types SET available_units = available_units + $1 WHERE id = $2`,
+            `UPDATE room_types SET available_units = LEAST(total_units, available_units + $1) WHERE id = $2`,
             [booking.rooms_count, booking.room_type_id]
           )
           count++
@@ -225,7 +229,7 @@ export class DatabaseEngine {
         booking.booking_status = 'EXPIRED'
         const room = this.memoryRoomTypes.get(booking.room_type_id)
         if (room) {
-          room.available_units += booking.rooms_count
+          room.available_units = Math.min(room.total_units, room.available_units + booking.rooms_count)
           this.memoryRoomTypes.set(room.id, room)
         }
         this.memoryBookings.set(booking.id, booking)
