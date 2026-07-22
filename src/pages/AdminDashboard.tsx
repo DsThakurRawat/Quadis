@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../components/ui'
+import { getApiUrl } from '../config/api'
 
 interface GlanceMetrics {
   todayCheckIns: number
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
   const fetchDashboard = async (authToken: string) => {
     setLoading(true)
     try {
-      const res = await fetch('/api/admin/dashboard', {
+      const res = await fetch(getApiUrl('/api/admin/dashboard'), {
         headers: { Authorization: authToken },
       })
       const data = await res.json()
@@ -82,7 +83,7 @@ export default function AdminDashboard() {
     e.preventDefault()
     setAuthError('')
     try {
-      const res = await fetch('/api/admin/auth', {
+      const res = await fetch(getApiUrl('/api/admin/auth'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin: pinInput }),
@@ -102,7 +103,7 @@ export default function AdminDashboard() {
   const toggleRoom = async (roomTypeId: string, currentStatus: boolean) => {
     if (!token) return
     try {
-      const res = await fetch('/api/admin/room-availability', {
+      const res = await fetch(getApiUrl('/api/admin/room-availability'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +129,7 @@ export default function AdminDashboard() {
     if (!token) return
     const newPercent = currentSurcharge > 0 ? 0 : 15
     try {
-      const res = await fetch('/api/admin/surcharge', {
+      const res = await fetch(getApiUrl('/api/admin/surcharge'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +152,7 @@ export default function AdminDashboard() {
     setLinkPending(true)
     setGeneratedLink(null)
     try {
-      const res = await fetch('/api/admin/payment-link', {
+      const res = await fetch(getApiUrl('/api/admin/payment-link'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

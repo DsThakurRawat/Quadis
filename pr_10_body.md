@@ -1,27 +1,20 @@
-# Pull Request #10: Phase 4 — Agentic GenAI Chatbot (`Quadis Assist`) & Autonomous Concierge
+# AWS Production Live Endpoints & Central API Connectivity
 
-## 🎯 Summary
-Implements **Phase 4** of the Quadis Hotels architecture: `Quadis Assist`, an autonomous, tool-equipped AI Concierge designed to handle direct guest interactions across all 10 properties.
+### Summary of Changes
+This Pull Request finalizes the AWS full-stack deployment and resolves the cross-origin API connection issue when running on Amazon S3 static hosting.
 
-## ✨ Key Capabilities & Agentic Skills
-1. **Groq SDK & Llama-3.3-70B (`AIService.ts`)**:
-   - Supports live tool calling via Groq API when `GROQ_API_KEY` is provided.
-   - Includes a **deterministic rule-based simulation engine** (`executeTool`) guaranteeing instantaneous local functioning and 100% test reliability when API keys are not provided.
-2. **5 Built-In Agentic Tools & Database Integration**:
-   - `search_hotels`: queries real live inventory (`db.getPropertiesWithRooms()`), base prices, and room square footage across Noida & New Delhi.
-   - `initiate_soft_hold`: creates an ACID-compliant **15-minute soft hold** (`PENDING_PAYMENT`) right inside the chat window without leaving conversation.
-   - `create_banquet_enquiry`: captures corporate, wedding, and event RFPs (`BANQUET` / `CORPORATE_RFP`) and dispatches instant WhatsApp/SMS alerts to management (`NotificationService.sendOwnerEnquiryAlert`).
-   - `check_booking_status`: retrieves live reservation status, check-in dates, and payment confirmations (`QD-XXXX`).
-   - `human_handoff`: triggers an immediate **`🚨 HUMAN HANDOFF REQUESTED`** alert to human managers via WhatsApp when guests require direct assistance.
-3. **API Endpoints (`/api/ai`)**:
-   - `POST /api/ai/chat`: handles multi-turn conversation and records every interaction into `chat_logs` table (`db.createChatLog()`).
-   - `GET /api/ai/logs`: admin audit endpoint returning chronological AI turn records.
-4. **Glassmorphic Floating UI (`QuadisAssistChat.tsx`)**:
-   - Fixed bottom-right glowing trigger (`✨ Quadis Assist AI`) with pulse animation.
-   - Expandable sleek dark-mode glass panel (`#12100e`) with quick suggestion pills, real-time status indicator (`● Agentic AI Online`), tool execution badges (`⚡ Tool: search_hotels`), and human handoff banners.
-   - Seamlessly integrated across all website pages via `Layout.tsx`.
+#### 1. Central API Configuration (`src/config/api.ts`)
+- Created `getApiUrl()` helper that dynamically targets:
+  - `http://localhost:3001` during local development (`localhost:5173`)
+  - `http://quadis-backend-live.eba-ekdyt4m3.us-east-1.elasticbeanstalk.com` in production on Amazon S3 (`s3-website-us-east-1.amazonaws.com`).
+- Refactored `QuadisAssistChat.tsx`, `CheckoutModal.tsx`, `AdminDashboard.tsx`, `Corporate.tsx`, `Contact.tsx`, and `BanquetDetail.tsx` to use `getApiUrl()` uniformly.
 
-## 🧪 Verification & Automated Testing
-- **Suite**: `backend/__tests__/ai.test.ts` (6 comprehensive agentic tests verifying tool calls, DB mutations, hold creations, banquet RFPs, handoff triggers, and audit logs).
-- **Results**: All **8 backend test suites (32 tests total)** passing in `5.49s`.
-- **Frontend Build**: `tsc && vite build` passing cleanly.
+#### 2. Live AWS Production Infrastructure
+- **Frontend SPA (`Vite`)**: Deployed & live on Amazon S3 Static Website Hosting (`s3://quadis-hotels-frontend-1784733246`).
+- **Backend API & AI (`Node.js 20`)**: Deployed & live on AWS Elastic Beanstalk (`quadis-backend-live` environment).
+- **Database Engine (`PostgreSQL`)**: Deployed & live on Amazon RDS (`quadis-db-live.cwxeoayeggjy.us-east-1.rds.amazonaws.com:5432`).
+- **Multi-Cloud CLI Readiness**: Verified installation and readiness for **AWS CLI (`aws`)**, **Google Cloud CLI (`gcloud`)**, and **Microsoft Azure CLI (`az`)**.
+
+### Verification
+- Tested `/api/ai/chat` live against the Elastic Beanstalk server from external POST requests (`Status: healthy`).
+- Compiled frontend `dist/` bundle (`466 MB`) and verified successful synchronization with `aws s3 sync --delete`.
