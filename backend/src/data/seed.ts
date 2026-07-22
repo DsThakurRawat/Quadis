@@ -1,0 +1,56 @@
+import { PropertyRecord, RoomTypeRecord } from '../types'
+
+export const seedProperties: PropertyRecord[] = [
+  { id: 'prop-1', slug: 'hotel-cladis-sector-51-noida', name: 'Hotel Cladis Sector 51', city: 'Noida', address: 'H-22, Sector 51, near Cloud9 Hospital, Noida', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1899, rating: 4.7, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-2', slug: 'hotel-quadis-sector-51-noida', name: 'Hotel Quadis 51', city: 'Noida', address: 'Hoshiarpur Village, Sector 51, Noida 201301', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1599, rating: 4.6, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-3', slug: 'hotel-quadis-central-sector-27-noida', name: 'Hotel Quadis Central', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1799, rating: 4.5, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-4', slug: 'hotel-downtown-sector-15-noida', name: 'Hotel Downtown Sec 15', city: 'Noida', address: 'Metro pillar 33, Naya Bans, Sector 15, Noida', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1599, rating: 4.4, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-5', slug: 'hotel-cladis-sector-15-noida', name: 'Hotel Cladis Sector 15', city: 'Noida', address: 'New Ashok Nagar Rd, Naya Bans, Sector 15, Noida', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1499, rating: 4.4, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-6', slug: 'hotel-cladis-sector-19-noida', name: 'Hotel Cladis Sector 19', city: 'Noida', address: 'A-369, Naya Bans Village, Sector 19, Noida', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1399, rating: 4.3, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-7', slug: 'hotel-downtown-sector-51-noida', name: 'Hotel Downtown Sec 51', city: 'Noida', address: 'Sector 51, Noida 201301', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1699, rating: 4.5, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-8', slug: 'hotel-downtown-east-of-kailash', name: 'Hotel Downtown EOK', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi 110065', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1999, rating: 4.6, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-9', slug: 'hotel-amby-inn-lajpat-nagar-ii', name: 'Hotel Amby Inn', city: 'New Delhi', address: 'M-13, Vinoba Puri, Lajpat Nagar, New Delhi 110024', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1899, rating: 4.5, is_active: true, weekend_surcharge_percent: 0 },
+  { id: 'prop-10', slug: 'hotel-amar-in', name: 'Hotel Amar Inn', city: 'New Delhi', address: 'K-102, near Central Market, Lajpat Nagar, New Delhi', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1799, rating: 4.4, is_active: true, weekend_surcharge_percent: 0 },
+]
+
+export const seedRoomTypes: RoomTypeRecord[] = seedProperties.flatMap((prop, index) => [
+  {
+    id: `room-${prop.id}-deluxe`,
+    property_id: prop.id,
+    slug: 'deluxe-room',
+    name: 'Deluxe Room',
+    description: 'Calm, refined comfort designed for effortless rest. Features plush bedding and executive workspace.',
+    size_sqft: '240 sq ft',
+    bed_type: 'King / Twin Beds',
+    max_guests: 2,
+    price_offset: 0,
+    total_units: 5,
+    available_units: 5,
+  },
+  {
+    id: `room-${prop.id}-superior`,
+    property_id: prop.id,
+    slug: 'superior-room',
+    name: 'Superior Room with Balcony',
+    description: 'Elevated space with private outdoor seating and expansive city views.',
+    size_sqft: '310 sq ft',
+    bed_type: 'King Bed + Balcony',
+    max_guests: 3,
+    price_offset: 400,
+    total_units: 3,
+    available_units: 3,
+  },
+  {
+    id: `room-${prop.id}-royal`,
+    property_id: prop.id,
+    slug: 'royal-suite',
+    name: 'Royal Suite',
+    description: 'Our most luxurious sanctuary featuring separate master bedroom, private lounge and dining area.',
+    size_sqft: '450 sq ft',
+    bed_type: 'Master Suite + Living Room',
+    max_guests: 4,
+    price_offset: 1200,
+    total_units: 2,
+    available_units: 2,
+  },
+])
