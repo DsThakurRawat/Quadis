@@ -30,9 +30,9 @@ ul { list-style: none; padding: 0; }
   margin-inline: auto;
   padding-inline: var(--pad-x);
 }
-.section { padding-block: var(--s-9); }
-@media (min-width: 1200px){ .section { padding-block: 120px; } }
-@media (max-width: 768px){ .section { padding-block: var(--s-8); } }
+.section { padding-block: 72px; }
+@media (min-width: 1200px){ .section { padding-block: 84px; } }
+@media (max-width: 768px){ .section { padding-block: 48px; } }
 
 .bg-cream   { background: var(--bg-cream); }
 .bg-warm    { background: var(--bg-warm); }
