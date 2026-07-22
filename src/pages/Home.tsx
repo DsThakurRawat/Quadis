@@ -42,15 +42,7 @@ export default function Home() {
         <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
       </section>
 
-      {/* 2. Floating Booking Bar overlapping threshold between video and stats */}
-      <div className="container" style={{ position: 'relative', zIndex: 10 }}>
-        <BookingBar overlap={true} />
-      </div>
-
-      {/* 3. Stats strip (5 columns wide) */}
-      <StatsStrip />
-
-      {/* 3. Photo Showcase + Brand Promise (Comfort you can book in seconds) */}
+      {/* 2. Photo Showcase + Brand Promise (Comfort you can book in seconds) */}
       <section className="home-hero scrim" style={{ minHeight: '520px', height: 'clamp(500px, 68vh, 620px)' }}>
         <HeroShowcase images={heroShowcaseImages} intervalMs={3000} />
         <div className="container home-hero__content">
@@ -59,6 +51,14 @@ export default function Home() {
           <p className="lead home-hero__sub">Ten thoughtfully run hotels across Noida &amp; Delhi — refined rooms, warm service, and grand banquets, all a few taps from your stay.</p>
         </div>
       </section>
+
+      {/* 3. Floating Booking Bar overlapping threshold between Photo Showcase and Stats */}
+      <div className="container" style={{ position: 'relative', zIndex: 10 }}>
+        <BookingBar overlap={true} />
+      </div>
+
+      {/* 4. Stats strip (5 columns wide) */}
+      <StatsStrip />
 
       {/* 3. Intro statement */}
       <section className="section bg-cream">
