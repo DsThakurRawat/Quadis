@@ -37,15 +37,17 @@ export default function Home() {
 
   return (
     <>
-      {/* 1. Hero with Full-Screen Video Background + Booking bar (Clean, no text overlay) */}
-      <section className="home-hero scrim">
+      {/* 1. Hero with Full-Screen Video Background (Pure, unobstructed) */}
+      <section className="home-hero scrim" style={{ minHeight: '560px', height: 'clamp(560px, 75vh, 700px)' }}>
         <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
-        <div className="container home-hero__bar" style={{ marginTop: 'auto', marginBottom: '40px', zIndex: 3 }}>
-          <BookingBar overlap={false} />
-        </div>
       </section>
 
-      {/* 2. Stats strip */}
+      {/* 2. Floating Booking Bar overlapping threshold between video and stats */}
+      <div className="container" style={{ position: 'relative', zIndex: 10 }}>
+        <BookingBar overlap={true} />
+      </div>
+
+      {/* 3. Stats strip (5 columns wide) */}
       <StatsStrip />
 
       {/* 3. Photo Showcase + Brand Promise (Comfort you can book in seconds) */}
