@@ -97,3 +97,58 @@ paymentsRouter.post('/payment-link', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: err.message || 'Error generating payment link' })
   }
 })
+
+const enquiryLinkSchema = z.object({
+  enquiryId: z.string().trim().min(1, 'Enquiry ID is required'),
+  amount: z.number().positive('Amount must be positive'),
+  description: z.string().optional(),
+})
+
+// POST /api/payments/enquiry-payment-link — generate payment link for an enquiry (banquet deposit / walk-in hold)
+paymentsRouter.post('/enquiry-payment-link', async (req: Request, res: Response) => {
+  try {
+    const validation = enquiryLinkSchema.safeParse(req.body)
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid enquiry payment link parameters',
+        details: validation.error.flatten().fieldErrors,
+      })
+    }
+
+    const { enquiryId, amount, description } = validation.data
+    const enquiry = await db.getEnquiryById(enquiryId)
+    if (!enquiry) {
+      return res.status(404).json({ success: false, error: 'Enquiry not found' })
+    }
+
+    const linkRes = await razorpayService.createEnquiryPaymentLink({
+      enquiryId,
+      amount,
+      guestName: enquiry.guest_name,
+      guestPhone: enquiry.guest_phone,
+      guestEmail: enquiry.guest_email || undefined,
+      description,
+    })
+
+    if (!linkRes.success) {
+      return res.status(500).json({ success: false, error: linkRes.error || 'Failed to create enquiry payment link' })
+    }
+
+    if (linkRes.paymentLinkId) {
+      await db.updateEnquiryStatus(enquiryId, 'LINK_SENT', linkRes.paymentLinkId)
+    }
+
+    res.json({
+      success: true,
+      message: 'Enquiry payment link generated and status updated to LINK_SENT',
+      data: {
+        paymentLinkId: linkRes.paymentLinkId,
+        shortUrl: linkRes.shortUrl,
+        isSimulated: linkRes.isSimulated,
+      },
+    })
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Error generating enquiry payment link' })
+  }
+})

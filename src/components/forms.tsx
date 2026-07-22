@@ -14,7 +14,7 @@ export interface UseForm<T> {
   values: T
   errors: FormErrors<T>
   set: (name: keyof T) => (e: FieldEvent) => void
-  submit: (onValid?: (values: T) => void) => (e: FormEvent) => void
+  submit: (onValid?: (values: T) => void | Promise<void>) => (e: FormEvent) => void
   pending: boolean
   done: boolean
   reset: () => void
@@ -34,7 +34,7 @@ export function useForm<T extends object>(initial: T, validate: Validate<T>): Us
     if (errors[name]) setErrors((s) => ({ ...s, [name]: undefined }))
   }
 
-  const submit = (onValid?: (values: T) => void) => (e: FormEvent) => {
+  const submit = (onValid?: (values: T) => void | Promise<void>) => async (e: FormEvent) => {
     e.preventDefault()
     const errs = validate(values)
     setErrors(errs)
@@ -44,8 +44,16 @@ export function useForm<T extends object>(initial: T, validate: Validate<T>): Us
       return
     }
     setPending(true)
-    // Simulate an async submit; swaps to a real API call later.
-    setTimeout(() => { setPending(false); setDone(true); onValid?.(values) }, 500)
+    try {
+      if (onValid) {
+        await onValid(values)
+      }
+    } catch (err) {
+      console.error('Error submitting form:', err)
+    } finally {
+      setPending(false)
+      setDone(true)
+    }
   }
 
   return { values, errors, set, submit, pending, done, reset: () => { setValues(initial); setErrors({}); setDone(false) } }

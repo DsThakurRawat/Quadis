@@ -32,7 +32,23 @@ export default function Contact() {
                 Thank you for reaching out — our team will get back to you shortly.
               </SuccessPanel>
             ) : (
-              <form className="form-grid form-grid--card" onSubmit={f.submit()} noValidate>
+              <form className="form-grid form-grid--card" onSubmit={f.submit(async (v) => {
+                try {
+                  await fetch('/api/enquiries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      enquiryType: 'GENERAL',
+                      guestName: v.name,
+                      guestPhone: v.phone || '9999999999',
+                      guestEmail: v.email,
+                      message: `[${v.type}] ${v.message}`,
+                    }),
+                  })
+                } catch (err) {
+                  console.error('Failed to submit contact form:', err)
+                }
+              })} noValidate>
                 <Field label="Name" className="form-grid__full" value={f.values.name} onChange={f.set('name')} error={f.errors.name} />
                 <Field label="Email" type="email" value={f.values.email} onChange={f.set('email')} error={f.errors.email} />
                 <Field label="Phone" type="tel" value={f.values.phone} onChange={f.set('phone')} error={f.errors.phone} />
