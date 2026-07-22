@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Header from './Header.tsx'
 import Footer from './Footer.tsx'
 import WhatsAppButton from './WhatsAppButton.tsx'
+import QuadisAssistChat from './QuadisAssistChat.tsx'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -20,6 +21,7 @@ export default function Layout() {
       </main>
       <Footer />
       <WhatsAppButton />
+      <QuadisAssistChat />
     </>
   )
 }
