@@ -15,6 +15,7 @@ interface ButtonProps {
   href?: string
   variant?: ButtonVariant
   className?: string
+  style?: React.CSSProperties
   children: ReactNode
   type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
@@ -22,12 +23,12 @@ interface ButtonProps {
   target?: string
   rel?: string
 }
-export function Button({ as = 'button', to, href, variant = 'primary', className = '', children, type, disabled, onClick, target, rel }: ButtonProps) {
+export function Button({ as = 'button', to, href, variant = 'primary', className = '', style, children, type, disabled, onClick, target, rel }: ButtonProps) {
   const cls = `btn btn--${variant} ${className}`.trim()
-  if (to) return <Link to={to} className={cls} onClick={onClick} target={target} rel={rel}>{children}</Link>
-  if (href) return <a href={href} className={cls} onClick={onClick} target={target} rel={rel}>{children}</a>
-  if (as === 'a') return <a className={cls} onClick={onClick} target={target} rel={rel}>{children}</a>
-  return <button className={cls} type={type ?? 'button'} disabled={disabled} onClick={onClick}>{children}</button>
+  if (to) return <Link to={to} className={cls} style={style} onClick={onClick} target={target} rel={rel}>{children}</Link>
+  if (href) return <a href={href} className={cls} style={style} onClick={onClick} target={target} rel={rel}>{children}</a>
+  if (as === 'a') return <a className={cls} style={style} onClick={onClick} target={target} rel={rel}>{children}</a>
+  return <button className={cls} style={style} type={type ?? 'button'} disabled={disabled} onClick={onClick}>{children}</button>
 }
 
 /* ---------- Section header (§4) ---------- */
