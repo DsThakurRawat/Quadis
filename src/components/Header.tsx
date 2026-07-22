@@ -5,7 +5,10 @@ import { IconChevron } from './icons.tsx'
 import { Button } from './ui.tsx'
 
 interface MenuItem { label: string; to: string }
-const HOTEL_MENU: MenuItem[] = HOTELS.map((h) => ({ label: h.name, to: `/hotels/${h.slug}` }))
+const HOTEL_MENU: MenuItem[] = [
+  ...HOTELS.map((h) => ({ label: h.name, to: `/hotels/${h.slug}` })),
+  { label: 'Upcoming Destinations (Rishikesh, Agra...)', to: '/hotels?city=Upcoming' },
+]
 const BANQUET_MENU: MenuItem[] = BANQUETS.map((b) => ({ label: b.name, to: `/banquets/${b.slug}` }))
 const RESTAURANT_MENU: MenuItem[] = [
   { label: 'In-house Restaurant', to: '/restaurant' },

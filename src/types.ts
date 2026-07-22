@@ -106,7 +106,7 @@ export interface RegisterPayload {
 
 /* ---------- UI helpers ---------- */
 
-export type CityFilter = 'All' | City
+export type CityFilter = 'All' | City | 'Upcoming'
 
 /** Generic map of field-name → error message for a form's values. */
 export type FormErrors<T> = Partial<Record<keyof T, string>>

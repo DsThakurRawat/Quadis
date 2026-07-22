@@ -29,8 +29,9 @@ export function PhotoHero({ image, overline, title, sub, height = 'band', childr
 const STATS = [
   { n: '10', label: 'Properties' },
   { n: '2', label: 'Cities' },
-  { n: '8+', label: 'Years' },
-  { n: '4.5★', label: 'Average Rating' },
+  { n: '5000+', label: 'Happy Guests' },
+  { n: '4.5★', label: 'Rating' },
+  { n: '95%', label: 'Repeat Guests' },
 ] as const
 export function StatsStrip() {
   const ref = useReveal()
