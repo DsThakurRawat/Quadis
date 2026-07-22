@@ -15,10 +15,12 @@ import Contact from './pages/Contact.tsx'
 import Login from './pages/Login.tsx'
 import Register from './pages/Register.tsx'
 import NotFound from './pages/NotFound.tsx'
+import AdminDashboard from './pages/AdminDashboard.tsx'
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/admin" element={<AdminDashboard />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<About />} />

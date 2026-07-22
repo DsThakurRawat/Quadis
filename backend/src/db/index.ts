@@ -50,6 +50,22 @@ export class DatabaseEngine {
     return Array.from(this.memoryProperties.values()).filter((p) => p.is_active)
   }
 
+  public async getPropertiesWithRooms(): Promise<Array<{ property: PropertyRecord; rooms: RoomTypeRecord[] }>> {
+    const props = await this.getProperties()
+    if (!this.useInMemory && this.pool) {
+      const allRooms = await this.pool.query('SELECT * FROM room_types')
+      return props.map((p) => ({
+        property: p,
+        rooms: allRooms.rows.filter((r) => r.property_id === p.id),
+      }))
+    }
+    const allRooms = Array.from(this.memoryRoomTypes.values())
+    return props.map((p) => ({
+      property: p,
+      rooms: allRooms.filter((r) => r.property_id === p.id),
+    }))
+  }
+
   public async getPropertyBySlug(slug: string): Promise<{ property: PropertyRecord | null; roomTypes: RoomTypeRecord[] }> {
     if (!this.useInMemory && this.pool) {
       const propRes = await this.pool.query('SELECT * FROM properties WHERE slug = $1 AND is_active = true', [slug])
@@ -335,6 +351,201 @@ export class DatabaseEngine {
       }
     })
     return count
+  }
+
+  public async getAllBookings(limit: number = 50): Promise<BookingRecord[]> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('SELECT * FROM bookings ORDER BY created_at DESC LIMIT $1', [limit])
+      return res.rows
+    }
+    const all = Array.from(this.memoryBookings.values())
+    return all
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, limit)
+  }
+
+  public async getGlanceMetrics(): Promise<{
+    todayCheckIns: number
+    pendingHolds: number
+    pendingEnquiries: number
+    todayRevenue: number
+  }> {
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    if (!this.useInMemory && this.pool) {
+      const checkInsRes = await this.pool.query(
+        "SELECT COUNT(*) as count FROM bookings WHERE check_in = $1 AND booking_status = 'CONFIRMED'",
+        [todayStr]
+      )
+      const holdsRes = await this.pool.query(
+        "SELECT COUNT(*) as count FROM bookings WHERE booking_status = 'PENDING_PAYMENT'"
+      )
+      const enqRes = await this.pool.query(
+        "SELECT COUNT(*) as count FROM enquiries WHERE status IN ('NEW', 'CONTACTED', 'LINK_SENT')"
+      )
+      const revRes = await this.pool.query(
+        "SELECT SUM(total_amount) as total FROM bookings WHERE booking_status = 'CONFIRMED' AND DATE(created_at) = $1",
+        [todayStr]
+      )
+
+      return {
+        todayCheckIns: Number(checkInsRes.rows[0]?.count || 0),
+        pendingHolds: Number(holdsRes.rows[0]?.count || 0),
+        pendingEnquiries: Number(enqRes.rows[0]?.count || 0),
+        todayRevenue: Number(revRes.rows[0]?.total || 0),
+      }
+    }
+
+    const allBookings = Array.from(this.memoryBookings.values())
+    const allEnquiries = Array.from(this.memoryEnquiries.values())
+
+    const todayCheckIns = allBookings.filter(
+      (b) => b.check_in === todayStr && b.booking_status === 'CONFIRMED'
+    ).length
+
+    const pendingHolds = allBookings.filter((b) => b.booking_status === 'PENDING_PAYMENT').length
+
+    const pendingEnquiries = allEnquiries.filter((e) =>
+      ['NEW', 'CONTACTED', 'LINK_SENT'].includes(e.status)
+    ).length
+
+    const todayRevenue = allBookings
+      .filter(
+        (b) =>
+          b.booking_status === 'CONFIRMED' &&
+          new Date(b.created_at).toISOString().split('T')[0] === todayStr
+      )
+      .reduce((sum, b) => sum + Number(b.total_amount), 0)
+
+    return { todayCheckIns, pendingHolds, pendingEnquiries, todayRevenue }
+  }
+
+  public async toggleRoomAvailability(
+    roomTypeIdOrSlug: string,
+    propertySlug?: string,
+    explicitAvailable?: boolean
+  ): Promise<RoomTypeRecord | null> {
+    if (!this.useInMemory && this.pool) {
+      let query = 'SELECT * FROM room_types WHERE id = $1 OR slug = $1'
+      const params: any[] = [roomTypeIdOrSlug]
+      if (propertySlug) {
+        query = `SELECT rt.* FROM room_types rt
+                 JOIN properties p ON p.id = rt.property_id
+                 WHERE p.slug = $2 AND (rt.id = $1 OR rt.slug = $1)`
+        params.push(propertySlug)
+      }
+      const res = await this.pool.query(query, params)
+      if (res.rows.length === 0) return null
+      const room = res.rows[0]
+      const newStatus = explicitAvailable !== undefined ? explicitAvailable : !room.is_available
+      const upd = await this.pool.query('UPDATE room_types SET is_available = $1 WHERE id = $2 RETURNING *', [
+        newStatus,
+        room.id,
+      ])
+      return upd.rows[0]
+    }
+
+    let targetRoom: RoomTypeRecord | undefined
+    if (propertySlug) {
+      const prop = Array.from(this.memoryProperties.values()).find((p) => p.slug === propertySlug)
+      if (prop) {
+        targetRoom = Array.from(this.memoryRoomTypes.values()).find(
+          (r) => r.property_id === prop.id && (r.id === roomTypeIdOrSlug || r.slug === roomTypeIdOrSlug)
+        )
+      }
+    } else {
+      targetRoom = Array.from(this.memoryRoomTypes.values()).find(
+        (r) => r.id === roomTypeIdOrSlug || r.slug === roomTypeIdOrSlug
+      )
+    }
+
+    if (!targetRoom) return null
+    targetRoom.is_available = explicitAvailable !== undefined ? explicitAvailable : !targetRoom.is_available
+    this.memoryRoomTypes.set(targetRoom.id, targetRoom)
+    return targetRoom
+  }
+
+  public async updateWeekendSurcharge(
+    propertyIdOrSlug: string | 'all',
+    surchargePercent: number
+  ): Promise<PropertyRecord[]> {
+    if (!this.useInMemory && this.pool) {
+      if (propertyIdOrSlug === 'all') {
+        await this.pool.query('UPDATE properties SET weekend_surcharge_percent = $1', [surchargePercent])
+        const res = await this.pool.query('SELECT * FROM properties ORDER BY name ASC')
+        return res.rows
+      }
+      await this.pool.query(
+        'UPDATE properties SET weekend_surcharge_percent = $1 WHERE id = $2 OR slug = $2',
+        [surchargePercent, propertyIdOrSlug]
+      )
+      const res = await this.pool.query('SELECT * FROM properties ORDER BY name ASC')
+      return res.rows
+    }
+
+    if (propertyIdOrSlug === 'all') {
+      this.memoryProperties.forEach((prop) => {
+        prop.weekend_surcharge_percent = surchargePercent
+        this.memoryProperties.set(prop.id, prop)
+      })
+    } else {
+      const prop = Array.from(this.memoryProperties.values()).find(
+        (p) => p.id === propertyIdOrSlug || p.slug === propertyIdOrSlug
+      )
+      if (prop) {
+        prop.weekend_surcharge_percent = surchargePercent
+        this.memoryProperties.set(prop.id, prop)
+      }
+    }
+    return Array.from(this.memoryProperties.values())
+  }
+
+  public async searchHotelsForChat(query: {
+    search?: string
+    city?: string
+    checkIn?: string
+    checkOut?: string
+    roomsCount?: number
+  }): Promise<
+    Array<{
+      property: PropertyRecord
+      rooms: Array<RoomTypeRecord & { currentPriceInr: number }>
+    }>
+  > {
+    const allProps = await this.getPropertiesWithRooms()
+    const result: Array<{
+      property: PropertyRecord
+      rooms: Array<RoomTypeRecord & { currentPriceInr: number }>
+    }> = []
+
+    for (const item of allProps) {
+      if (query.city && !item.property.city.toLowerCase().includes(query.city.toLowerCase())) {
+        continue
+      }
+      if (
+        query.search &&
+        !item.property.name.toLowerCase().includes(query.search.toLowerCase()) &&
+        !item.property.slug.toLowerCase().includes(query.search.toLowerCase()) &&
+        !item.property.city.toLowerCase().includes(query.search.toLowerCase())
+      ) {
+        continue
+      }
+
+      const matchingRooms = item.rooms
+        .filter((r) => r.is_available && (!query.roomsCount || r.available_units >= query.roomsCount))
+        .map((r) => ({
+          ...r,
+          currentPriceInr: Number(item.property.base_price) + Number(r.price_offset),
+        }))
+
+      if (matchingRooms.length > 0) {
+        result.push({
+          property: item.property,
+          rooms: matchingRooms,
+        })
+      }
+    }
+    return result
   }
 
   public async createEnquiry(payload: Omit<EnquiryRecord, 'id' | 'status' | 'created_at'>): Promise<EnquiryRecord> {

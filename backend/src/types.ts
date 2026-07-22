@@ -117,6 +117,7 @@ export interface RoomTypeRecord {
   price_offset: number
   total_units: number
   available_units: number
+  is_available: boolean
 }
 
 export interface BookingRecord {

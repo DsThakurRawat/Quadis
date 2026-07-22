@@ -5,6 +5,7 @@ import { bookingsRouter } from './routes/bookings'
 import { paymentsRouter } from './routes/payments'
 import { webhooksRouter } from './routes/webhooks'
 import { enquiriesRouter } from './routes/enquiries'
+import { adminRouter } from './routes/admin'
 
 export function createApp(): Express {
   const app = express()
@@ -23,6 +24,7 @@ export function createApp(): Express {
   app.use('/api/payments', paymentsRouter)
   app.use('/api/webhooks', webhooksRouter)
   app.use('/api/enquiries', enquiriesRouter)
+  app.use('/api/admin', adminRouter)
 
   // Global 404 fallback
   app.use((_req: Request, res: Response) => {

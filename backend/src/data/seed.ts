@@ -26,6 +26,7 @@ export const seedRoomTypes: RoomTypeRecord[] = seedProperties.flatMap((prop, ind
     price_offset: 0,
     total_units: 5,
     available_units: 5,
+    is_available: true,
   },
   {
     id: `room-${prop.id}-superior`,
@@ -39,6 +40,7 @@ export const seedRoomTypes: RoomTypeRecord[] = seedProperties.flatMap((prop, ind
     price_offset: 400,
     total_units: 3,
     available_units: 3,
+    is_available: true,
   },
   {
     id: `room-${prop.id}-royal`,
@@ -52,5 +54,6 @@ export const seedRoomTypes: RoomTypeRecord[] = seedProperties.flatMap((prop, ind
     price_offset: 1200,
     total_units: 2,
     available_units: 2,
+    is_available: true,
   },
 ])
