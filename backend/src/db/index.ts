@@ -70,6 +70,8 @@ export class DatabaseEngine {
     guestName: string
     guestPhone: string
     guestEmail?: string
+    companyName?: string
+    gstin?: string
   }): Promise<{ success: boolean; booking?: BookingRecord; error?: string }> {
     if (new Date(payload.checkOut).getTime() <= new Date(payload.checkIn).getTime()) {
       return { success: false, error: 'Check-out date must be strictly after check-in date' }
@@ -109,9 +111,9 @@ export class DatabaseEngine {
 
         const insertRes = await client.query(
           `INSERT INTO bookings (
-            booking_code, property_id, room_type_id, guest_name, guest_phone, guest_email,
+            booking_code, property_id, room_type_id, guest_name, guest_phone, guest_email, company_name, gstin,
             check_in, check_out, rooms_count, guests_count, total_amount, booking_status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING_PAYMENT', NOW()) RETURNING *`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'PENDING_PAYMENT', NOW()) RETURNING *`,
           [
             bookingCode,
             room.prop_id,
@@ -119,6 +121,8 @@ export class DatabaseEngine {
             payload.guestName,
             payload.guestPhone,
             payload.guestEmail || null,
+            payload.companyName || null,
+            payload.gstin || null,
             payload.checkIn,
             payload.checkOut,
             payload.roomsCount,
@@ -164,6 +168,8 @@ export class DatabaseEngine {
       guest_name: payload.guestName,
       guest_phone: payload.guestPhone,
       guest_email: payload.guestEmail,
+      company_name: payload.companyName,
+      gstin: payload.gstin,
       check_in: payload.checkIn,
       check_out: payload.checkOut,
       rooms_count: payload.roomsCount,
@@ -191,6 +197,94 @@ export class DatabaseEngine {
       (b) => b.booking_code === bookingCode && (!guestPhone || b.guest_phone === guestPhone)
     )
     return booking || null
+  }
+
+  public async getPropertyById(id: string): Promise<PropertyRecord | null> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('SELECT * FROM properties WHERE id = $1', [id])
+      return res.rows[0] || null
+    }
+    return this.memoryProperties.get(id) || null
+  }
+
+  public async getRoomTypeById(id: string): Promise<RoomTypeRecord | null> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('SELECT * FROM room_types WHERE id = $1', [id])
+      return res.rows[0] || null
+    }
+    return this.memoryRoomTypes.get(id) || null
+  }
+
+  public async updateBookingPayment(
+    bookingCode: string,
+    payload: {
+      paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+      bookingStatus?: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
+      razorpayOrderId?: string
+      razorpayPaymentId?: string
+      razorpayPaymentLinkId?: string
+    }
+  ): Promise<BookingRecord | null> {
+    const existing = await this.getBookingByCode(bookingCode)
+    if (!existing) return null
+
+    const newPaymentStatus = payload.paymentStatus || existing.payment_status
+    const newBookingStatus = payload.bookingStatus || existing.booking_status
+    const rzpOrder = payload.razorpayOrderId !== undefined ? payload.razorpayOrderId : existing.razorpay_order_id
+    const rzpPayment = payload.razorpayPaymentId !== undefined ? payload.razorpayPaymentId : existing.razorpay_payment_id
+    const rzpLink = payload.razorpayPaymentLinkId !== undefined ? payload.razorpayPaymentLinkId : existing.razorpay_payment_link_id
+
+    const shouldReleaseInventory =
+      existing.booking_status === 'PENDING_PAYMENT' &&
+      (newBookingStatus === 'CANCELLED' || newBookingStatus === 'EXPIRED' || newPaymentStatus === 'FAILED')
+
+    if (!this.useInMemory && this.pool) {
+      const client = await this.pool.connect()
+      try {
+        await client.query('BEGIN')
+        if (shouldReleaseInventory) {
+          await client.query(
+            `UPDATE room_types SET available_units = LEAST(total_units, available_units + $1) WHERE id = $2`,
+            [existing.rooms_count, existing.room_type_id]
+          )
+        }
+        const res = await client.query(
+          `UPDATE bookings SET
+             payment_status = $1,
+             booking_status = $2,
+             razorpay_order_id = $3,
+             razorpay_payment_id = $4,
+             razorpay_payment_link_id = $5
+           WHERE booking_code = $6 RETURNING *`,
+          [newPaymentStatus, newBookingStatus, rzpOrder || null, rzpPayment || null, rzpLink || null, bookingCode]
+        )
+        await client.query('COMMIT')
+        return res.rows[0] || null
+      } catch (err) {
+        await client.query('ROLLBACK')
+        throw err
+      } finally {
+        client.release()
+      }
+    }
+
+    // In-memory update
+    if (shouldReleaseInventory) {
+      const room = this.memoryRoomTypes.get(existing.room_type_id)
+      if (room) {
+        room.available_units = Math.min(room.total_units, room.available_units + existing.rooms_count)
+        this.memoryRoomTypes.set(room.id, room)
+      }
+    }
+
+    existing.payment_status = newPaymentStatus
+    existing.booking_status = newBookingStatus
+    if (rzpOrder !== undefined) existing.razorpay_order_id = rzpOrder
+    if (rzpPayment !== undefined) existing.razorpay_payment_id = rzpPayment
+    if (rzpLink !== undefined) existing.razorpay_payment_link_id = rzpLink
+
+    this.memoryBookings.set(existing.id, existing)
+    return existing
   }
 
   public async cleanupExpiredHolds(expireThresholdMinutes: number = 15): Promise<number> {

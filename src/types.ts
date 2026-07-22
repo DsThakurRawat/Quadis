@@ -110,3 +110,58 @@ export type CityFilter = 'All' | City | 'Upcoming'
 
 /** Generic map of field-name → error message for a form's values. */
 export type FormErrors<T> = Partial<Record<keyof T, string>>
+
+/* ---------- Database & API Record Interfaces ---------- */
+
+export interface PropertyRecord {
+  id: string
+  slug: string
+  name: string
+  city: City
+  address: string
+  phone: string
+  whatsapp: string
+  email: string
+  base_price: number
+  rating: number
+  is_active: boolean
+  weekend_surcharge_percent: number
+}
+
+export interface RoomTypeRecord {
+  id: string
+  property_id: string
+  slug: string
+  name: string
+  description: string
+  size_sqft: string
+  bed_type: string
+  max_guests: number
+  price_offset: number
+  total_units: number
+  available_units: number
+}
+
+export interface BookingRecord {
+  id: string
+  booking_code: string
+  property_id: string
+  room_type_id: string
+  guest_name: string
+  guest_phone: string
+  guest_email?: string
+  company_name?: string
+  gstin?: string
+  check_in: string
+  check_out: string
+  rooms_count: number
+  guests_count: number
+  total_amount: number
+  payment_mode: 'INSTANT_FULL_PAYMENT' | 'TOKEN_DEPOSIT' | 'ENQUIRY_PAYMENT_LINK'
+  payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+  razorpay_order_id?: string
+  razorpay_payment_id?: string
+  razorpay_payment_link_id?: string
+  booking_status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
+  created_at: Date | string
+}

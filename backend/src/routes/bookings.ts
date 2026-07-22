@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { z } from 'zod'
 import { db } from '../db'
+import { invoiceService } from '../services/InvoiceService'
 
 export const bookingsRouter = Router()
 
@@ -14,6 +15,8 @@ const initiateBookingSchema = z.object({
   guestName: z.string().trim().min(2, 'Guest name must be at least 2 characters'),
   guestPhone: z.string().trim().min(10, 'Valid 10-digit mobile number required'),
   guestEmail: z.string().trim().email('Invalid email address').optional(),
+  companyName: z.string().trim().optional(),
+  gstin: z.string().trim().optional(),
 }).refine(
   (data) => new Date(data.checkOut).getTime() > new Date(data.checkIn).getTime(),
   { message: 'Check-out date must be strictly after check-in date', path: ['checkOut'] }
@@ -68,3 +71,27 @@ bookingsRouter.get('/:code', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: err.message || 'Failed to lookup booking' })
   }
 })
+
+// GET /api/bookings/:code/invoice - download SAC 996311 GST Tax Invoice PDF
+bookingsRouter.get('/:code/invoice', async (req: Request, res: Response) => {
+  try {
+    const { code } = req.params
+    const booking = await db.getBookingByCode(code)
+    if (!booking) {
+      return res.status(404).json({ success: false, error: 'Booking not found' })
+    }
+
+    const prop = await db.getPropertyById(booking.property_id)
+    const room = await db.getRoomTypeById(booking.room_type_id)
+
+    const pdfBuffer = await invoiceService.generateGstInvoicePdf(booking, prop, room)
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="Quadis-Invoice-${booking.booking_code}.pdf"`)
+    res.send(pdfBuffer)
+  } catch (err: any) {
+    console.error('Error generating PDF invoice:', err)
+    res.status(500).json({ success: false, error: err.message || 'Failed to generate invoice PDF' })
+  }
+})
+

@@ -2,6 +2,8 @@ import express, { Express, Request, Response } from 'express'
 import cors from 'cors'
 import { propertiesRouter } from './routes/properties'
 import { bookingsRouter } from './routes/bookings'
+import { paymentsRouter } from './routes/payments'
+import { webhooksRouter } from './routes/webhooks'
 
 export function createApp(): Express {
   const app = express()
@@ -17,6 +19,8 @@ export function createApp(): Express {
   // Mount API route handlers
   app.use('/api/properties', propertiesRouter)
   app.use('/api/bookings', bookingsRouter)
+  app.use('/api/payments', paymentsRouter)
+  app.use('/api/webhooks', webhooksRouter)
 
   // Global 404 fallback
   app.use((_req: Request, res: Response) => {
