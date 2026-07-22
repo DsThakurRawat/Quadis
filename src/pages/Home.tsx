@@ -5,13 +5,17 @@ import type { CityFilter } from '../types.ts'
 import BookingBar from '../components/BookingBar.tsx'
 import Testimonials from '../components/Testimonials.tsx'
 import { HotelCard, FilterPills, Button } from '../components/ui.tsx'
-import { Photo, HeroShowcase } from '../components/media.tsx'
+import { Photo, HeroVideoShowcase } from '../components/media.tsx'
 import { SectionHeader, StatsStrip, CtaBand, Reveal } from '../components/blocks.tsx'
 import { IconWifi, IconTv, IconAc, IconShield, IconTowel, IconShower, IconToiletries, IconBell } from '../components/icons.tsx'
 
 import UpcomingHotels from '../components/UpcomingHotels.tsx'
 import DestinationsGrid from '../components/DestinationsGrid.tsx'
 import BusinessCtaBanner from '../components/BusinessCtaBanner.tsx'
+import OurOfferings from '../components/OurOfferings.tsx'
+import DealsSection from '../components/DealsSection.tsx'
+import FeaturedInAndOffers from '../components/FeaturedInAndOffers.tsx'
+import HappyClientsSection from '../components/HappyClientsSection.tsx'
 
 interface Experience { title: string; blurb: string; to: string; img: () => string | undefined }
 const EXPERIENCES: Experience[] = [
@@ -33,9 +37,9 @@ export default function Home() {
 
   return (
     <>
-      {/* 1. Hero + Booking bar */}
+      {/* 1. Hero with Full-Screen Video Background + Booking bar (§1) */}
       <section className="home-hero scrim">
-        <HeroShowcase images={heroShowcaseImages} intervalMs={3000} />
+        <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
         <div className="container home-hero__content">
           <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE 2017</span>
           <h1 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h1>
@@ -45,11 +49,10 @@ export default function Home() {
           <BookingBar overlap={false} />
         </div>
       </section>
-
-      {/* 3. Stats strip */}
+      {/* 2. Stats strip */}
       <StatsStrip />
 
-      {/* 4. Intro statement */}
+      {/* 3. Intro statement */}
       <section className="section bg-cream">
         <Reveal className="container intro center-col">
           <span className="script">A Way of Being</span>
@@ -60,7 +63,7 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* 5. Hotels */}
+      {/* 4. Hotels */}
       <section className="section bg-warm">
         <div className="container">
           <SectionHeader overline="OUR PROPERTIES" title={filter === 'Upcoming' ? 'Our Upcoming Hotels' : 'Best Hotels in Delhi NCR'} />
@@ -97,66 +100,56 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Great Sleep & Refreshing Showers Guarantee */}
+      {/* 5. Great Sleep & Refreshing Showers Guarantee (§Stay Promise) */}
       <section className="section stay-promise-section bg-dark text-on-dark">
         <div className="container">
           <Reveal className="stay-promise center-col">
-            <span className="overline gold-accent">FABULOUS STAYS, GUARANTEED</span>
-            <h2 className="h2 on-dark stay-promise__title">Great <span className="gold-text">sleep.</span> Refreshing <span className="gold-text">showers.</span></h2>
-            <p className="lead stay-promise__sub">Hassle-free stay across all 10 Quadis properties in Delhi NCR.</p>
+            <span className="stay-promise__pill">FABULOUS STAYS, GUARANTEED</span>
+            <h2 className="h2 on-dark stay-promise__title">Great <span className="gold-text" style={{ color: 'var(--gold)' }}>sleep.</span> Refreshing <span className="gold-text" style={{ color: 'var(--gold)' }}>showers.</span></h2>
+            <p className="lead stay-promise__sub">Hassle-free stay across all 10 Quadis properties in Delhi NCR. Know more.</p>
             
-            <div className="stay-essentials-grid">
-              <div className="stay-essential-card">
-                <div className="stay-essential-icon"><IconWifi /></div>
-                <span className="stay-essential-label">Free Wi-Fi</span>
+            <div className="stay-promise__icons">
+              <div className="stay-promise__icon-item">
+                <div className="stay-promise__icon-circle"><IconWifi /></div>
+                <span>Free Wi-Fi</span>
               </div>
-              <div className="stay-essential-card">
-                <div className="stay-essential-icon"><IconTv /></div>
-                <span className="stay-essential-label">HD Smart TV</span>
+              <div className="stay-promise__icon-item">
+                <div className="stay-promise__icon-circle"><IconTv /></div>
+                <span>HD Smart TV</span>
               </div>
-              <div className="stay-essential-card">
-                <div className="stay-essential-icon"><IconAc /></div>
-                <span className="stay-essential-label">Climate AC</span>
+              <div className="stay-promise__icon-item">
+                <div className="stay-promise__icon-circle"><IconAc /></div>
+                <span>Climate AC</span>
               </div>
-              <div className="stay-essential-card">
-                <div className="stay-essential-icon"><IconShield /></div>
-                <span className="stay-essential-label">24x7 Security</span>
+              <div className="stay-promise__icon-item">
+                <div className="stay-promise__icon-circle"><IconShield /></div>
+                <span>24x7 Security</span>
               </div>
-              <div className="stay-essential-card">
-                <div className="stay-essential-icon"><IconTowel /></div>
-                <span className="stay-essential-label">Clean Towels</span>
+              <div className="stay-promise__icon-item">
+                <div className="stay-promise__icon-circle"><IconTowel /></div>
+                <span>Clean Towels</span>
               </div>
-              <div className="stay-essential-card">
-                <div className="stay-essential-icon"><IconShower /></div>
-                <span className="stay-essential-label">Hot Water</span>
+              <div className="stay-promise__icon-item">
+                <div className="stay-promise__icon-circle"><IconShower /></div>
+                <span>Hot Water</span>
               </div>
-              <div className="stay-essential-card">
-                <div className="stay-essential-icon"><IconToiletries /></div>
-                <span className="stay-essential-label">Toiletries</span>
+              <div className="stay-promise__icon-item">
+                <div className="stay-promise__icon-circle"><IconToiletries /></div>
+                <span>Toiletries</span>
               </div>
-              <div className="stay-essential-card">
-                <div className="stay-essential-icon"><IconBell /></div>
-                <span className="stay-essential-label">Room Service</span>
+              <div className="stay-promise__icon-item">
+                <div className="stay-promise__icon-circle"><IconBell /></div>
+                <span>Room Service</span>
               </div>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* Ecosystem banner */}
-      <section className="section bg-cream">
-        <div className="container center-col">
-          <SectionHeader overline="THE QUADIS ECOSYSTEM" title="A Vision Beyond Room Count" />
-          <Reveal className="prose center-col mb-8">
-            <p>
-              As Delhi NCR&rsquo;s leading hospitality brand, our leadership is anchored in genuine guest satisfaction, rigorous employee welfare, and ambitious future horizons including <strong>Quadis Airlines</strong> and <strong>Quadis Homes</strong>.
-            </p>
-          </Reveal>
-          <Button to="/about-us" variant="primary">EXPLORE OUR VISION &amp; ROADMAP</Button>
-        </div>
-      </section>
+      {/* 6. Our Offerings Section */}
+      <OurOfferings />
 
-      {/* 6. Experiences */}
+      {/* Experiences by Quadis */}
       <section className="section bg-dark">
         <div className="container">
           <SectionHeader overline="WE OFFER" title="Experiences by Quadis" onDark />
@@ -175,16 +168,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 7. Upcoming Hotels */}
+      {/* 7. Upcoming Hotels Section */}
       <UpcomingHotels />
 
-      {/* 8. Destinations For You */}
+      {/* 8. Destinations For You Section */}
       <DestinationsGrid />
 
       {/* 9. Business & Franchisee CTA Banner */}
       <BusinessCtaBanner />
 
-      {/* 7. Testimonial */}
+      {/* 10. Deal Of The Day / Never Too Old Section */}
+      <DealsSection />
+
+      {/* 11. Featured In & Offers For You Section */}
+      <FeaturedInAndOffers />
+
+      {/* 12. Our Happy Clients & Trusted by 500,000+ Verified Guests */}
+      <HappyClientsSection />
+
+      {/* 13. Testimonials */}
       <section className="section bg-cream">
         <div className="container testi">
           <div className="testi__head">
@@ -194,18 +196,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 8. Partners */}
+      {/* 14. Ecosystem & Partners banner */}
       <section className="section bg-dark">
         <div className="container center-col stack" style={{ gap: '40px' }}>
-          <SectionHeader overline="WE WORK WITH" title="Trusted by teams across NCR" onDark />
+          <SectionHeader overline="THE QUADIS ECOSYSTEM" title="A Vision Beyond Room Count" onDark />
+          <Reveal className="prose center-col mb-4">
+            <p>
+              As Delhi NCR&rsquo;s leading hospitality brand, our leadership is anchored in genuine guest satisfaction, rigorous employee welfare, and ambitious future horizons including <strong>Quadis Airlines</strong> and <strong>Quadis Homes</strong>.
+            </p>
+          </Reveal>
           <div className="partners">
             {PARTNERS.map((p) => (<span className="partner" key={p}>{p}</span>))}
           </div>
+          <Button to="/about-us" variant="primary">EXPLORE OUR VISION &amp; ROADMAP</Button>
         </div>
       </section>
 
-      {/* 9. CTA band */}
+      {/* 15. CTA band */}
       <CtaBand />
     </>
   )
 }
+

@@ -123,3 +123,40 @@ export function HeroShowcase({ images = [], intervalMs = 3000 }: HeroShowcasePro
     </>
   )
 }
+
+interface HeroVideoShowcaseProps {
+  videoUrl?: string
+  posterUrl?: string
+}
+
+/**
+ * HeroVideoShowcase — Full-screen looping background video for the top banner (§1).
+ * Features smooth autoPlay loop and high-res poster fallback.
+ */
+export function HeroVideoShowcase({
+  videoUrl = 'https://assets.mixkit.co/videos/preview/mixkit-luxury-hotel-lobby-and-reception-42681-large.mp4',
+  posterUrl = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80'
+}: HeroVideoShowcaseProps) {
+  const [videoFailed, setVideoFailed] = useState(false)
+
+  if (videoFailed) {
+    return <img className="hero-media" src={posterUrl} alt="Quadis Hotel Showcase" />
+  }
+
+  return (
+    <video
+      className="hero-media"
+      autoPlay
+      loop
+      muted
+      playsInline
+      poster={posterUrl}
+      onError={() => setVideoFailed(true)}
+      style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', inset: 0 }}
+    >
+      <source src={videoUrl} type="video/mp4" />
+      <img className="hero-media" src={posterUrl} alt="Quadis Hotel Showcase" />
+    </video>
+  )
+}
+
