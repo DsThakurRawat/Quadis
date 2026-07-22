@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { getApiUrl } from '../config/api'
 
 interface ChatMessage {
   id: string
@@ -51,10 +52,9 @@ export default function QuadisAssistChat() {
     setLoading(true)
 
     try {
-      const baseUrl = window.location.origin.includes('localhost:517') ? 'http://localhost:3001' : ''
       const historyPayload = messages.slice(-6).map((m) => ({ role: m.role, content: m.content }))
 
-      const res = await fetch(`${baseUrl}/api/ai/chat`, {
+      const res = await fetch(getApiUrl('/api/ai/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

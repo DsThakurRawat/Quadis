@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { BookingRecord } from '../types'
 import { inr } from '../data/hotels'
+import { getApiUrl } from '../config/api'
 
 interface CheckoutModalProps {
   propertySlug: string
@@ -64,7 +65,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null)
 
     try {
-      const response = await fetch('http://localhost:3001/api/bookings/initiate', {
+      const response = await fetch(getApiUrl('/api/bookings/initiate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -90,7 +91,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setBooking(resData.data)
 
       // Initialize Razorpay order right after hold
-      const orderRes = await fetch('http://localhost:3001/api/payments/create-order', {
+      const orderRes = await fetch(getApiUrl('/api/payments/create-order'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingCode: resData.data.booking_code }),
@@ -114,7 +115,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null)
 
     try {
-      const response = await fetch('http://localhost:3001/api/webhooks/razorpay', {
+      const response = await fetch(getApiUrl('/api/webhooks/razorpay'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +143,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }
 
       if (status === 'order.paid') {
-        const lookup = await fetch(`http://localhost:3001/api/bookings/${booking.booking_code}`)
+        const lookup = await fetch(getApiUrl(`/api/bookings/${booking.booking_code}`))
         const lookupJson = await lookup.json()
         if (lookup.ok && lookupJson.success) {
           setBooking(lookupJson.data)
@@ -161,7 +162,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleDownloadInvoice = () => {
     if (!booking) return
-    window.open(`http://localhost:3001/api/bookings/${booking.booking_code}/invoice`, '_blank')
+    window.open(getApiUrl(`/api/bookings/${booking.booking_code}/invoice`), '_blank')
   }
 
   return (

@@ -3,6 +3,7 @@ import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
 import { IconPhone, IconMail, IconPin } from '../components/icons.tsx'
 import type { ContactPayload, ContactType } from '../types.ts'
+import { getApiUrl } from '../config/api.ts'
 
 const TYPES: ContactType[] = ['General', 'Booking', 'Banquet', 'Corporate', 'Feedback']
 const HQ = encodeURIComponent('H-22, Sector 51, Noida, Gautam Buddha Nagar, UP 201307')
@@ -34,7 +35,7 @@ export default function Contact() {
             ) : (
               <form className="form-grid form-grid--card" onSubmit={f.submit(async (v) => {
                 try {
-                  await fetch('/api/enquiries', {
+                  await fetch(getApiUrl('/api/enquiries'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

@@ -6,6 +6,7 @@ import Gallery from '../components/Gallery.tsx'
 import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
 import { SectionHeader } from '../components/blocks.tsx'
+import { getApiUrl } from '../config/api.ts'
 import NotFound from './NotFound.tsx'
 
 const OCCASIONS = ['Weddings', 'Receptions', 'Corporate', 'Birthdays']
@@ -74,7 +75,7 @@ export default function BanquetDetail() {
           ) : (
             <form className="form-grid" onSubmit={f.submit(async (v) => {
               try {
-                await fetch('/api/enquiries', {
+                await fetch(getApiUrl('/api/enquiries'), {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({

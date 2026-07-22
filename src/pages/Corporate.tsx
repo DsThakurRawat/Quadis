@@ -5,6 +5,7 @@ import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
 import { Photo } from '../components/media.tsx'
 import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
+import { getApiUrl } from '../config/api.ts'
 
 interface Benefit { title: string; body: string }
 const BENEFITS: Benefit[] = [
@@ -79,7 +80,7 @@ export default function Corporate() {
           ) : (
             <form className="form-grid form-grid--card" onSubmit={f.submit(async (v) => {
               try {
-                await fetch('/api/enquiries', {
+                await fetch(getApiUrl('/api/enquiries'), {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
