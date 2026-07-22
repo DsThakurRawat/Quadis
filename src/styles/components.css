@@ -942,6 +942,7 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
 }
 
 /* ===================== Upcoming Hotels Showcase ===================== */
+.mt-8 { margin-top: 32px; }
 .upcoming-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
