@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   guest_name VARCHAR(128) NOT NULL,
   guest_phone VARCHAR(20) NOT NULL,
   guest_email VARCHAR(128),
+  company_name VARCHAR(128),
+  gstin VARCHAR(32),
   check_in DATE NOT NULL,
   check_out DATE NOT NULL,
   rooms_count INTEGER NOT NULL DEFAULT 1,
@@ -48,6 +50,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   payment_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
   razorpay_order_id VARCHAR(64),
   razorpay_payment_id VARCHAR(64),
+  razorpay_payment_link_id VARCHAR(64),
   booking_status VARCHAR(32) NOT NULL DEFAULT 'PENDING_PAYMENT',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

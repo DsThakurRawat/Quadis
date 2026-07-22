@@ -10,6 +10,7 @@ import Gallery from '../components/Gallery.tsx'
 import { Photo } from '../components/media.tsx'
 import { IconPin, IconStar, IconWifi, IconAc, IconBreakfast, IconParking, IconDesk, IconRoom } from '../components/icons.tsx'
 import NotFound from './NotFound.tsx'
+import { CheckoutModal } from '../components/CheckoutModal.tsx'
 
 interface Amenity { icon: ComponentType<SVGProps<SVGSVGElement>>; label: string }
 const AMENITIES: Amenity[] = [
@@ -41,6 +42,7 @@ export default function HotelDetail() {
   const [selectedRoomId, setSelectedRoomId] = useState('')
   const [selectedMealPlan, setSelectedMealPlan] = useState<MealPlan>('Room Only')
   const [cardMealPlans, setCardMealPlans] = useState<Record<string, MealPlan>>({})
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false)
 
   const nearby = useMemo(() => {
     if (!hotel) return []
@@ -63,7 +65,7 @@ export default function HotelDetail() {
 
   const book = (e: React.FormEvent) => {
     e.preventDefault()
-    setConfirmed(true)
+    setShowCheckoutModal(true)
   }
 
   return (
@@ -263,6 +265,26 @@ export default function HotelDetail() {
       </section>
 
       <CtaBand />
+
+      {showCheckoutModal && activeRoom && (
+        <CheckoutModal
+          propertySlug={hotel.slug}
+          propertyName={hotel.name}
+          propertyAddress={hotel.address}
+          roomTypeSlug={activeRoom.id}
+          roomTypeName={activeRoom.name}
+          checkIn={checkin}
+          checkOut={checkout}
+          roomsCount={rooms}
+          guestsCount={guests}
+          totalAmount={total}
+          onClose={() => setShowCheckoutModal(false)}
+          onSuccess={(code) => {
+            console.log('Payment successful for booking:', code)
+            setConfirmed(true)
+          }}
+        />
+      )}
     </>
   )
 }

@@ -127,6 +127,8 @@ export interface BookingRecord {
   guest_name: string
   guest_phone: string
   guest_email?: string
+  company_name?: string
+  gstin?: string
   check_in: string
   check_out: string
   rooms_count: number
@@ -134,6 +136,9 @@ export interface BookingRecord {
   total_amount: number
   payment_mode: 'INSTANT_FULL_PAYMENT' | 'TOKEN_DEPOSIT' | 'ENQUIRY_PAYMENT_LINK'
   payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+  razorpay_order_id?: string
+  razorpay_payment_id?: string
+  razorpay_payment_link_id?: string
   booking_status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
   created_at: Date
 }
