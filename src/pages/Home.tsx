@@ -9,6 +9,10 @@ import { Photo, HeroMedia } from '../components/media.tsx'
 import { SectionHeader, StatsStrip, CtaBand, Reveal } from '../components/blocks.tsx'
 import { IconWifi, IconTv, IconAc, IconShield, IconTowel, IconShower, IconToiletries, IconBell } from '../components/icons.tsx'
 
+import UpcomingHotels from '../components/UpcomingHotels.tsx'
+import DestinationsGrid from '../components/DestinationsGrid.tsx'
+import BusinessCtaBanner from '../components/BusinessCtaBanner.tsx'
+
 interface Experience { title: string; blurb: string; to: string; img: () => string | undefined }
 const EXPERIENCES: Experience[] = [
   { title: 'Hotels by Quadis', blurb: 'Ten considered properties across Noida and New Delhi — calm rooms, prime locations, and warm, attentive service.', to: '/hotels', img: () => hotelImages('hotel-cladis-sector-51-noida')[0] },
@@ -17,7 +21,7 @@ const EXPERIENCES: Experience[] = [
 ]
 
 const PARTNERS = ['Blackcomb Springs', 'Hitachi', 'Polycab', 'Aditya Birla Grasim']
-const CITY_FILTERS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi']
+const CITY_FILTERS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi', 'Upcoming']
 
 export default function Home() {
   const [filter, setFilter] = useState<CityFilter>('All')
@@ -60,13 +64,37 @@ export default function Home() {
       {/* 5. Hotels */}
       <section className="section bg-warm">
         <div className="container">
-          <SectionHeader overline="OUR PROPERTIES" title="Best Hotels in Delhi NCR" />
+          <SectionHeader overline="OUR PROPERTIES" title={filter === 'Upcoming' ? 'Our Upcoming Hotels' : 'Best Hotels in Delhi NCR'} />
           <div className="home-hotels__pills">
             <FilterPills options={CITY_FILTERS} value={filter} onChange={setFilter} ariaLabel="Filter hotels by city" />
           </div>
-          <div className="card-grid card-grid--anim" key={filter}>
-            {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
-          </div>
+          {filter === 'Upcoming' ? (
+            <div className="upcoming-grid mt-8">
+              {[
+                { name: 'OPO Hotel Rishikesh', location: 'Rishikesh, Uttarakhand' },
+                { name: 'OPO Hotels Agra', location: 'Agra, Uttar Pradesh' },
+                { name: 'OPO Hotels Chandigarh', location: 'Chandigarh, Punjab' },
+                { name: 'OPO Hotels Dehradun', location: 'Dehradun, Uttarakhand' },
+              ].map((h) => (
+                <article key={h.name} className="upcoming-card">
+                  <div className="upcoming-card__media">
+                    <div className="photo__ph">
+                      <span className="photo__ph-label">{h.name}</span>
+                    </div>
+                    <span className="upcoming-card__badge">COMING SOON</span>
+                  </div>
+                  <div className="upcoming-card__body">
+                    <h3 className="h3 upcoming-card__title">{h.name}</h3>
+                    <p className="upcoming-card__location">{h.location}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="card-grid card-grid--anim" key={filter}>
+              {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -147,6 +175,15 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 7. Upcoming Hotels */}
+      <UpcomingHotels />
+
+      {/* 8. Destinations For You */}
+      <DestinationsGrid />
+
+      {/* 9. Business & Franchisee CTA Banner */}
+      <BusinessCtaBanner />
 
       {/* 7. Testimonial */}
       <section className="section bg-cream">

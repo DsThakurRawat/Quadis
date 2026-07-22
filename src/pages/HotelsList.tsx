@@ -7,7 +7,7 @@ import { HotelCard, FilterPills } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
 import { CtaBand } from '../components/blocks.tsx'
 
-const OPTIONS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi']
+const OPTIONS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi', 'Upcoming']
 const isFilter = (v: string | null): v is CityFilter => !!v && (OPTIONS as readonly string[]).includes(v)
 
 export default function HotelsList() {
@@ -39,7 +39,7 @@ export default function HotelsList() {
         <HeroMedia src={hotelsHero[0]} />
         <div className="container mini-hero__content">
           <span className="overline on-dark">STAY WITH QUADIS</span>
-          <h1 className="h1 on-dark mini-hero__title">Our Hotels</h1>
+          <h1 className="h1 on-dark mini-hero__title">{filter === 'Upcoming' ? 'Upcoming Destinations' : 'Our Hotels'}</h1>
         </div>
       </section>
 
@@ -48,10 +48,39 @@ export default function HotelsList() {
           <div className="list-pills">
             <FilterPills options={OPTIONS} value={filter} onChange={onFilter} ariaLabel="Filter hotels by city" />
           </div>
-          <p className="list-count meta">{filtered.length} propert{filtered.length === 1 ? 'y' : 'ies'}{filter !== 'All' ? ` in ${filter}` : ''}</p>
-          <div className="card-grid card-grid--anim" key={filter}>
-            {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
-          </div>
+          {filter === 'Upcoming' ? (
+            <>
+              <p className="list-count meta">4 upcoming destinations across India</p>
+              <div className="upcoming-grid mt-8">
+                {[
+                  { name: 'OPO Hotel Rishikesh', location: 'Rishikesh, Uttarakhand' },
+                  { name: 'OPO Hotels Agra', location: 'Agra, Uttar Pradesh' },
+                  { name: 'OPO Hotels Chandigarh', location: 'Chandigarh, Punjab' },
+                  { name: 'OPO Hotels Dehradun', location: 'Dehradun, Uttarakhand' },
+                ].map((h) => (
+                  <article key={h.name} className="upcoming-card">
+                    <div className="upcoming-card__media">
+                      <div className="photo__ph">
+                        <span className="photo__ph-label">{h.name}</span>
+                      </div>
+                      <span className="upcoming-card__badge">COMING SOON</span>
+                    </div>
+                    <div className="upcoming-card__body">
+                      <h3 className="h3 upcoming-card__title">{h.name}</h3>
+                      <p className="upcoming-card__location">{h.location}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="list-count meta">{filtered.length} propert{filtered.length === 1 ? 'y' : 'ies'}{filter !== 'All' ? ` in ${filter}` : ''}</p>
+              <div className="card-grid card-grid--anim" key={filter}>
+                {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
