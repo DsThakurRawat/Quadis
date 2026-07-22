@@ -57,3 +57,32 @@ CREATE TABLE IF NOT EXISTS bookings (
 
 CREATE INDEX IF NOT EXISTS idx_bookings_status_created ON bookings(booking_status, created_at);
 CREATE INDEX IF NOT EXISTS idx_bookings_code ON bookings(booking_code);
+
+CREATE TABLE IF NOT EXISTS enquiries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  enquiry_type VARCHAR(32) NOT NULL,
+  property_id VARCHAR(64) REFERENCES properties(id),
+  guest_name VARCHAR(128) NOT NULL,
+  guest_phone VARCHAR(20) NOT NULL,
+  guest_email VARCHAR(128),
+  event_date DATE,
+  guest_count INTEGER,
+  message TEXT,
+  status VARCHAR(32) NOT NULL DEFAULT 'NEW',
+  razorpay_payment_link_id VARCHAR(64),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_enquiries_status_created ON enquiries(status, created_at);
+
+CREATE TABLE IF NOT EXISTS chat_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id VARCHAR(64) NOT NULL,
+  user_message TEXT NOT NULL,
+  bot_response TEXT NOT NULL,
+  tools_invoked JSONB,
+  handoff_triggered BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_logs_session ON chat_logs(session_id);

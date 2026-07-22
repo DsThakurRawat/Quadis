@@ -72,7 +72,26 @@ export default function BanquetDetail() {
               Thank you — our banquet team will contact you shortly about {venue.name}.
             </SuccessPanel>
           ) : (
-            <form className="form-grid" onSubmit={f.submit()} noValidate>
+            <form className="form-grid" onSubmit={f.submit(async (v) => {
+              try {
+                await fetch('/api/enquiries', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    enquiryType: 'BANQUET',
+                    propertySlug: venue?.slug,
+                    guestName: v.name,
+                    guestPhone: v.phone,
+                    guestEmail: v.email,
+                    eventDate: v.date,
+                    guestCount: v.guests,
+                    message: v.message,
+                  }),
+                })
+              } catch (err) {
+                console.error('Failed to submit banquet enquiry:', err)
+              }
+            })} noValidate>
               <Field label="Name" value={f.values.name} onChange={f.set('name')} error={f.errors.name} />
               <Field label="Phone" type="tel" value={f.values.phone} onChange={f.set('phone')} error={f.errors.phone} />
               <Field label="Email" type="email" value={f.values.email} onChange={f.set('email')} error={f.errors.email} />

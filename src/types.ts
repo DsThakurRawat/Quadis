@@ -165,3 +165,28 @@ export interface BookingRecord {
   booking_status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
   created_at: Date | string
 }
+
+export interface EnquiryRecord {
+  id: string
+  enquiry_type: 'ROOM_HOLD' | 'BANQUET' | 'CORPORATE_RFP' | 'GENERAL'
+  property_id?: string
+  guest_name: string
+  guest_phone: string
+  guest_email?: string
+  event_date?: string
+  guest_count?: number
+  message?: string
+  status: 'NEW' | 'CONTACTED' | 'LINK_SENT' | 'CONVERTED' | 'CLOSED'
+  razorpay_payment_link_id?: string
+  created_at: Date | string
+}
+
+export interface ChatLogRecord {
+  id: string
+  session_id: string
+  user_message: string
+  bot_response: string
+  tools_invoked?: string[]
+  handoff_triggered: boolean
+  created_at: Date | string
+}

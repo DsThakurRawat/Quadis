@@ -1,4 +1,4 @@
-import { BookingRecord } from '../types'
+import { BookingRecord, EnquiryRecord } from '../types'
 
 export interface NotificationResult {
   success: boolean
@@ -141,6 +141,62 @@ export class NotificationService {
     console.log(`------------------------------------------------------------------`)
     console.log(messageBody)
     console.log(`==================================================================\n`)
+
+    return {
+      success: true,
+      isSimulated: true,
+      recipient: this.ownerPhone,
+      messageBody,
+    }
+  }
+
+  public async sendOwnerEnquiryAlert(
+    enquiry: EnquiryRecord,
+    propertyName: string = 'Quadis Hotel'
+  ): Promise<NotificationResult> {
+    const messageBody = `🔔 NEW ENQUIRY RECEIVED (${enquiry.enquiry_type})
+• Property: ${propertyName}
+• Guest: ${enquiry.guest_name} (${enquiry.guest_phone})
+• Email: ${enquiry.guest_email || 'N/A'}
+• Event/Stay Date: ${enquiry.event_date || 'N/A'}
+• Guests: ${enquiry.guest_count || 'N/A'}
+• Message: ${enquiry.message || 'No additional notes'}
+• Status: ${enquiry.status}
+• Time: ${new Date(enquiry.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`
+
+    if (this.whatsappToken && this.phoneNumberId && this.whatsappToken !== 'mock') {
+      try {
+        const response = await fetch(`https://graph.facebook.com/v19.0/${this.phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.whatsappToken}`,
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: this.ownerPhone,
+            type: 'text',
+            text: { body: messageBody },
+          }),
+        })
+        if (response.ok) {
+          return {
+            success: true,
+            isSimulated: false,
+            recipient: this.ownerPhone,
+            messageBody,
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to send live owner enquiry WhatsApp alert:', err)
+      }
+    }
+
+    console.log(`\n==================== [OWNER WHATSAPP ENQUIRY ALERT] ====================`)
+    console.log(`Recipient: +91 ${this.ownerPhone} (Hotel Manager)`)
+    console.log(`------------------------------------------------------------------------`)
+    console.log(messageBody)
+    console.log(`========================================================================\n`)
 
     return {
       success: true,

@@ -77,7 +77,24 @@ export default function Corporate() {
               Thank you — our corporate desk will respond with negotiated rates and terms shortly.
             </SuccessPanel>
           ) : (
-            <form className="form-grid form-grid--card" onSubmit={f.submit()} noValidate>
+            <form className="form-grid form-grid--card" onSubmit={f.submit(async (v) => {
+              try {
+                await fetch('/api/enquiries', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    enquiryType: 'CORPORATE_RFP',
+                    guestName: `${v.person} (${v.company})`,
+                    guestPhone: v.phone,
+                    guestEmail: v.email,
+                    guestCount: v.rooms ? Number(v.rooms) : undefined,
+                    message: `City: ${v.city} | ${v.message}`,
+                  }),
+                })
+              } catch (err) {
+                console.error('Failed to submit corporate RFP:', err)
+              }
+            })} noValidate>
               <Field label="Company" value={f.values.company} onChange={f.set('company')} error={f.errors.company} />
               <Field label="Contact person" value={f.values.person} onChange={f.set('person')} error={f.errors.person} />
               <Field label="Email" type="email" value={f.values.email} onChange={f.set('email')} error={f.errors.email} />

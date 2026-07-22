@@ -150,6 +150,62 @@ export class RazorpayService {
       shortUrl: simShortUrl,
     }
   }
+
+  public async createEnquiryPaymentLink(payload: {
+    enquiryId: string
+    amount: number
+    guestName: string
+    guestPhone: string
+    guestEmail?: string
+    description?: string
+  }): Promise<RazorpayPaymentLinkResponse> {
+    const amountInPaisa = Math.round(Number(payload.amount) * 100)
+
+    if (this.isLiveMode && this.razorpayInstance) {
+      try {
+        const link = await (this.razorpayInstance as any).paymentLink.create({
+          amount: amountInPaisa,
+          currency: 'INR',
+          accept_partial: false,
+          description: payload.description || `Quadis Hotels Enquiry Deposit (${payload.enquiryId})`,
+          customer: {
+            name: payload.guestName,
+            contact: payload.guestPhone,
+            email: payload.guestEmail || 'guest@quadishotels.com',
+          },
+          notify: {
+            sms: true,
+            email: Boolean(payload.guestEmail),
+          },
+          reminder_enable: true,
+          notes: {
+            enquiryId: payload.enquiryId,
+          },
+        })
+        return {
+          success: true,
+          isSimulated: false,
+          paymentLinkId: link.id,
+          shortUrl: link.short_url,
+        }
+      } catch (err: any) {
+        return {
+          success: false,
+          error: err.message || 'Razorpay API failed to create payment link for enquiry',
+        }
+      }
+    }
+
+    // Simulated Payment Link for Enquiry
+    const simLinkId = `plink_enq_sim_${Date.now()}`
+    const simShortUrl = `https://checkout.quadishotels.com/pay-enquiry/${payload.enquiryId}`
+    return {
+      success: true,
+      isSimulated: true,
+      paymentLinkId: simLinkId,
+      shortUrl: simShortUrl,
+    }
+  }
 }
 
 export const razorpayService = new RazorpayService()

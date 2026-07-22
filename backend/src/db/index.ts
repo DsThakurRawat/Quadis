@@ -1,5 +1,5 @@
 import { Pool } from 'pg'
-import { PropertyRecord, RoomTypeRecord, BookingRecord } from '../types'
+import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
 
 // DatabaseEngine abstraction layer providing seamless support for real PostgreSQL via pg Pool
@@ -13,6 +13,8 @@ export class DatabaseEngine {
   public memoryProperties: Map<string, PropertyRecord> = new Map()
   public memoryRoomTypes: Map<string, RoomTypeRecord> = new Map()
   public memoryBookings: Map<string, BookingRecord> = new Map()
+  public memoryEnquiries: Map<string, EnquiryRecord> = new Map()
+  public memoryChatLogs: Map<string, ChatLogRecord> = new Map()
 
   constructor() {
     const dbUrl = process.env.DATABASE_URL
@@ -29,6 +31,8 @@ export class DatabaseEngine {
     this.memoryProperties.clear()
     this.memoryRoomTypes.clear()
     this.memoryBookings.clear()
+    this.memoryEnquiries.clear()
+    this.memoryChatLogs.clear()
 
     seedProperties.forEach((p) => {
       this.memoryProperties.set(p.id, { ...p })
@@ -331,6 +335,116 @@ export class DatabaseEngine {
       }
     })
     return count
+  }
+
+  public async createEnquiry(payload: Omit<EnquiryRecord, 'id' | 'status' | 'created_at'>): Promise<EnquiryRecord> {
+    const id = `enq_${Date.now()}_${Math.floor(Math.random() * 1000)}`
+    const record: EnquiryRecord = {
+      id,
+      enquiry_type: payload.enquiry_type,
+      property_id: payload.property_id,
+      guest_name: payload.guest_name,
+      guest_phone: payload.guest_phone,
+      guest_email: payload.guest_email,
+      event_date: payload.event_date,
+      guest_count: payload.guest_count,
+      message: payload.message,
+      status: 'NEW',
+      created_at: new Date(),
+    }
+
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `INSERT INTO enquiries (id, enquiry_type, property_id, guest_name, guest_phone, guest_email, event_date, guest_count, message, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [
+          record.id,
+          record.enquiry_type,
+          record.property_id || null,
+          record.guest_name,
+          record.guest_phone,
+          record.guest_email || null,
+          record.event_date || null,
+          record.guest_count || null,
+          record.message || null,
+          record.status,
+        ]
+      )
+      return res.rows[0]
+    }
+
+    this.memoryEnquiries.set(id, record)
+    return record
+  }
+
+  public async getEnquiries(status?: string): Promise<EnquiryRecord[]> {
+    if (!this.useInMemory && this.pool) {
+      if (status) {
+        const res = await this.pool.query('SELECT * FROM enquiries WHERE status = $1 ORDER BY created_at DESC', [status])
+        return res.rows
+      }
+      const res = await this.pool.query('SELECT * FROM enquiries ORDER BY created_at DESC')
+      return res.rows
+    }
+    const all = Array.from(this.memoryEnquiries.values())
+    if (status) return all.filter((e) => e.status === status)
+    return all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }
+
+  public async getEnquiryById(id: string): Promise<EnquiryRecord | null> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('SELECT * FROM enquiries WHERE id = $1', [id])
+      return res.rows[0] || null
+    }
+    return this.memoryEnquiries.get(id) || null
+  }
+
+  public async updateEnquiryStatus(id: string, status: EnquiryRecord['status'], razorpayPaymentLinkId?: string): Promise<EnquiryRecord | null> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `UPDATE enquiries SET status = $1, razorpay_payment_link_id = COALESCE($2, razorpay_payment_link_id) WHERE id = $3 RETURNING *`,
+        [status, razorpayPaymentLinkId || null, id]
+      )
+      return res.rows[0] || null
+    }
+    const enq = this.memoryEnquiries.get(id)
+    if (!enq) return null
+    enq.status = status
+    if (razorpayPaymentLinkId) enq.razorpay_payment_link_id = razorpayPaymentLinkId
+    this.memoryEnquiries.set(id, enq)
+    return enq
+  }
+
+  public async createChatLog(payload: Omit<ChatLogRecord, 'id' | 'created_at'>): Promise<ChatLogRecord> {
+    const id = `chat_${Date.now()}_${Math.floor(Math.random() * 1000)}`
+    const record: ChatLogRecord = {
+      id,
+      session_id: payload.session_id,
+      user_message: payload.user_message,
+      bot_response: payload.bot_response,
+      tools_invoked: payload.tools_invoked || [],
+      handoff_triggered: Boolean(payload.handoff_triggered),
+      created_at: new Date(),
+    }
+
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `INSERT INTO chat_logs (id, session_id, user_message, bot_response, tools_invoked, handoff_triggered)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [
+          record.id,
+          record.session_id,
+          record.user_message,
+          record.bot_response,
+          JSON.stringify(record.tools_invoked),
+          record.handoff_triggered,
+        ]
+      )
+      return res.rows[0]
+    }
+
+    this.memoryChatLogs.set(id, record)
+    return record
   }
 }
 
