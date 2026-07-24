@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { BookingRecord } from '../types'
 import { inr } from '../data/hotels'
+import { getApiUrl } from '../config/api'
 
 
 interface CheckoutModalProps {
@@ -65,32 +66,30 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null)
 
     try {
-      // Simulate 1.5s network delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      const simulatedBookingCode = `BKG-${Math.floor(100000 + Math.random() * 900000)}`
-      
-      setBooking({
-        id: simulatedBookingCode,
-        booking_code: simulatedBookingCode,
-        property_id: propertySlug,
-        room_type_id: roomTypeSlug,
-        check_in: checkIn,
-        check_out: checkOut,
-        rooms_count: roomsCount,
-        guests_count: guestsCount,
-        guest_name: guestName.trim(),
-        guest_phone: guestPhone.trim(),
-        guest_email: guestEmail.trim() || undefined,
-        company_name: companyName.trim() || undefined,
-        gstin: gstin.trim() || undefined,
-        total_amount: totalAmount,
-        payment_mode: 'INSTANT_FULL_PAYMENT',
-        payment_status: 'PENDING',
-        booking_status: 'PENDING_PAYMENT',
-        created_at: new Date().toISOString()
+      const res = await fetch(getApiUrl('bookings/initiate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertySlug,
+          roomTypeSlug,
+          checkIn,
+          checkOut,
+          roomsCount,
+          guestsCount,
+          guestName: guestName.trim(),
+          guestPhone: guestPhone.trim(),
+          guestEmail: guestEmail.trim() || undefined,
+          companyName: companyName.trim() || undefined,
+          gstin: gstin.trim() || undefined
+        })
       })
 
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to initiate booking hold')
+      }
+
+      setBooking(json.data)
       setStep('PAYMENT')
     } catch (err: any) {
       setError(err.message || 'Error communicating with reservation server')

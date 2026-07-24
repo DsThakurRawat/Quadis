@@ -3,6 +3,7 @@ import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
 import { IconPhone, IconMail, IconPin } from '../components/icons.tsx'
 import type { ContactPayload, ContactType } from '../types.ts'
+import { getApiUrl } from '../config/api'
 
 
 const TYPES: ContactType[] = ['General', 'Booking', 'Banquet', 'Corporate', 'Feedback']
@@ -35,7 +36,12 @@ export default function Contact() {
             ) : (
               <form className="form-grid form-grid--card" onSubmit={f.submit(async (_) => {
                 try {
-                  await new Promise(r => setTimeout(r, 1500))
+                  const res = await fetch(getApiUrl('enquiries'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(f.values)
+                  })
+                  if (!res.ok) throw new Error('Submission failed')
                 } catch (err) {
                   console.error('Failed to submit contact form:', err)
                 }

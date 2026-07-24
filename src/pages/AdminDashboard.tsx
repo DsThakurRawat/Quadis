@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../components/ui'
+import { getApiUrl } from '../config/api'
 
 
 interface GlanceMetrics {
@@ -53,39 +54,17 @@ export default function AdminDashboard() {
   const fetchDashboard = async () => {
     setLoading(true)
     try {
-      await new Promise(r => setTimeout(r, 800))
-      
-      setMetrics({
-        todayCheckIns: 14,
-        pendingHolds: 3,
-        pendingEnquiries: 8,
-        todayRevenue: 2450500
+      const res = await fetch(getApiUrl('admin/dashboard'), {
+        headers: { Authorization: `Bearer ${token}` }
       })
-      setProperties((prev) => prev.length ? prev : [
-        {
-          property: { id: 'p1', name: 'Hotel Cladis Sector 51', slug: 'hotel-cladis-sector-51-noida', city: 'Noida', base_price: 1899, weekend_surcharge_percent: 0 },
-          rooms: [
-            { id: 'r1', name: 'Deluxe Room', slug: 'deluxe-room', is_available: true, total_units: 12, available_units: 4, price_offset: 0 },
-            { id: 'r2', name: 'Royal Suite', slug: 'royal-suite', is_available: true, total_units: 2, available_units: 1, price_offset: 1200 }
-          ]
-        },
-        {
-          property: { id: 'p2', name: 'Hotel Downtown-EOK', slug: 'hotel-downtown-east-of-kailash', city: 'New Delhi', base_price: 1999, weekend_surcharge_percent: 0 },
-          rooms: [
-            { id: 'r3', name: 'Superior Room', slug: 'superior-room', is_available: false, total_units: 15, available_units: 0, price_offset: 400 }
-          ]
-        }
-      ])
-      setRecentBookings([
-        { id: 'b1', booking_code: 'BKG-982143', property: { name: 'Hotel Cladis' }, room_type: { name: 'Deluxe' }, guest_name: 'Anjali Sharma', created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), total_amount: 5400, booking_status: 'CONFIRMED' },
-        { id: 'b2', booking_code: 'BKG-762910', property: { name: 'Hotel Downtown' }, room_type: { name: 'Superior' }, guest_name: 'Rajesh Kumar', created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(), total_amount: 2150, booking_status: 'PENDING_PAYMENT' },
-        { id: 'b3', booking_code: 'BKG-119284', property: { name: 'Hotel Amby Inn' }, room_type: { name: 'Deluxe' }, guest_name: 'Divyansh Rawat', created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), total_amount: 8900, booking_status: 'CONFIRMED' },
-      ])
-      setRecentEnquiries([
-        { id: 'e1', guest_name: 'Priya Desai', enquiry_type: 'CORPORATE_RFP', created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(), status: 'NEW' },
-        { id: 'e2', guest_name: 'Amit Patel', enquiry_type: 'BANQUET', created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), status: 'CONTACTED' },
-        { id: 'e3', guest_name: 'Rohan Gupta', enquiry_type: 'GENERAL', created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), status: 'NEW' },
-      ])
+      if (!res.ok) throw new Error('Failed to fetch dashboard')
+      const json = await res.json()
+      if (json.success) {
+        setMetrics(json.data.metrics || { todayCheckIns: 0, pendingHolds: 0, pendingEnquiries: 0, todayRevenue: 0 })
+        setProperties(json.data.properties || [])
+        setRecentBookings(json.data.recentBookings || [])
+        setRecentEnquiries(json.data.recentEnquiries || [])
+      }
     } catch (err) {
       console.error('Failed to load admin dashboard:', err)
     } finally {

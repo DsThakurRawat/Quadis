@@ -47,9 +47,32 @@ export const DEFAULT_ROOMS: HotelRoom[] = [
 
 export const getHotelRooms = (hotel: Hotel): HotelRoom[] => hotel.rooms ?? DEFAULT_ROOMS
 
+import { getApiUrl } from '../config/api'
+
 // §5 — single source of truth. Every hotel UI renders from this array.
-// Backend drop-in: replace this export with a fetch() of the same shape.
-export const HOTELS: Hotel[] = [
+// Backend drop-in: dynamically fetching from API
+let fetchedHotels: Hotel[] = []
+try {
+  const res = await fetch(getApiUrl('properties'))
+  if (res.ok) {
+    const json = await res.json()
+    if (json.success && Array.isArray(json.data)) {
+      fetchedHotels = json.data.map((h: any) => ({
+        slug: h.slug,
+        name: h.name,
+        area: h.name.includes('Sector') ? `Sector ${h.name.split('Sector ')[1]}` : h.name.split(' ').slice(-2).join(' '),
+        city: h.city as City,
+        address: h.address,
+        price: h.base_price,
+        rating: h.rating
+      }))
+    }
+  }
+} catch (e) {
+  console.error("Failed to fetch hotels", e)
+}
+
+const STATIC_HOTELS: Hotel[] = [
   { slug: 'hotel-cladis-sector-51-noida', name: 'Hotel Cladis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Sector 51, near Cloud9 Hospital, Noida', price: 1899, rating: 4.7 },
   { slug: 'hotel-quadis-sector-51-noida', name: 'Hotel Quadis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', price: 1599, rating: 4.6 },
   { slug: 'hotel-quadis-central-sector-27-noida', name: 'Hotel Quadis Central', area: 'Sector 27', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida, Uttar Pradesh 201301', price: 1799, rating: 4.5 },
@@ -61,6 +84,8 @@ export const HOTELS: Hotel[] = [
   { slug: 'hotel-amby-inn-lajpat-nagar-ii', name: 'Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', price: 1899, rating: 4.5 },
   { slug: 'hotel-amar-in', name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', price: 1799, rating: 4.4 },
 ]
+
+export const HOTELS: Hotel[] = fetchedHotels.length ? fetchedHotels : STATIC_HOTELS
 
 export const UPCOMING_HOTELS: UpcomingHotel[] = [
   { name: 'OPO Hotel Rishikesh', location: 'Rishikesh, Uttarakhand', image: '/images/upcoming/rishikesh.png', badge: 'COMING SOON' },
