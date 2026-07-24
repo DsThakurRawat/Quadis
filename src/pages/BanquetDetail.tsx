@@ -6,7 +6,7 @@ import Gallery from '../components/Gallery.tsx'
 import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
 import { SectionHeader } from '../components/blocks.tsx'
-import { getApiUrl } from '../config/api.ts'
+
 import NotFound from './NotFound.tsx'
 
 const OCCASIONS = ['Weddings', 'Receptions', 'Corporate', 'Birthdays']
@@ -73,22 +73,9 @@ export default function BanquetDetail() {
               Thank you — our banquet team will contact you shortly about {venue.name}.
             </SuccessPanel>
           ) : (
-            <form className="form-grid" onSubmit={f.submit(async (v) => {
+            <form className="form-grid" onSubmit={f.submit(async (_) => {
               try {
-                await fetch(getApiUrl('/api/enquiries'), {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    enquiryType: 'BANQUET',
-                    propertySlug: venue?.slug,
-                    guestName: v.name,
-                    guestPhone: v.phone,
-                    guestEmail: v.email,
-                    eventDate: v.date,
-                    guestCount: v.guests,
-                    message: v.message,
-                  }),
-                })
+                await new Promise(r => setTimeout(r, 1500))
               } catch (err) {
                 console.error('Failed to submit banquet enquiry:', err)
               }

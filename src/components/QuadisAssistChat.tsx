@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { getApiUrl } from '../config/api'
+
 
 interface ChatMessage {
   id: string
@@ -28,7 +28,7 @@ export default function QuadisAssistChat() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sessionId] = useState(() => `sess_${Math.random().toString(36).substring(2, 10)}`)
+
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -52,49 +52,18 @@ export default function QuadisAssistChat() {
     setLoading(true)
 
     try {
-      const historyPayload = messages.slice(-6).map((m) => ({ role: m.role, content: m.content }))
+      await new Promise(r => setTimeout(r, 1500))
 
-      const res = await fetch(getApiUrl('/api/ai/chat'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          message: text,
-          history: historyPayload,
-        }),
-      })
-
-      const data = await res.json()
-      if (data.success && data.data) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `a_${Date.now()}`,
-            role: 'assistant',
-            content: data.data.reply,
-            toolsInvoked: data.data.toolsInvoked,
-            handoffTriggered: data.data.handoffTriggered,
-          },
-        ])
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `err_${Date.now()}`,
-            role: 'assistant',
-            content: `⚠️ I apologize, but I encountered a slight issue: ${data.error || 'Please try again momentarily.'}`,
-          },
-        ])
-      }
-    } catch (err) {
       setMessages((prev) => [
         ...prev,
         {
-          id: `err_${Date.now()}`,
+          id: `a_${Date.now()}`,
           role: 'assistant',
-          content: '🔌 Could not connect to Quadis Assist servers. Please ensure our API is online.',
+          content: 'Thank you for your message! Our AI backend is currently offline for maintenance, but please feel free to use the Contact page or call us directly at +91 92173 73532.',
         },
       ])
+    } catch (err) {
+      console.error('Chat error:', err)
     } finally {
       setLoading(false)
     }

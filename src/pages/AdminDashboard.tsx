@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../components/ui'
-import { getApiUrl } from '../config/api'
+
 
 interface GlanceMetrics {
   todayCheckIns: number
@@ -46,26 +46,46 @@ export default function AdminDashboard() {
   const [linkPhone, setLinkPhone] = useState('')
   const [linkAmount, setLinkAmount] = useState('')
   const [linkName, setLinkName] = useState('')
-  const [linkDesc, setLinkDesc] = useState('')
+
   const [generatedLink, setGeneratedLink] = useState<{ shortUrl: string; paymentLinkId: string } | null>(null)
   const [linkPending, setLinkPending] = useState(false)
 
-  const fetchDashboard = async (authToken: string) => {
+  const fetchDashboard = async () => {
     setLoading(true)
     try {
-      const res = await fetch(getApiUrl('/api/admin/dashboard'), {
-        headers: { Authorization: authToken },
+      await new Promise(r => setTimeout(r, 800))
+      
+      setMetrics({
+        todayCheckIns: 14,
+        pendingHolds: 3,
+        pendingEnquiries: 8,
+        todayRevenue: 2450500
       })
-      const data = await res.json()
-      if (data.success && data.data) {
-        setMetrics(data.data.metrics)
-        setProperties(data.data.properties)
-        setRecentBookings(data.data.recentBookings || [])
-        setRecentEnquiries(data.data.recentEnquiries || [])
-      } else if (res.status === 401) {
-        sessionStorage.removeItem('quadis_admin_token')
-        setToken(null)
-      }
+      setProperties((prev) => prev.length ? prev : [
+        {
+          property: { id: 'p1', name: 'Hotel Cladis Sector 51', slug: 'hotel-cladis-sector-51-noida', city: 'Noida', base_price: 1899, weekend_surcharge_percent: 0 },
+          rooms: [
+            { id: 'r1', name: 'Deluxe Room', slug: 'deluxe-room', is_available: true, total_units: 12, available_units: 4, price_offset: 0 },
+            { id: 'r2', name: 'Royal Suite', slug: 'royal-suite', is_available: true, total_units: 2, available_units: 1, price_offset: 1200 }
+          ]
+        },
+        {
+          property: { id: 'p2', name: 'Hotel Downtown-EOK', slug: 'hotel-downtown-east-of-kailash', city: 'New Delhi', base_price: 1999, weekend_surcharge_percent: 0 },
+          rooms: [
+            { id: 'r3', name: 'Superior Room', slug: 'superior-room', is_available: false, total_units: 15, available_units: 0, price_offset: 400 }
+          ]
+        }
+      ])
+      setRecentBookings([
+        { id: 'b1', booking_code: 'BKG-982143', property: { name: 'Hotel Cladis' }, room_type: { name: 'Deluxe' }, guest_name: 'Anjali Sharma', created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), total_amount: 5400, booking_status: 'CONFIRMED' },
+        { id: 'b2', booking_code: 'BKG-762910', property: { name: 'Hotel Downtown' }, room_type: { name: 'Superior' }, guest_name: 'Rajesh Kumar', created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(), total_amount: 2150, booking_status: 'PENDING_PAYMENT' },
+        { id: 'b3', booking_code: 'BKG-119284', property: { name: 'Hotel Amby Inn' }, room_type: { name: 'Deluxe' }, guest_name: 'Divyansh Rawat', created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), total_amount: 8900, booking_status: 'CONFIRMED' },
+      ])
+      setRecentEnquiries([
+        { id: 'e1', guest_name: 'Priya Desai', enquiry_type: 'CORPORATE_RFP', created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(), status: 'NEW' },
+        { id: 'e2', guest_name: 'Amit Patel', enquiry_type: 'BANQUET', created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), status: 'CONTACTED' },
+        { id: 'e3', guest_name: 'Rohan Gupta', enquiry_type: 'GENERAL', created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), status: 'NEW' },
+      ])
     } catch (err) {
       console.error('Failed to load admin dashboard:', err)
     } finally {
@@ -75,7 +95,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (token) {
-      fetchDashboard(token)
+      fetchDashboard()
     }
   }, [token])
 
@@ -83,17 +103,14 @@ export default function AdminDashboard() {
     e.preventDefault()
     setAuthError('')
     try {
-      const res = await fetch(getApiUrl('/api/admin/auth'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pinInput }),
-      })
-      const data = await res.json()
-      if (data.success && data.token) {
-        sessionStorage.setItem('quadis_admin_token', data.token)
-        setToken(data.token)
+      await new Promise(r => setTimeout(r, 600))
+      // Accept any PIN as success for frontend mock
+      if (pinInput.length >= 4) {
+        const dummyToken = 'mock_admin_token_123'
+        sessionStorage.setItem('quadis_admin_token', dummyToken)
+        setToken(dummyToken)
       } else {
-        setAuthError(data.error || 'Invalid PIN code')
+        setAuthError('Invalid PIN code. Enter any 4+ digit PIN for demo.')
       }
     } catch (err) {
       setAuthError('Authentication server error')
@@ -103,23 +120,13 @@ export default function AdminDashboard() {
   const toggleRoom = async (roomTypeId: string, currentStatus: boolean) => {
     if (!token) return
     try {
-      const res = await fetch(getApiUrl('/api/admin/room-availability'), {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token,
-        },
-        body: JSON.stringify({ roomTypeId, isAvailable: !currentStatus }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setProperties((prev) =>
-          prev.map((item) => ({
-            ...item,
-            rooms: item.rooms.map((r) => (r.id === roomTypeId ? { ...r, is_available: !currentStatus } : r)),
-          }))
-        )
-      }
+      await new Promise(r => setTimeout(r, 300))
+      setProperties((prev) =>
+        prev.map((item) => ({
+          ...item,
+          rooms: item.rooms.map((r) => (r.id === roomTypeId ? { ...r, is_available: !currentStatus } : r)),
+        }))
+      )
     } catch (err) {
       console.error('Error toggling room:', err)
     }
@@ -129,18 +136,13 @@ export default function AdminDashboard() {
     if (!token) return
     const newPercent = currentSurcharge > 0 ? 0 : 15
     try {
-      const res = await fetch(getApiUrl('/api/admin/surcharge'), {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token,
-        },
-        body: JSON.stringify({ surchargePercent: newPercent, propertyId: 'all' }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        fetchDashboard(token)
-      }
+      await new Promise(r => setTimeout(r, 400))
+      setProperties((prev) =>
+        prev.map((item) => ({
+          ...item,
+          property: { ...item.property, weekend_surcharge_percent: newPercent },
+        }))
+      )
     } catch (err) {
       console.error('Error toggling surcharge:', err)
     }
@@ -152,28 +154,15 @@ export default function AdminDashboard() {
     setLinkPending(true)
     setGeneratedLink(null)
     try {
-      const res = await fetch(getApiUrl('/api/admin/payment-link'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token,
-        },
-        body: JSON.stringify({
-          phone: linkPhone,
-          amount: Number(linkAmount),
-          guestName: linkName || 'Walk-in Guest',
-          description: linkDesc || 'Quadis Hotels Deposit',
-        }),
+      await new Promise(r => setTimeout(r, 1000))
+      setGeneratedLink({
+        shortUrl: `https://rzp.io/i/demo${Math.floor(Math.random() * 10000)}`,
+        paymentLinkId: `plink_sim_${Date.now()}`
       })
-      const data = await res.json()
-      if (data.success && data.data) {
-        setGeneratedLink(data.data)
-        setLinkPhone('')
-        setLinkAmount('')
-        setLinkName('')
-        setLinkDesc('')
-        fetchDashboard(token)
-      }
+      setLinkPhone('')
+      setLinkAmount('')
+      setLinkName('')
+
     } catch (err) {
       console.error('Error generating link:', err)
     } finally {

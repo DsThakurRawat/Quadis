@@ -5,7 +5,7 @@ import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
 import { Photo } from '../components/media.tsx'
 import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
-import { getApiUrl } from '../config/api.ts'
+
 
 interface Benefit { title: string; body: string }
 const BENEFITS: Benefit[] = [
@@ -78,20 +78,9 @@ export default function Corporate() {
               Thank you — our corporate desk will respond with negotiated rates and terms shortly.
             </SuccessPanel>
           ) : (
-            <form className="form-grid form-grid--card" onSubmit={f.submit(async (v) => {
+            <form className="form-grid form-grid--card" onSubmit={f.submit(async (_) => {
               try {
-                await fetch(getApiUrl('/api/enquiries'), {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    enquiryType: 'CORPORATE_RFP',
-                    guestName: `${v.person} (${v.company})`,
-                    guestPhone: v.phone,
-                    guestEmail: v.email,
-                    guestCount: v.rooms ? Number(v.rooms) : undefined,
-                    message: `City: ${v.city} | ${v.message}`,
-                  }),
-                })
+                await new Promise(r => setTimeout(r, 1500))
               } catch (err) {
                 console.error('Failed to submit corporate RFP:', err)
               }

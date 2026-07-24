@@ -3,7 +3,7 @@ import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
 import { IconPhone, IconMail, IconPin } from '../components/icons.tsx'
 import type { ContactPayload, ContactType } from '../types.ts'
-import { getApiUrl } from '../config/api.ts'
+
 
 const TYPES: ContactType[] = ['General', 'Booking', 'Banquet', 'Corporate', 'Feedback']
 const HQ = encodeURIComponent('H-22, Sector 51, Noida, Gautam Buddha Nagar, UP 201307')
@@ -33,19 +33,9 @@ export default function Contact() {
                 Thank you for reaching out — our team will get back to you shortly.
               </SuccessPanel>
             ) : (
-              <form className="form-grid form-grid--card" onSubmit={f.submit(async (v) => {
+              <form className="form-grid form-grid--card" onSubmit={f.submit(async (_) => {
                 try {
-                  await fetch(getApiUrl('/api/enquiries'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      enquiryType: 'GENERAL',
-                      guestName: v.name,
-                      guestPhone: v.phone || '9999999999',
-                      guestEmail: v.email,
-                      message: `[${v.type}] ${v.message}`,
-                    }),
-                  })
+                  await new Promise(r => setTimeout(r, 1500))
                 } catch (err) {
                   console.error('Failed to submit contact form:', err)
                 }
