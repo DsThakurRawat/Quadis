@@ -4,7 +4,7 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL || (
   typeof window !== 'undefined' && window.location.origin.includes('localhost:517')
     ? 'http://localhost:3001/api'
-    : 'http://quadis-backend-live.eba-ekdyt4m3.us-east-1.elasticbeanstalk.com/api'
+    : '/api'
 );
 
 export const getApiUrl = (endpoint: string): string => {
