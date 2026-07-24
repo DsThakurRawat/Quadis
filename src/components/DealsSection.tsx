@@ -12,7 +12,7 @@ interface Deal {
 const DEALS: Deal[] = [
   {
     badgeText: 'DEAL OF THE DAY',
-    badgeColor: 'bg-emerald-800 text-amber-300',
+    badgeColor: 'bg-dark text-gold',
     title: 'Deal Of The Day',
     description: "Enjoy today's special deal with up to 25% instant discount across all properties!",
     image: '/images/offers/deal-of-the-day.png',
@@ -20,7 +20,7 @@ const DEALS: Deal[] = [
   },
   {
     badgeText: 'NEVER TOO OLD',
-    badgeColor: 'bg-emerald-800 text-amber-300',
+    badgeColor: 'bg-dark text-gold',
     title: 'Never Too Old',
     description: 'Enjoy Our Full-Fledged Senior Citizen Package with special ground-floor rooms and complimentary breakfast!',
     image: '/images/offers/never-too-old.png',
@@ -28,7 +28,7 @@ const DEALS: Deal[] = [
   },
   {
     badgeText: 'BOSS LADY',
-    badgeColor: 'bg-emerald-800 text-amber-300',
+    badgeColor: 'bg-dark text-gold',
     title: 'Boss Lady',
     description: 'Exclusive Perks, priority 24x7 security, and express check-in for Solo Female Travelers!',
     image: '/images/offers/boss-lady.png',
@@ -36,7 +36,7 @@ const DEALS: Deal[] = [
   },
   {
     badgeText: 'STAY LONG STAY GREEN',
-    badgeColor: 'bg-emerald-800 text-amber-300',
+    badgeColor: 'bg-dark text-gold',
     title: 'Stay Long Stay Green',
     description: 'Big Savings up to 35% off on weekly and monthly extended stays across Noida & Delhi!',
     image: '/images/offers/stay-long-stay-green.png',

@@ -7,7 +7,7 @@ export default function UpcomingHotels() {
   return (
     <section className="section bg-warm">
       <div className="container">
-        <SectionHeader overline="EXPANDING OUR HORIZONS" title="Our Upcoming Hotels" />
+        <SectionHeader overline="EXPANDING OUR HORIZONS" title="Our Upcoming Hotels" align="center" />
         
         <Reveal className="upcoming-grid">
           {UPCOMING_HOTELS.map((hotel) => (

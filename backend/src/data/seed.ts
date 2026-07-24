@@ -1,7 +1,6 @@
 import { PropertyRecord, RoomTypeRecord } from '../types'
 
 export const seedProperties: PropertyRecord[] = [
-  { id: 'prop-1', slug: 'hotel-cladis-sector-51-noida', name: 'Hotel Cladis Sector 51', city: 'Noida', address: 'H-22, Sector 51, near Cloud9 Hospital, Noida', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1899, rating: 4.7, is_active: true, weekend_surcharge_percent: 0 },
   { id: 'prop-2', slug: 'hotel-quadis-sector-51-noida', name: 'Hotel Quadis 51', city: 'Noida', address: 'Hoshiarpur Village, Sector 51, Noida 201301', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1599, rating: 4.6, is_active: true, weekend_surcharge_percent: 0 },
   { id: 'prop-3', slug: 'hotel-quadis-central-sector-27-noida', name: 'Hotel Quadis Central', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1799, rating: 4.5, is_active: true, weekend_surcharge_percent: 0 },
   { id: 'prop-4', slug: 'hotel-downtown-sector-15-noida', name: 'Hotel Downtown Sec 15', city: 'Noida', address: 'Metro pillar 33, Naya Bans, Sector 15, Noida', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1599, rating: 4.4, is_active: true, weekend_surcharge_percent: 0 },

@@ -3,7 +3,7 @@ import { HOTELS } from '../data/hotels.ts'
 import { heroShowcaseImages } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
 import BookingBar from '../components/BookingBar.tsx'
-import Testimonials from '../components/Testimonials.tsx'
+
 import { HotelCard, FilterPills, Button } from '../components/ui.tsx'
 import { HeroVideoShowcase } from '../components/media.tsx'
 import { SectionHeader, StatsStrip, CtaBand, Reveal } from '../components/blocks.tsx'
@@ -64,12 +64,14 @@ export default function Home() {
         </div>
       </section>
       {/* 5. Great Sleep & Refreshing Showers Guarantee (§Stay Promise) */}
-      <section className="section stay-promise-section bg-blue text-on-dark" style={{ margin: '40px auto', maxWidth: '1200px' }}>
-        <div className="container" style={{ padding: '20px 0' }}>
-          <Reveal className="stay-promise center-col">
-            <span className="stay-promise__pill" style={{ background: '#366bc5', color: 'white', borderRadius: '4px', border: 'none', padding: '4px 12px', fontSize: '0.85rem' }}>Fabulous, or Free</span>
-            <h2 className="h2 on-dark stay-promise__title" style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '2.2rem', marginTop: '16px' }}>Great <span className="gold-text" style={{ color: '#ffc107' }}>sleep.</span> Refreshing <span className="gold-text" style={{ color: '#ffc107' }}>showers.</span></h2>
-            <p className="lead stay-promise__sub" style={{ fontSize: '1rem', opacity: 0.9 }}>Hassle free stay, else we pay. <a href="#" style={{color: 'white', textDecoration: 'underline'}}>Know more.</a></p>
+      <section className="section stay-promise-section bg-dark text-on-dark">
+        <div className="container">
+          <Reveal className="stay-promise center-col text-center">
+            <span className="stay-promise__pill">Fabulous, or Free</span>
+            <h2 className="h2 on-dark stay-promise__title">
+              Great <span className="script gold-text" style={{ fontSize: '1.2em' }}>sleep.</span> Refreshing <span className="script gold-text" style={{ fontSize: '1.2em' }}>showers.</span>
+            </h2>
+            <p className="lead stay-promise__sub">Hassle free stay, else we pay. <a href="#" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>Know more.</a></p>
             
             <div className="stay-promise__icons">
               <div className="stay-promise__icon-item">
@@ -131,15 +133,7 @@ export default function Home() {
       {/* 12. Our Happy Clients & Trusted by 500,000+ Verified Guests */}
       <HappyClientsSection />
 
-      {/* 13. Testimonials */}
-      <section className="section bg-cream">
-        <div className="container testi">
-          <div className="testi__head">
-            <SectionHeader overline="CLIENTS REVIEW" title="What our guests say" align="left" flank={false} />
-          </div>
-          <Testimonials />
-        </div>
-      </section>
+
 
       {/* 14. Ecosystem & Partners banner */}
       <section className="section bg-dark">
