@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { BookingRecord } from '../types'
 import { inr } from '../data/hotels'
-import { getApiUrl } from '../config/api'
+
 
 interface CheckoutModalProps {
   propertySlug: string
@@ -46,7 +46,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Created hold / order state
   const [booking, setBooking] = useState<BookingRecord | null>(null)
-  const [orderData, setOrderData] = useState<any>(null)
+
 
   // Calculate nights & GST slab
   const nights = Math.max(
@@ -65,41 +65,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null)
 
     try {
-      const response = await fetch(getApiUrl('/api/bookings/initiate'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          propertySlug,
-          roomTypeSlug,
-          checkIn,
-          checkOut,
-          roomsCount,
-          guestsCount,
-          guestName: guestName.trim(),
-          guestPhone: guestPhone.trim(),
-          guestEmail: guestEmail.trim() || undefined,
-          companyName: companyName.trim() || undefined,
-          gstin: gstin.trim() || undefined,
-        }),
+      // Simulate 1.5s network delay
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      const simulatedBookingCode = `BKG-${Math.floor(100000 + Math.random() * 900000)}`
+      
+      setBooking({
+        id: simulatedBookingCode,
+        booking_code: simulatedBookingCode,
+        property_id: propertySlug,
+        room_type_id: roomTypeSlug,
+        check_in: checkIn,
+        check_out: checkOut,
+        rooms_count: roomsCount,
+        guests_count: guestsCount,
+        guest_name: guestName.trim(),
+        guest_phone: guestPhone.trim(),
+        guest_email: guestEmail.trim() || undefined,
+        company_name: companyName.trim() || undefined,
+        gstin: gstin.trim() || undefined,
+        total_amount: totalAmount,
+        payment_mode: 'INSTANT_FULL_PAYMENT',
+        payment_status: 'PENDING',
+        booking_status: 'PENDING_PAYMENT',
+        created_at: new Date().toISOString()
       })
-
-      const resData = await response.json()
-      if (!response.ok || !resData.success) {
-        throw new Error(resData.error || 'Could not initiate booking hold')
-      }
-
-      setBooking(resData.data)
-
-      // Initialize Razorpay order right after hold
-      const orderRes = await fetch(getApiUrl('/api/payments/create-order'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingCode: resData.data.booking_code }),
-      })
-      const orderJson = await orderRes.json()
-      if (orderRes.ok && orderJson.success) {
-        setOrderData(orderJson.data)
-      }
 
       setStep('PAYMENT')
     } catch (err: any) {
@@ -115,39 +105,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null)
 
     try {
-      const response = await fetch(getApiUrl('/api/webhooks/razorpay'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-simulated-webhook': 'true',
-        },
-        body: JSON.stringify({
-          event: status,
-          payload: {
-            payment: {
-              entity: {
-                id: status === 'order.paid' ? `pay_live_sim_${Date.now()}` : `pay_failed_sim_${Date.now()}`,
-                order_id: orderData?.orderId || 'order_sim_online',
-                notes: {
-                  bookingCode: booking.booking_code,
-                },
-              },
-            },
-          },
-        }),
-      })
-
-      const resData = await response.json()
-      if (!response.ok || !resData.success) {
-        throw new Error(resData.error || 'Failed to process payment verification')
-      }
+      // Simulate 2s payment processing delay
+      await new Promise((resolve) => setTimeout(resolve, 2000))
 
       if (status === 'order.paid') {
-        const lookup = await fetch(getApiUrl(`/api/bookings/${booking.booking_code}`))
-        const lookupJson = await lookup.json()
-        if (lookup.ok && lookupJson.success) {
-          setBooking(lookupJson.data)
-        }
+        setBooking({
+          ...booking,
+          payment_status: 'PAID',
+          booking_status: 'CONFIRMED'
+        })
         setStep('CONFIRMED')
         if (onSuccess) onSuccess(booking.booking_code)
       } else {
@@ -162,7 +128,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleDownloadInvoice = () => {
     if (!booking) return
-    window.open(getApiUrl(`/api/bookings/${booking.booking_code}/invoice`), '_blank')
+    // Temporarily append an invoice element, trigger print, then remove it
+    window.print()
   }
 
   return (
@@ -348,10 +315,70 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
           </div>
         )}
+        {/* INVOICE PRINT VIEW (Hidden on screen, visible on print) */}
+        {booking && step === 'CONFIRMED' && (
+          <div className="print-invoice-wrapper" style={{ display: 'none' }}>
+            <div className="print-invoice">
+              <div style={{ textAlign: 'center', marginBottom: 30, borderBottom: '2px solid #000', paddingBottom: 20 }}>
+                <h1 style={{ fontFamily: 'Georgia, serif', margin: 0, fontSize: 32 }}>QUADIS HOTELS</h1>
+                <p style={{ margin: '5px 0', color: '#555' }}>Original Tax Invoice / Receipt</p>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 40 }}>
+                <div>
+                  <strong>Billed To:</strong>
+                  <p style={{ margin: '5px 0' }}>{booking.guest_name}</p>
+                  <p style={{ margin: '5px 0' }}>Phone: {booking.guest_phone}</p>
+                  {booking.guest_email && <p style={{ margin: '5px 0' }}>Email: {booking.guest_email}</p>}
+                  {booking.company_name && <p style={{ margin: '5px 0', marginTop: 10 }}><strong>Company:</strong> {booking.company_name}</p>}
+                  {booking.gstin && <p style={{ margin: '5px 0' }}><strong>GSTIN:</strong> {booking.gstin}</p>}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <strong>Invoice Details:</strong>
+                  <p style={{ margin: '5px 0' }}>Booking Code: {booking.booking_code}</p>
+                  <p style={{ margin: '5px 0' }}>Date: {new Date().toLocaleDateString()}</p>
+                  <p style={{ margin: '5px 0' }}>Property: {propertyName}</p>
+                  <p style={{ margin: '5px 0', fontSize: 12, color: '#555' }}>{propertyAddress}</p>
+                </div>
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 40 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #ccc' }}>
+                    <th style={{ textAlign: 'left', padding: 10 }}>Description</th>
+                    <th style={{ textAlign: 'right', padding: 10 }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: 10 }}>
+                      <strong>{roomTypeName}</strong><br/>
+                      {checkIn} to {checkOut} ({nights} nights, {roomsCount} rooms, {guestsCount} guests)
+                    </td>
+                    <td style={{ padding: 10, textAlign: 'right' }}>{inr(taxableBase)}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: 10 }}>GST ({gstRatePercent}%)</td>
+                    <td style={{ padding: 10, textAlign: 'right' }}>{inr(gstAmount)}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: 10 }}><strong>Total Paid (INR)</strong></td>
+                    <td style={{ padding: 10, textAlign: 'right' }}><strong>{inr(totalAmount)}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style={{ textAlign: 'center', marginTop: 50, color: '#666', fontSize: 14 }}>
+                <p>Thank you for choosing Quadis Hotels.</p>
+                <p>This is a computer-generated invoice and does not require a physical signature.</p>
+                <p>SAC Code: 996311</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
+
+// ... styles remain unchanged ...
 
 const styles: Record<string, React.CSSProperties> = {
   backdrop: {

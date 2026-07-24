@@ -105,3 +105,23 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; }
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-invoice-wrapper, .print-invoice-wrapper * {
+    visibility: visible;
+  }
+  .print-invoice-wrapper {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+    background: white;
+  }
+  /* Hide the modal backdrop and other UI */
+  #root, .modal-backdrop { display: none !important; }
+}
