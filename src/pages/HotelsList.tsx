@@ -1,14 +1,13 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { HOTELS } from '../data/hotels.ts'
+import { HOTELS, UPCOMING_HOTELS, CITY_FILTERS } from '../data/hotels.ts'
 import { hotelsHero } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
 import { HotelCard, FilterPills } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
 import { CtaBand } from '../components/blocks.tsx'
 
-const OPTIONS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi', 'Upcoming']
-const isFilter = (v: string | null): v is CityFilter => !!v && (OPTIONS as readonly string[]).includes(v)
+const isFilter = (v: string | null): v is CityFilter => !!v && (CITY_FILTERS as readonly string[]).includes(v)
 
 export default function HotelsList() {
   const [params, setParams] = useSearchParams()
@@ -46,23 +45,22 @@ export default function HotelsList() {
       <section className="section bg-cream">
         <div className="container">
           <div className="list-pills">
-            <FilterPills options={OPTIONS} value={filter} onChange={onFilter} ariaLabel="Filter hotels by city" />
+            <FilterPills options={CITY_FILTERS} value={filter} onChange={onFilter} ariaLabel="Filter hotels by city" />
           </div>
           {filter === 'Upcoming' ? (
             <>
-              <p className="list-count meta">4 upcoming destinations across India</p>
+              <p className="list-count meta">{UPCOMING_HOTELS.length} upcoming destinations across India</p>
               <div className="upcoming-grid mt-8">
-                {[
-                  { name: 'OPO Hotel Rishikesh', location: 'Rishikesh, Uttarakhand' },
-                  { name: 'OPO Hotels Agra', location: 'Agra, Uttar Pradesh' },
-                  { name: 'OPO Hotels Chandigarh', location: 'Chandigarh, Punjab' },
-                  { name: 'OPO Hotels Dehradun', location: 'Dehradun, Uttarakhand' },
-                ].map((h) => (
+                {UPCOMING_HOTELS.map((h) => (
                   <article key={h.name} className="upcoming-card">
                     <div className="upcoming-card__media">
-                      <div className="photo__ph">
-                        <span className="photo__ph-label">{h.name}</span>
-                      </div>
+                      {h.image ? (
+                        <img src={h.image} alt={h.name} className="photo__img" loading="lazy" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                      ) : (
+                        <div className="photo__ph">
+                          <span className="photo__ph-label">{h.name}</span>
+                        </div>
+                      )}
                       <span className="upcoming-card__badge">COMING SOON</span>
                     </div>
                     <div className="upcoming-card__body">

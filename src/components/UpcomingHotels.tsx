@@ -1,18 +1,7 @@
 import { SectionHeader } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
 
-interface UpcomingHotel {
-  name: string
-  location: string
-  badge?: string
-}
-
-const UPCOMING_HOTELS: UpcomingHotel[] = [
-  { name: 'OPO Hotel Rishikesh', location: 'Rishikesh, Uttarakhand', badge: 'COMING SOON' },
-  { name: 'OPO Hotels Agra', location: 'Agra, Uttar Pradesh', badge: 'COMING SOON' },
-  { name: 'OPO Hotels Chandigarh', location: 'Chandigarh, Punjab', badge: 'COMING SOON' },
-  { name: 'OPO Hotels Dehradun', location: 'Dehradun, Uttarakhand', badge: 'COMING SOON' },
-]
+import { UPCOMING_HOTELS } from '../data/hotels.ts'
 
 export default function UpcomingHotels() {
   return (
@@ -24,9 +13,13 @@ export default function UpcomingHotels() {
           {UPCOMING_HOTELS.map((hotel) => (
             <article key={hotel.name} className="upcoming-card">
               <div className="upcoming-card__media">
-                <div className="photo__ph">
-                  <span className="photo__ph-label">{hotel.name}</span>
-                </div>
+                {hotel.image ? (
+                  <img src={hotel.image} alt={hotel.name} className="photo__img" loading="lazy" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                ) : (
+                  <div className="photo__ph">
+                    <span className="photo__ph-label">{hotel.name}</span>
+                  </div>
+                )}
                 {hotel.badge && <span className="upcoming-card__badge">{hotel.badge}</span>}
               </div>
               <div className="upcoming-card__body">

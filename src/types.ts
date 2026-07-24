@@ -43,6 +43,13 @@ export interface BanquetVenue {
   parking: string
 }
 
+export interface UpcomingHotel {
+  name: string
+  location: string
+  image?: string
+  badge?: string
+}
+
 /* ---------- Form payloads (submitted to the backend later) ---------- */
 
 export type ContactType = 'General' | 'Booking' | 'Banquet' | 'Corporate' | 'Feedback'

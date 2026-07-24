@@ -25,7 +25,7 @@ const EXPERIENCES: Experience[] = [
 ]
 
 const PARTNERS = ['Blackcomb Springs', 'Hitachi', 'Polycab', 'Aditya Birla Grasim']
-const CITY_FILTERS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi', 'Upcoming']
+import { UPCOMING_HOTELS, CITY_FILTERS } from '../data/hotels.ts'
 
 export default function Home() {
   const [filter, setFilter] = useState<CityFilter>('All')
@@ -85,17 +85,16 @@ export default function Home() {
           </div>
           {filter === 'Upcoming' ? (
             <div className="upcoming-grid mt-8">
-              {[
-                { name: 'OPO Hotel Rishikesh', location: 'Rishikesh, Uttarakhand' },
-                { name: 'OPO Hotels Agra', location: 'Agra, Uttar Pradesh' },
-                { name: 'OPO Hotels Chandigarh', location: 'Chandigarh, Punjab' },
-                { name: 'OPO Hotels Dehradun', location: 'Dehradun, Uttarakhand' },
-              ].map((h) => (
+              {UPCOMING_HOTELS.map((h) => (
                 <article key={h.name} className="upcoming-card">
                   <div className="upcoming-card__media">
-                    <div className="photo__ph">
-                      <span className="photo__ph-label">{h.name}</span>
-                    </div>
+                    {h.image ? (
+                      <img src={h.image} alt={h.name} className="photo__img" loading="lazy" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                    ) : (
+                      <div className="photo__ph">
+                        <span className="photo__ph-label">{h.name}</span>
+                      </div>
+                    )}
                     <span className="upcoming-card__badge">COMING SOON</span>
                   </div>
                   <div className="upcoming-card__body">
