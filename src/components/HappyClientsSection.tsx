@@ -48,7 +48,7 @@ export default function HappyClientsSection() {
           <Reveal className="happy-clients-logos">
             {CLIENT_LOGOS.map((client) => (
               <div key={client.name} className="happy-client-logo-card">
-                <span className={client.style || 'happy-client-text-default'}>{client.display}</span>
+                <span className={client.color || client.style || 'happy-client-text-default'}>{client.display}</span>
               </div>
             ))}
           </Reveal>

@@ -417,3 +417,10 @@
 .text-lg { font-size: 18px; }
 .text-base { font-size: 16px; }
 
+.text-stone-900 { color: #1c1917; }
+.text-amber-600 { color: #d97706; }
+.text-stone-700 { color: #44403c; }
+.text-pink-600 { color: #db2777; }
+.text-orange-600 { color: #ea580c; }
+.uppercase { text-transform: uppercase; }
+.font-semibold { font-weight: 600; }
