@@ -178,9 +178,9 @@ export const hotelsHero: string[] = at('hotels').length ? at('hotels') : homeIma
 
 export const heroShowcaseImages: string[] = [
   '/images/home/hero.jpg',
-  '/images/facade/facade.png',
-  '/images/facade/exterior-evening.png',
-  '/images/facade/exterior-night.png',
+  '/images/hotels/hotel-downtown-sector-51-noida/03.png',
+  '/images/hotels/hotel-downtown-sector-51-noida/02.png',
+  '/images/hotels/hotel-downtown-sector-51-noida/01.png',
   '/images/restaurant/dining/banquet-2-.png',
 ].filter(Boolean)
 
