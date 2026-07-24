@@ -1,5 +1,4 @@
-import { Reveal, SectionHeader } from './blocks.tsx'
-import { Button } from './ui.tsx'
+import { SectionHeader } from './blocks.tsx'
 
 interface Deal {
   badgeText: string
@@ -54,21 +53,26 @@ export default function DealsSection() {
           <p className="intro__body" style={{ marginTop: '12px' }}>Exclusive savings tailored for your next stay.</p>
         </div>
         
-        <Reveal className="deals-editorial-layout">
-          {DEALS.map((deal, index) => (
-            <div key={deal.title} className={`deals-floating-item item-${index}`}>
-              <div className="deals-floating-media">
-                <img src={deal.image} alt={deal.title} className="deals-floating-img" loading="lazy" />
+        <div className="deals-fern-layout">
+          <div className="deals-fern-bg"></div>
+          <div className="deals-fern-cards">
+            {DEALS.map((deal) => (
+              <div key={deal.title} className="deal-card-fern">
+                <div className="deal-card-fern__img-wrapper">
+                  <div className="deal-card-fern__circle">
+                    {/* Fallback styling for images if missing */}
+                    <img src={deal.image} alt={deal.title} loading="lazy" onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80'
+                    }} />
+                  </div>
+                </div>
+                <h3 className="h3 deal-card-fern__title">{deal.title}</h3>
+                <p className="deal-card-fern__desc">{deal.description}</p>
+                <a href={deal.link} className="deal-card-fern__btn">VIEW OFFER</a>
               </div>
-              
-              <div className="deals-floating-action">
-                <Button to={deal.link} variant="primary" className="deals-floating-btn">
-                  CLAIM OFFER
-                </Button>
-              </div>
-            </div>
-          ))}
-        </Reveal>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   )

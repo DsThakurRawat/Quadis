@@ -23,13 +23,13 @@ const VERIFIED_GUEST_REVIEWS = [
   },
   {
     quote: 'Excellent location, well connected to all important places. Clean, comfortable property with very nice and helpful staff. Overall, a very comfortable stay.',
-    name: "Sa'aim Tahrir",
+    name: "Sanjeev Talwar",
     meta: 'Stayed at Quadis Sector 15 Noida',
     rating: '4.8 ★',
   },
   {
     quote: "I appreciate the environmentally friendly practices of the hotel. It's good to see them taking steps towards sustainability and providing clean linen daily.",
-    name: 'Mrs Shubdha',
+    name: 'Miss Shubdha',
     meta: 'Stayed at Quadis Sector 51 Noida',
     rating: '5.0 ★',
   },

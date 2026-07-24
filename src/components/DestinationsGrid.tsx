@@ -1,37 +1,35 @@
 import { SectionHeader } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-import { IconPin } from './icons.tsx'
 
 interface Destination {
   name: string
-  code: string
+  image: string
   status?: 'active' | 'coming_soon'
 }
 
 const DESTINATIONS: Destination[] = [
-  { name: 'Delhi', code: 'DEL', status: 'active' },
-  { name: 'Gurgaon', code: 'GUR', status: 'active' },
-  { name: 'Rishikesh', code: 'RSH', status: 'coming_soon' },
-  { name: 'Chandigarh', code: 'CHD', status: 'coming_soon' },
-  { name: 'Noida', code: 'NOI', status: 'active' },
-  { name: 'Manesar', code: 'MNR', status: 'active' },
-  { name: 'Faridabad', code: 'FBD', status: 'active' },
-  { name: 'Bengaluru', code: 'BLR', status: 'coming_soon' },
+  { name: 'Delhi', image: '/images/upcoming/delhi.jpg', status: 'active' },
+  { name: 'Gurgaon', image: '/images/upcoming/gurgaon.jpg', status: 'active' },
+  { name: 'Rishikesh', image: '/images/upcoming/rishikesh.png', status: 'coming_soon' },
+  { name: 'Chandigarh', image: '/images/upcoming/chandigarh.jpg', status: 'coming_soon' },
+  { name: 'Noida', image: '/images/facade/facade.png', status: 'active' },
+  { name: 'Manesar', image: '/images/upcoming/manesar.png', status: 'active' },
+  { name: 'Faridabad', image: '/images/upcoming/faridabad.png', status: 'active' },
+  { name: 'Bengaluru', image: '/images/home/hero.jpg', status: 'coming_soon' },
 ]
 
 export default function DestinationsGrid() {
   return (
     <section className="section bg-cream">
       <div className="container">
-        <SectionHeader overline="EXPLORE INDIA" title="Destinations For You" />
+        <SectionHeader overline="" title="Destinations For You" />
 
         <Reveal className="destinations-grid">
           {DESTINATIONS.map((dest) => (
             <div key={dest.name} className={`dest-stamp ${dest.status === 'coming_soon' ? 'dest-stamp--coming' : ''}`}>
               <div className="dest-stamp__frame">
                 <div className="dest-stamp__inner">
-                  <IconPin className="dest-stamp__pin" />
-                  <span className="dest-stamp__code">{dest.code}</span>
+                  <img src={dest.image} alt={dest.name} loading="lazy" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
                 </div>
                 {dest.status === 'coming_soon' && (
                   <span className="dest-stamp__badge">COMING SOON</span>
