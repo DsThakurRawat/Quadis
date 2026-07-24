@@ -50,7 +50,7 @@ export default function DealsSection() {
       <div className="container center-col">
         <div className="mb-10 text-center">
           <SectionHeader overline="CURATED OFFERS" title="Exclusive Savings" />
-          <p className="intro__body" style={{ marginTop: '12px' }}>Exclusive savings tailored for your next stay.</p>
+          <p className="intro__body" style={{ marginTop: '-12px' }}>Exclusive savings tailored for your next stay.</p>
         </div>
         
         <div className="deals-fern-layout">
