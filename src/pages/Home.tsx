@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { HOTELS } from '../data/hotels.ts'
-import { hotelImages, banquetHero, restaurantImages, heroShowcaseImages } from '../data/images.ts'
+import { heroShowcaseImages } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
 import BookingBar from '../components/BookingBar.tsx'
 import Testimonials from '../components/Testimonials.tsx'
