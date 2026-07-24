@@ -19,9 +19,9 @@ import HappyClientsSection from '../components/HappyClientsSection.tsx'
 
 interface Experience { title: string; blurb: string; to: string; img: () => string | undefined }
 const EXPERIENCES: Experience[] = [
-  { title: 'Hotels by Quadis', blurb: 'Ten considered properties across Noida and New Delhi — calm rooms, prime locations, and warm, attentive service.', to: '/hotels', img: () => hotelImages('hotel-cladis-sector-51-noida')[0] },
-  { title: 'Banquets by Quadis', blurb: 'Elegant halls for weddings, receptions and corporate gatherings, with seamless catering and coordination.', to: '/banquets', img: () => banquetHero[0] },
-  { title: 'Restaurant by Quadis', blurb: 'In-house dining and outdoor catering — refined menus, generous flavours, and effortless hospitality.', to: '/restaurant', img: () => restaurantImages()[0] },
+  { title: 'Hotels by Quadis', blurb: 'Ten considered properties across Noida and New Delhi — calm rooms, prime locations, and warm, attentive service.', to: '/hotels', img: () => '/images/experiences/hotels-in-delhi-ncr.png' },
+  { title: 'Banquets by Quadis', blurb: 'Elegant halls for weddings, receptions and corporate gatherings, with seamless catering and coordination.', to: '/banquets', img: () => '/images/experiences/banquet-hall-in-delhi-ncr.png' },
+  { title: 'Restaurant by Quadis', blurb: 'In-house dining and outdoor catering — refined menus, generous flavours, and effortless hospitality.', to: '/restaurant', img: () => '/images/experiences/restaurant-in-noida.png' },
 ]
 
 const PARTNERS = ['Blackcomb Springs', 'Hitachi', 'Polycab', 'Aditya Birla Grasim']
