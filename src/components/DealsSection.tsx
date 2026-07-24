@@ -16,7 +16,7 @@ const DEALS: Deal[] = [
     badgeColor: 'bg-emerald-800 text-amber-300',
     title: 'Deal Of The Day',
     description: "Enjoy today's special deal with up to 25% instant discount across all properties!",
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=400&q=80',
+    image: '/images/offers/deal-of-the-day.png',
     link: '/hotels',
   },
   {
@@ -24,15 +24,15 @@ const DEALS: Deal[] = [
     badgeColor: 'bg-emerald-800 text-amber-300',
     title: 'Never Too Old',
     description: 'Enjoy Our Full-Fledged Senior Citizen Package with special ground-floor rooms and complimentary breakfast!',
-    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=400&q=80',
+    image: '/images/offers/never-too-old.png',
     link: '/hotels',
   },
   {
-    badgeText: 'DEAR LADY',
+    badgeText: 'BOSS LADY',
     badgeColor: 'bg-emerald-800 text-amber-300',
-    title: 'Dear Lady',
+    title: 'Boss Lady',
     description: 'Exclusive Perks, priority 24x7 security, and express check-in for Solo Female Travelers!',
-    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=400&q=80',
+    image: '/images/offers/boss-lady.png',
     link: '/hotels',
   },
   {
@@ -40,7 +40,7 @@ const DEALS: Deal[] = [
     badgeColor: 'bg-emerald-800 text-amber-300',
     title: 'Stay Long Stay Green',
     description: 'Big Savings up to 35% off on weekly and monthly extended stays across Noida & Delhi!',
-    image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=400&q=80',
+    image: '/images/offers/stay-long-stay-green.png',
     link: '/hotels',
   },
 ]
