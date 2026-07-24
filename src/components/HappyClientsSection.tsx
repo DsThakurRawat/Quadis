@@ -40,48 +40,48 @@ export default function HappyClientsSection() {
     <section className="section bg-cream py-12">
       <div className="container">
         {/* Our Happy Clients */}
-        <div className="mb-14 text-center">
+        <div className="happy-clients-container">
           <SectionHeader overline="CORPORATE TRUST" title="Our Happy Clients" />
-          <p className="text-stone-600 text-sm max-w-xl mx-auto -mt-4 mb-8">
+          <p className="intro__body mb-10 text-center">
             Proudly hosting executives and corporate teams from India&rsquo;s most respected enterprises.
           </p>
-          <Reveal className="grid grid-cols-2 sm:grid-cols-5 gap-4 items-center justify-center">
+          <Reveal className="happy-clients-logos">
             {CLIENT_LOGOS.map((client) => (
-              <div key={client.name} className="flex items-center justify-center p-4 bg-white rounded-xl border border-stone-200/80 shadow-xs h-16 hover:shadow-sm transition-all">
-                <span className={client.color || client.style}>{client.display}</span>
+              <div key={client.name} className="happy-client-logo-card">
+                <span className={client.style || 'happy-client-text-default'}>{client.display}</span>
               </div>
             ))}
           </Reveal>
         </div>
 
         {/* Trusted by 500,000+ verified guests */}
-        <div className="bg-emerald-950 text-white rounded-3xl p-8 md:p-10 shadow-lg border border-emerald-900/50">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+        <div className="guest-experience-banner">
+          <div className="guest-experience-header">
             <div>
-              <span className="overline text-amber-400 text-xs font-bold tracking-widest">GUEST EXPERIENCE</span>
-              <h3 className="text-2xl md:text-3xl font-serif font-bold text-white mt-1">
-                Trusted by <span className="text-amber-400 underline decoration-amber-400/40">500,000+</span> verified guests
+              <span className="guest-experience-overline">GUEST EXPERIENCE</span>
+              <h3 className="h3 on-dark" style={{ marginTop: '4px' }}>
+                Trusted by <span className="gold-text">500,000+</span> verified guests
               </h3>
             </div>
-            <div className="flex items-center gap-2 bg-emerald-900/80 px-4 py-2 rounded-full border border-emerald-800">
-              <span className="text-amber-400 font-bold text-sm">★ 4.5 Rating</span>
-              <span className="text-emerald-300 text-xs">|</span>
-              <span className="text-emerald-200 text-xs">95% Repeat Guests</span>
+            <div className="guest-experience-stats">
+              <span className="stat-rating">★ 4.5 Rating</span>
+              <span className="stat-divider">|</span>
+              <span className="stat-repeat">95% Repeat Guests</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="guest-reviews-grid">
             {VERIFIED_GUEST_REVIEWS.map((review) => (
-              <div key={review.name} className="bg-white text-stone-900 rounded-2xl p-6 flex flex-col justify-between shadow-sm border border-stone-100">
-                <p className="text-stone-700 text-xs sm:text-sm leading-relaxed italic mb-6">
+              <div key={review.name} className="guest-review-card">
+                <p className="guest-review-quote">
                   &ldquo;{review.quote}&rdquo;
                 </p>
-                <div className="border-t border-stone-100 pt-4 flex items-center justify-between">
+                <div className="guest-review-footer">
                   <div>
-                    <h4 className="font-bold text-stone-900 text-sm">{review.name}</h4>
-                    <p className="text-stone-400 text-[11px] leading-tight mt-0.5">{review.meta}</p>
+                    <h4 className="guest-review-name">{review.name}</h4>
+                    <p className="guest-review-meta">{review.meta}</p>
                   </div>
-                  <span className="bg-amber-100 text-amber-900 text-xs font-bold px-2 py-1 rounded-md">
+                  <span className="guest-review-rating">
                     {review.rating}
                   </span>
                 </div>

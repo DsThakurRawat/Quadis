@@ -47,31 +47,22 @@ const DEALS: Deal[] = [
 
 export default function DealsSection() {
   return (
-    <section className="section bg-stone-50 py-16">
-      <div className="container">
-        <div className="text-center mb-12">
-          <h2 className="h2 text-stone-900 font-serif">Curated Offers</h2>
-          <p className="text-stone-500 mt-3">Exclusive savings tailored for your next stay.</p>
+    <section className="section bg-cream">
+      <div className="container center-col">
+        <div className="mb-10 text-center">
+          <SectionHeader overline="CURATED OFFERS" title="Exclusive Savings" />
+          <p className="intro__body" style={{ marginTop: '12px' }}>Exclusive savings tailored for your next stay.</p>
         </div>
-        <Reveal className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        
+        <Reveal className="deals-grid">
           {DEALS.map((deal) => (
-            <div key={deal.title} className="group relative overflow-hidden rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-500 bg-white border border-stone-200 cursor-pointer">
-              {/* The Graphic (Aspect ratio perfectly matches the 256x224 px images) */}
-              <div className="w-full aspect-[256/224] overflow-hidden bg-stone-100">
-                <img 
-                  src={deal.image} 
-                  alt={deal.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
-                  loading="lazy" 
-                />
+            <div key={deal.title} className="deals-poster">
+              <div className="deals-poster-media">
+                <img src={deal.image} alt={deal.title} className="deals-poster-img" loading="lazy" />
               </div>
               
-              {/* Sleek Hover Overlay with Action Button */}
-              <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/20 transition-colors duration-500 flex items-end justify-center pb-8 opacity-0 group-hover:opacity-100">
-                <Button 
-                  to={deal.link} 
-                  className="bg-white text-emerald-950 px-8 py-3 rounded-full text-xs font-bold tracking-widest shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-500"
-                >
+              <div className="deals-poster-overlay">
+                <Button to={deal.link} variant="primary" className="deals-poster-btn">
                   CLAIM OFFER
                 </Button>
               </div>

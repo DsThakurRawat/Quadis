@@ -275,3 +275,145 @@
   height: 100%;
 }
 
+/* Deals Section */
+.deals-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 32px; width: 100%; }
+@media (min-width: 640px) { .deals-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .deals-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.deals-poster {
+  position: relative; overflow: hidden; border-radius: 16px;
+  background-color: #fff; box-shadow: var(--shadow-sm); border: 1px solid var(--border-card);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  cursor: pointer;
+}
+.deals-poster:hover {
+  transform: translateY(-4px); box-shadow: var(--shadow-lg);
+}
+
+.deals-poster-media {
+  width: 100%; aspect-ratio: 256/224; overflow: hidden; background: #f5f5f4;
+}
+.deals-poster-img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.deals-poster:hover .deals-poster-img {
+  transform: scale(1.05);
+}
+
+.deals-poster-overlay {
+  position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 32px; background: linear-gradient(to top, rgba(15,14,11, 0.4), transparent 50%);
+  opacity: 0; transition: opacity 0.4s ease;
+}
+.deals-poster:hover .deals-poster-overlay {
+  opacity: 1;
+}
+
+.deals-poster-btn {
+  background: var(--bg-dark); color: #fff; padding: 12px 32px; border-radius: 99px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  transform: translateY(16px); transition: transform 0.4s ease, background 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+.deals-poster-btn:hover { background: #000; }
+.deals-poster:hover .deals-poster-btn {
+  transform: translateY(0);
+}
+
+/* Featured Press */
+.featured-section { background-color: var(--bg-cream); padding: 80px 0; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); }
+.featured-press-container { margin-bottom: 64px; text-align: center; }
+.press-logos-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: center; justify-content: center; margin-top: 32px;
+}
+@media (min-width: 640px) { .press-logos-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1024px) { .press-logos-grid { grid-template-columns: repeat(8, 1fr); } }
+
+.press-logo-card {
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(255,255,255,0.8); border-radius: 12px; border: 1px solid rgba(0,0,0,0.06);
+  height: 64px; transition: all 0.3s ease; cursor: default;
+}
+.press-logo-card:hover { background: #fff; box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+
+/* Bank Offers */
+.offers-container { margin-top: 56px; }
+.offers-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 32px; }
+@media (min-width: 768px) { .offers-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.offer-card {
+  background: #fff; border-radius: 16px; padding: 24px; border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;
+  transition: box-shadow 0.3s ease;
+}
+.offer-card:hover { box-shadow: var(--shadow-md); }
+.offer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.offer-bank-tag { font-size: 11px; font-weight: 900; letter-spacing: 0.05em; color: var(--primary); background: #d1fae5; padding: 4px 12px; border-radius: 99px; }
+.offer-discount-tag { font-size: 11px; font-weight: 700; color: #b45309; background: #fffbeb; padding: 4px 10px; border-radius: 4px; }
+.offer-details { color: var(--text-primary); font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+.offer-validity { color: var(--text-muted-2); font-size: 12px; font-style: italic; margin-bottom: 24px; }
+.offer-footer { display: flex; align-items: center; justify-content: space-between; background: #fafaf9; border: 1px dashed #d6d3d1; border-radius: 12px; padding: 10px; }
+.offer-code-text { font-family: monospace; font-weight: 700; color: var(--text-dark); letter-spacing: 0.05em; font-size: 14px; padding-left: 8px; }
+.offer-copy-button { background: var(--bg-dark); color: #fff; font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 8px; cursor: pointer; transition: background 0.2s; border: none; }
+.offer-copy-button:hover { background: #000; }
+
+/* Happy Clients */
+.happy-clients-container { margin-bottom: 56px; text-align: center; }
+.happy-clients-logos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; justify-content: center; align-items: center; margin-top: 32px; }
+@media (min-width: 640px) { .happy-clients-logos { grid-template-columns: repeat(5, 1fr); } }
+
+.happy-client-logo-card { display: flex; align-items: center; justify-content: center; padding: 16px; background: #fff; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); box-shadow: var(--shadow-sm); height: 64px; transition: all 0.3s; }
+.happy-client-logo-card:hover { box-shadow: var(--shadow-md); }
+.happy-client-text-default { font-size: 18px; font-weight: 800; color: #444; }
+
+.guest-experience-banner { background: var(--bg-dark); color: #fff; border-radius: 24px; padding: 32px; box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.1); }
+@media (min-width: 768px) { .guest-experience-banner { padding: 40px; } }
+.guest-experience-header { display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px; }
+@media (min-width: 768px) { .guest-experience-header { flex-direction: row; align-items: center; justify-content: space-between; } }
+.guest-experience-overline { color: var(--gold); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.guest-experience-stats { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 99px; border: 1px solid rgba(255,255,255,0.05); }
+.stat-rating { color: var(--gold); font-weight: 700; font-size: 14px; }
+.stat-divider { color: rgba(255,255,255,0.3); font-size: 12px; }
+.stat-repeat { color: #a7f3d0; font-size: 12px; }
+
+.guest-reviews-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+@media (min-width: 768px) { .guest-reviews-grid { grid-template-columns: repeat(3, 1fr); } }
+.guest-review-card { background: #fff; color: var(--text-dark); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); }
+.guest-review-quote { color: var(--text-muted); font-size: 14px; line-height: 1.6; font-style: italic; margin-bottom: 24px; }
+.guest-review-footer { border-top: 1px solid var(--border-light); padding-top: 16px; display: flex; align-items: center; justify-content: space-between; }
+.guest-review-name { font-weight: 700; font-size: 14px; color: var(--text-dark); }
+.guest-review-meta { color: var(--text-muted-2); font-size: 11px; margin-top: 2px; }
+.guest-review-rating { background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+
+/* Legacy Tailwind Classes mapped to Vanilla CSS for Logos */
+.text-amber-700 { color: #b45309; }
+.text-red-600 { color: #dc2626; }
+.text-rose-600 { color: #e11d48; }
+.text-red-700 { color: #b91c1c; }
+.text-sky-600 { color: #0284c7; }
+.text-purple-700 { color: #7e22ce; }
+.text-stone-800 { color: #292524; }
+.text-blue-900 { color: #1e3a8a; }
+.text-amber-900 { color: #78350f; }
+
+.font-black { font-weight: 900; }
+.font-extrabold { font-weight: 800; }
+.font-bold { font-weight: 700; }
+.font-sans { font-family: sans-serif; }
+.font-serif { font-family: serif; }
+.font-mono { font-family: monospace; }
+.italic { font-style: italic; }
+.lowercase { text-transform: lowercase; }
+.tracking-tighter { letter-spacing: -0.05em; }
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-normal { letter-spacing: 0; }
+.tracking-wider { letter-spacing: 0.05em; }
+.tracking-widest { letter-spacing: 0.1em; }
+.text-xl { font-size: 20px; }
+.text-2xl { font-size: 24px; }
+.text-lg { font-size: 18px; }
+.text-base { font-size: 16px; }
+

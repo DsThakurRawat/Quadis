@@ -55,14 +55,14 @@ export default function FeaturedInAndOffers() {
   }
 
   return (
-    <section className="section bg-warm py-12 border-t border-b border-stone-200">
+    <section className="featured-section">
       <div className="container">
         {/* Featured In */}
-        <div className="mb-12 text-center">
+        <div className="featured-press-container">
           <SectionHeader overline="PRESS & ACCLAIM" title="Featured In" />
-          <Reveal className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-6 items-center justify-center mt-6">
+          <Reveal className="press-logos-grid">
             {PRESS_LOGOS.map((logo) => (
-              <div key={logo.name} className="flex items-center justify-center p-4 bg-white/80 rounded-xl border border-stone-200/60 shadow-xs h-16 hover:bg-white hover:shadow-sm transition-all">
+              <div key={logo.name} className="press-logo-card">
                 <span className={logo.style}>{logo.display}</span>
               </div>
             ))}
@@ -70,31 +70,31 @@ export default function FeaturedInAndOffers() {
         </div>
 
         {/* Offers for You */}
-        <div className="mt-14">
+        <div className="offers-container">
           <SectionHeader overline="SPECIAL SAVINGS" title="Offers for You" />
-          <Reveal className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          <Reveal className="offers-grid">
             {OFFERS.map((offer) => (
-              <div key={offer.code} className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div key={offer.code} className="offer-card">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-black tracking-wider text-emerald-900 bg-emerald-100 px-3 py-1 rounded-full">
+                  <div className="offer-header">
+                    <span className="offer-bank-tag">
                       {offer.bank}
                     </span>
-                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded">
+                    <span className="offer-discount-tag">
                       {offer.discount}
                     </span>
                   </div>
-                  <p className="text-stone-700 text-sm leading-relaxed mb-4">{offer.details}</p>
-                  <p className="text-stone-400 text-xs italic mb-6">{offer.validity}</p>
+                  <p className="offer-details">{offer.details}</p>
+                  <p className="offer-validity">{offer.validity}</p>
                 </div>
-                <div className="flex items-center justify-between bg-stone-50 border border-dashed border-stone-300 rounded-xl p-2.5">
-                  <span className="font-mono font-bold text-stone-900 tracking-wider text-sm pl-2">
+                <div className="offer-footer">
+                  <span className="offer-code-text">
                     {offer.code}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleCopy(offer.code)}
-                    className="bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    className="offer-copy-button"
                   >
                     {copiedCode === offer.code ? '✓ COPIED' : 'COPY CODE'}
                   </button>
