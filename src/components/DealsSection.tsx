@@ -52,13 +52,8 @@ export default function DealsSection() {
         <Reveal className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {DEALS.map((deal) => (
             <div key={deal.title} className="deal-card flex flex-col items-center text-center p-6 bg-white rounded-2xl shadow-sm border border-stone-200 hover:shadow-md transition-shadow">
-              <div className="relative mb-4 w-32 h-32 rounded-full overflow-hidden border-4 border-emerald-900 shadow-inner flex items-center justify-center bg-stone-100">
-                <img src={deal.image} alt={deal.title} className="w-full h-full object-cover opacity-90" loading="lazy" />
-                <div className="absolute inset-0 bg-emerald-950/60 flex items-center justify-center p-2">
-                  <span className="text-center font-extrabold text-amber-400 text-xs tracking-wider leading-tight uppercase">
-                    {deal.badgeText}
-                  </span>
-                </div>
+              <div className="relative mb-5 w-full flex items-center justify-center">
+                <img src={deal.image} alt={deal.title} className="w-full max-w-[256px] h-auto object-contain rounded-xl drop-shadow-md" loading="lazy" />
               </div>
               <h3 className="h3 text-stone-900 text-lg font-bold mb-2">{deal.title}</h3>
               <p className="text-stone-600 text-sm mb-6 flex-grow leading-relaxed">{deal.description}</p>
