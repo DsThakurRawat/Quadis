@@ -54,15 +54,15 @@ export default function DealsSection() {
           <p className="intro__body" style={{ marginTop: '12px' }}>Exclusive savings tailored for your next stay.</p>
         </div>
         
-        <Reveal className="deals-grid">
-          {DEALS.map((deal) => (
-            <div key={deal.title} className="deals-poster">
-              <div className="deals-poster-media">
-                <img src={deal.image} alt={deal.title} className="deals-poster-img" loading="lazy" />
+        <Reveal className="deals-editorial-layout">
+          {DEALS.map((deal, index) => (
+            <div key={deal.title} className={`deals-floating-item item-${index}`}>
+              <div className="deals-floating-media">
+                <img src={deal.image} alt={deal.title} className="deals-floating-img" loading="lazy" />
               </div>
               
-              <div className="deals-poster-overlay">
-                <Button to={deal.link} variant="primary" className="deals-poster-btn">
+              <div className="deals-floating-action">
+                <Button to={deal.link} variant="primary" className="deals-floating-btn">
                   CLAIM OFFER
                 </Button>
               </div>
