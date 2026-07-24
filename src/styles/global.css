@@ -51,7 +51,8 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; }
 .h2 {
   font-family: var(--font-display);
   font-size: clamp(32px, 5vw, 56px);
-  line-height: 1.05;
+  line-height: 1.15;
+  padding-bottom: 0.1em;
   color: var(--text-primary);
 }
 .bg-dark .h2, .bg-darkest .h2, .h2.on-dark { color: var(--text-on-dark); }
