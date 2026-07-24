@@ -6,7 +6,7 @@ const HOTELS_LINKS: FooterLink[] = [
   { label: 'Hotel Amar Inn', to: '/hotels/hotel-amar-in' },
   { label: 'Hotel Amby Inn', to: '/hotels/hotel-amby-inn-lajpat-nagar-ii' },
   { label: 'Hotel Downtown', to: '/hotels/hotel-downtown-east-of-kailash' },
-  { label: 'Hotel Cladis', to: '/hotels/hotel-cladis-sector-51-noida' },
+  { label: 'Hotel Cladis', to: '/hotels/hotel-cladis-sector-15-noida' },
   { label: 'Hotel Quadis', to: '/hotels/hotel-quadis-sector-51-noida' },
 ]
 const IMPORTANT: FooterLink[] = [

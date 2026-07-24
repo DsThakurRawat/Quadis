@@ -73,7 +73,6 @@ try {
 }
 
 const STATIC_HOTELS: Hotel[] = [
-  { slug: 'hotel-cladis-sector-51-noida', name: 'Hotel Cladis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Sector 51, near Cloud9 Hospital, Noida', price: 1899, rating: 4.7 },
   { slug: 'hotel-quadis-sector-51-noida', name: 'Hotel Quadis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', price: 1599, rating: 4.6 },
   { slug: 'hotel-quadis-central-sector-27-noida', name: 'Hotel Quadis Central', area: 'Sector 27', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida, Uttar Pradesh 201301', price: 1799, rating: 4.5 },
   { slug: 'hotel-downtown-sector-15-noida', name: 'Hotel Downtown Sector 15', area: 'Sector 15', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 1599, rating: 4.4 },
@@ -104,7 +103,7 @@ export const CITY_FILTERS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi',
 // Banquet venues — §4/§6.4. Capacities are representative venue specs.
 export const BANQUETS: BanquetVenue[] = [
   { slug: 'banquets-at-hotel-amby-inn', name: 'Banquets at Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', capacity: 350, hallArea: '4,200 sq ft', catering: 'Veg & Non-veg', parking: 'Valet available' },
-  { slug: 'banquets-at-hotel-cladis', name: 'Banquets at Hotel Cladis', area: 'Sector 51', city: 'Noida', capacity: 500, hallArea: '6,000 sq ft', catering: 'Veg & Non-veg', parking: 'On-site parking' },
+  { slug: 'banquets-at-hotel-cladis', name: 'Banquets at Hotel Cladis', area: 'Sector 15', city: 'Noida', capacity: 500, hallArea: '6,000 sq ft', catering: 'Veg & Non-veg', parking: 'On-site parking' },
   { slug: 'banquets-at-hotel-downtown-eok', name: 'Banquets at Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', capacity: 300, hallArea: '3,600 sq ft', catering: 'Veg & Non-veg', parking: 'Valet available' },
   { slug: 'banquets-at-hotel-downtown-sector-51', name: 'Banquets at Hotel Downtown Sector 51', area: 'Sector 51', city: 'Noida', capacity: 450, hallArea: '5,200 sq ft', catering: 'Veg & Non-veg', parking: 'On-site parking' },
 ]
