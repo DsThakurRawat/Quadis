@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { getApiUrl } from '../config/api'
 
 
 interface ChatMessage {
@@ -52,14 +53,23 @@ export default function QuadisAssistChat() {
     setLoading(true)
 
     try {
-      await new Promise(r => setTimeout(r, 1500))
+      const res = await fetch(getApiUrl('ai/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: messages })
+      })
+
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to fetch reply')
 
       setMessages((prev) => [
         ...prev,
         {
           id: `a_${Date.now()}`,
           role: 'assistant',
-          content: 'Thank you for your message! Our AI backend is currently offline for maintenance, but please feel free to use the Contact page or call us directly at +91 92173 73532.',
+          content: json.data.reply,
+          toolsInvoked: json.data.toolsInvoked,
+          handoffTriggered: json.data.handoffTriggered
         },
       ])
     } catch (err) {
