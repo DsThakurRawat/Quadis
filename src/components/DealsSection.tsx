@@ -1,4 +1,4 @@
-import { Reveal } from './blocks.tsx'
+import { Reveal, SectionHeader } from './blocks.tsx'
 import { Button } from './ui.tsx'
 
 interface Deal {
