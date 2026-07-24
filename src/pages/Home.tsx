@@ -113,7 +113,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5. Great Sleep & Refreshing Showers Guarantee (§Stay Promise) */}
+      {/* 5. Deal Of The Day / Curated Offers */}
+      <DealsSection />
+
+      {/* 6. Featured In & Offers For You Section */}
+      <FeaturedInAndOffers />
+
+      {/* 7. Great Sleep & Refreshing Showers Guarantee (§Stay Promise) */}
       <section className="section stay-promise-section bg-dark text-on-dark">
         <div className="container">
           <Reveal className="stay-promise center-col">
@@ -190,16 +196,10 @@ export default function Home() {
       {/* 9. Business & Franchisee CTA Banner */}
       <BusinessCtaBanner />
 
-      {/* 10. Deal Of The Day / Never Too Old Section */}
-      <DealsSection />
-
-      {/* 11. Featured In & Offers For You Section */}
-      <FeaturedInAndOffers />
-
-      {/* 12. Our Happy Clients & Trusted by 500,000+ Verified Guests */}
+      {/* 11. Our Happy Clients & Trusted by 500,000+ Verified Guests */}
       <HappyClientsSection />
 
-      {/* 13. Testimonials */}
+      {/* 12. Testimonials */}
       <section className="section bg-cream">
         <div className="container testi">
           <div className="testi__head">
