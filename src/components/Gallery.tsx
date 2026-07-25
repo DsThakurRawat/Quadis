@@ -46,11 +46,11 @@ export default function Gallery({ images = [], alt = '' }: { images?: string[]; 
                 onClick={() => setActive(i)}
                 aria-label={`View photo ${i + 1}`}
               >
-                <Photo src={src} ratio="4 / 3" label={alt} alt={`${alt} thumbnail ${i + 1}`} />
+                <Photo src={src} fill label={alt} alt={`${alt} thumbnail ${i + 1}`} />
               </button>
             ) : (
               <div className="gallery__thumb" key={i}>
-                <Photo ratio="4 / 3" label={alt} alt={alt} />
+                <Photo fill label={alt} alt={alt} />
               </div>
             )
           ))}

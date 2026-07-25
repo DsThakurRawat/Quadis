@@ -1311,3 +1311,6 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
 
 
 
+
+/* Photo in fill mode: height comes from the parent grid cell, not a fixed ratio. */
+.photo--fill { height: 100%; }

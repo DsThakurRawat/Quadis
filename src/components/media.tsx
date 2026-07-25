@@ -6,6 +6,13 @@ interface PhotoProps {
   ratio?: string // e.g. '4 / 3'
   alt?: string
   className?: string
+  /**
+   * Fill the parent's height instead of reserving a fixed ratio. Used where the
+   * parent is a grid cell whose height is set by a sibling — a fixed ratio there
+   * leaves the cell part-empty. Sets a class rather than an inline style so CSS
+   * (including media queries) can still take over.
+   */
+  fill?: boolean
 }
 
 /**
@@ -13,11 +20,14 @@ interface PhotoProps {
  * Renders a neutral --bg-warm placeholder (label centered) until a real photo
  * URL is supplied, so real photography drops in with zero layout shift (§5).
  */
-export function Photo({ src, label = 'Quadis', ratio = '4 / 3', alt, className = '' }: PhotoProps) {
+export function Photo({ src, label = 'Quadis', ratio = '4 / 3', alt, className = '', fill = false }: PhotoProps) {
   const [failed, setFailed] = useState(false)
   const show = src && !failed
   return (
-    <div className={`photo ${className}`} style={{ aspectRatio: ratio }}>
+    <div
+      className={`photo ${fill ? 'photo--fill' : ''} ${className}`}
+      style={fill ? undefined : { aspectRatio: ratio }}
+    >
       {show ? (
         <img className="photo__img" src={src} alt={alt || label} loading="lazy" onError={() => setFailed(true)} />
       ) : (
