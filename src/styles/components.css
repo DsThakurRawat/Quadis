@@ -1175,7 +1175,7 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
 .dest-stamp__frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   background: white;
   border: 4px dotted #4caf50;
   border-radius: 4px;

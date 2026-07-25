@@ -28,8 +28,8 @@ export default function DestinationsGrid() {
           {DESTINATIONS.map((dest) => (
             <div key={dest.name} className={`dest-stamp ${dest.status === 'coming_soon' ? 'dest-stamp--coming' : ''}`}>
               <div className="dest-stamp__frame">
-                <div className="dest-stamp__inner" style={{ position: 'relative' }}>
-                  <img src={dest.image} alt={dest.name} loading="lazy" style={{ position: 'absolute', top: 0, left: 0, objectFit: 'cover', width: '100%', height: '100%' }} />
+                <div className="dest-stamp__inner">
+                  <img src={dest.image} alt={dest.name} loading="lazy" style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
                 </div>
                 {dest.status === 'coming_soon' && (
                   <span className="dest-stamp__badge">COMING SOON</span>
