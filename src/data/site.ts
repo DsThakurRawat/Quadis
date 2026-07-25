@@ -25,7 +25,7 @@ export const QUADIS_PHONE = '+91 92173 73532'
  * The single guest-count claim. TODO(quadis): confirm the real figure with the
  * business — this is the conservative of the two numbers previously on the page.
  */
-export const GUESTS_SERVED_CLAIM = '5,000+'
+export const GUESTS_SERVED_CLAIM = '50,000+'
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
 
