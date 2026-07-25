@@ -21,6 +21,8 @@ export interface HotelRoom {
   mealOptions: RoomMealOption[]
 }
 
+export type QuadisTier = 'central' | 'select' | 'experience'
+
 export interface Hotel {
   slug: string
   name: string
@@ -29,6 +31,8 @@ export interface Hotel {
   address: string
   price: number // INR per night
   rating: number // 0–5
+  tier: QuadisTier
+  tierLabel: 'Quadis Central' | 'Quadis Select' | 'Quadis Experience'
   rooms?: HotelRoom[]
 }
 
@@ -113,7 +117,8 @@ export interface RegisterPayload {
 
 /* ---------- UI helpers ---------- */
 
-export type CityFilter = 'All' | City | 'Upcoming'
+export type CityFilter = 'All' | City
+export type TierFilter = 'All Tiers' | QuadisTier
 
 /** Generic map of field-name → error message for a form's values. */
 export type FormErrors<T> = Partial<Record<keyof T, string>>
@@ -133,6 +138,8 @@ export interface PropertyRecord {
   rating: number
   is_active: boolean
   weekend_surcharge_percent: number
+  tier: QuadisTier
+  tier_label: 'Quadis Central' | 'Quadis Select' | 'Quadis Experience'
 }
 
 export interface RoomTypeRecord {

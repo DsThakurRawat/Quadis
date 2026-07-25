@@ -147,6 +147,7 @@ export function HotelCard({ hotel }: { hotel: Hotel }) {
     <article className="hcard">
       <Link to={`/hotels/${hotel.slug}`} className="hcard__media" aria-label={`${hotel.name}, ${hotel.city}`}>
         <span className="hcard__chip">{hotel.city}</span>
+        {hotel.tier && <span className={`hcard__tier hcard__tier--${hotel.tier}`}>{hotel.tierLabel}</span>}
         <Photo src={img} ratio="4 / 3" label={hotel.name} alt={`${hotel.name} — ${hotel.area}, ${hotel.city}`} />
       </Link>
       <div className="hcard__body">

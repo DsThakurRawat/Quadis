@@ -77,6 +77,7 @@ export default function HotelDetail() {
 
           <div className="detail-head">
             <div>
+              <span className="overline mb-2" style={{ display: 'block', color: 'var(--text-muted)' }}>{hotel.tierLabel}</span>
               <h1 className="h2 detail-head__name">{hotel.name}</h1>
               <p className="detail-head__addr">
                 <IconPin /> <span>{hotel.address}</span>

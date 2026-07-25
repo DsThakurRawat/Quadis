@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { HOTELS } from '../data/hotels.ts'
 import { heroShowcaseImages } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
@@ -56,7 +57,7 @@ export default function Home() {
         <div className="container">
           <SectionHeader overline="OUR PROPERTIES" title="Best Hotels in Delhi NCR" />
           <div className="home-hotels__pills">
-            <FilterPills options={CITY_FILTERS.filter(f => f !== 'Upcoming')} value={filter} onChange={setFilter} ariaLabel="Filter hotels by city" />
+            <FilterPills options={CITY_FILTERS} value={filter} onChange={setFilter} ariaLabel="Filter hotels by city" />
           </div>
           <div className="card-grid card-grid--anim" key={filter}>
             {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
@@ -129,6 +130,45 @@ export default function Home() {
       {/* 11. Business & Franchisee CTA Banner */}
 
       <BusinessCtaBanner />
+
+      {/* 11.5. Future Vision */}
+      <section className="section bg-dark text-on-dark">
+        <div className="container">
+          <SectionHeader overline="THE ROAD AHEAD" title="Beyond hospitality" onDark align="center" />
+          <Reveal className="future-vision-grid mt-12">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+              <article className="future-card" style={{ background: 'var(--bg-warm)', color: 'var(--text-primary)', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+                  <img src="/images/home/12.jpg" alt="Quadis Homes" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <div style={{ padding: '32px' }}>
+                  <span className="overline mb-2" style={{ display: 'block', color: 'var(--gold-deep)' }}>FUTURE VISION</span>
+                  <h3 className="h3" style={{ fontFamily: 'var(--font-display)', fontSize: '30px' }}>Quadis Homes</h3>
+                  <p className="mt-2" style={{ color: 'var(--text-muted)' }}>Premium residential spaces designed with Quadis hospitality.</p>
+                  <div className="mt-8" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span className="meta" style={{ background: 'var(--bg-cream)', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>In development</span>
+                    <Link to="/contact" className="btn btn--ghost btn--sm" style={{ padding: 0 }}>Contact</Link>
+                  </div>
+                </div>
+              </article>
+              <article className="future-card" style={{ background: 'var(--bg-warm)', color: 'var(--text-primary)', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+                  <img src="/images/home/13.jpg" alt="Quadis Aviation" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <div style={{ padding: '32px' }}>
+                  <span className="overline mb-2" style={{ display: 'block', color: 'var(--gold-deep)' }}>FUTURE VISION</span>
+                  <h3 className="h3" style={{ fontFamily: 'var(--font-display)', fontSize: '30px' }}>Quadis Aviation</h3>
+                  <p className="mt-2" style={{ color: 'var(--text-muted)' }}>Elevating your journey before you even arrive.</p>
+                  <div className="mt-8" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span className="meta" style={{ background: 'var(--bg-cream)', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>In development</span>
+                    <Link to="/contact" className="btn btn--ghost btn--sm" style={{ padding: 0 }}>Contact</Link>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       {/* 12. Our Happy Clients & Trusted by 500,000+ Verified Guests */}
       <HappyClientsSection />
