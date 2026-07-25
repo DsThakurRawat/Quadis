@@ -12,7 +12,7 @@ const DESTINATIONS: Destination[] = [
   { name: 'Gurgaon', image: '/images/upcoming/gurgaon.jpg', status: 'active' },
   { name: 'Rishikesh', image: '/images/upcoming/rishikesh.png', status: 'coming_soon' },
   { name: 'Chandigarh', image: '/images/upcoming/chandigarh.jpg', status: 'coming_soon' },
-  { name: 'Noida', image: '/images/facade/facade.png', status: 'active' },
+  { name: 'Noida', image: '/images/upcoming/noida.png', status: 'active' },
   { name: 'Manesar', image: '/images/upcoming/manesar.png', status: 'active' },
   { name: 'Faridabad', image: '/images/upcoming/faridabad.png', status: 'active' },
   { name: 'Bengaluru', image: '/images/home/hero.jpg', status: 'coming_soon' },
