@@ -22,10 +22,11 @@ export const FOUNDED_YEAR = 2017
 export const QUADIS_PHONE = '+91 92173 73532'
 
 /**
- * The single guest-count claim. TODO(quadis): confirm the real figure with the
- * business — this is the conservative of the two numbers previously on the page.
+ * The single guest-count claim, confirmed by the client in "Website Changes"
+ * (July 2026): "Replace '8+ Years' with '5000+ Happy Guests'". One number, used
+ * everywhere — the page previously claimed 5,000+ and 500,000+ at the same time.
  */
-export const GUESTS_SERVED_CLAIM = '50,000+'
+export const GUESTS_SERVED_CLAIM = '5,000+'
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
 

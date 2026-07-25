@@ -20,7 +20,6 @@ export default function HotelsList() {
   const [tierFilter, setTierFilter] = useState<TierFilter>(isTierFilter(tierParam) ? tierParam : 'All Tiers')
   
   const hotels = useHotels()
-  const [activeSlug, setActiveSlug] = useState<string | null>(null)
 
   // Honor query params on load / when it changes externally.
   useEffect(() => {
@@ -50,10 +49,6 @@ export default function HotelsList() {
       return cityMatch && tierMatch
     })
   }, [hotels, cityFilter, tierFilter])
-
-  // The locator renders nothing without coordinates. Only reserve a column for
-  // it when it will actually appear, otherwise the cards leave a dead gap.
-  const hasMap = filtered.some((h) => h.coords)
 
   return (
     <>
@@ -95,20 +90,8 @@ export default function HotelsList() {
           </p>
           
           {filtered.length > 0 ? (
-            <div className={`mt-8 ${hasMap ? 'list-with-map' : ''}`}>
-              <div className={`card-grid card-grid--anim ${hasMap ? 'list-with-map__cards' : ''}`} key={`${cityFilter}-${tierFilter}`}>
-                {filtered.map((h) => (
-                  <div
-                    key={h.slug}
-                    className={activeSlug === h.slug ? 'is-located' : ''}
-                    onMouseEnter={() => setActiveSlug(h.slug)}
-                    onMouseLeave={() => setActiveSlug(null)}
-                  >
-                    <HotelCard hotel={h} />
-                  </div>
-                ))}
-              </div>
-              <NcrLocatorMap hotels={filtered} activeSlug={activeSlug} onHover={setActiveSlug} />
+            <div className="card-grid card-grid--anim mt-8" key={`${cityFilter}-${tierFilter}`}>
+              {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
             </div>
           ) : (
             <div className="mt-8 py-12 text-center" style={{ border: '1px dashed var(--border-card-2)' }}>
@@ -118,6 +101,8 @@ export default function HotelsList() {
           )}
         </div>
       </section>
+
+      <NcrLocatorMap hotels={filtered} />
 
       <UpcomingHotels />
 

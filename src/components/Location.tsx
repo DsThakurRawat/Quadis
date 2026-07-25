@@ -64,16 +64,11 @@ export function MapFacade({ hotel }: { hotel: Hotel }) {
   )
 }
 
-const TRANSIT_ROWS: Array<{ key: keyof NonNullable<Hotel['transit']>; label: string }> = [
-  { key: 'metro', label: 'Nearest Metro' },
-  { key: 'airport', label: 'IGI Airport' },
-  { key: 'rail', label: 'Railway / ISBT' },
-  { key: 'landmark', label: 'Local landmark' },
-]
+const TRANSIT_ORDER: Array<keyof NonNullable<Hotel['transit']>> = ['metro', 'airport', 'rail', 'landmark']
 
 /** Renders nothing until at least one fact has been verified for this property. */
 export function GettingHere({ transit }: { transit?: Hotel['transit'] }) {
-  const rows = TRANSIT_ROWS.filter((r) => transit?.[r.key])
+  const rows = TRANSIT_ORDER.map((k) => transit?.[k]).filter(Boolean) as NonNullable<Hotel['transit']>['metro'][]
   if (!rows.length) return null
 
   return (
@@ -81,10 +76,13 @@ export function GettingHere({ transit }: { transit?: Hotel['transit'] }) {
       <span className="overline">GETTING HERE</span>
       <h3 className="h3 getting-here__title">Four facts a map can&rsquo;t tell you</h3>
       <dl className="getting-here__list">
-        {rows.map((r) => (
-          <div className="getting-here__row" key={r.key}>
-            <dt>{r.label}</dt>
-            <dd>{transit?.[r.key]}</dd>
+        {rows.map((f) => (
+          <div className="getting-here__row" key={f!.name}>
+            <dt>
+              {f!.name}
+              {f!.note && <span className="getting-here__note"> · {f!.note}</span>}
+            </dt>
+            {f!.value && <dd>{f!.value}</dd>}
           </div>
         ))}
       </dl>

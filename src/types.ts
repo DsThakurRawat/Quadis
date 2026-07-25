@@ -36,15 +36,27 @@ export interface HotelCoords {
 }
 
 /**
+ * One row of the "Getting here" panel: the place on the left, how far on the
+ * right — "Sector 52 Metro · Blue Line" … "9 min walk".
+ */
+export interface TransitFact {
+  name: string
+  /** Muted qualifier after the name, e.g. 'Blue Line' or 'dining & retail'. */
+  note?: string
+  /** Distance and/or time. Omitted when only proximity is known. */
+  value?: string
+}
+
+/**
  * The four facts an NCR guest actually needs, which a map cannot convey.
  * Every field is optional — a fact we haven't verified is simply not shown.
  * Never invent these; a wrong walk time is worse than a missing one.
  */
 export interface HotelTransit {
-  metro?: string
-  airport?: string
-  rail?: string
-  landmark?: string
+  metro?: TransitFact
+  airport?: TransitFact
+  rail?: TransitFact
+  landmark?: TransitFact
 }
 
 export interface Hotel {

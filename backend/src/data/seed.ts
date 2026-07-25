@@ -12,53 +12,100 @@ export const seedProperties: PropertyRecord[] = [
   { id: 'prop-10', slug: 'hotel-amar-in', lat: 28.571, lng: 77.2415, name: 'Hotel Amar Inn', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', map_link: 'https://share.google/IQLx35cfOmLf93S2o', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1799, rating: 4.4, is_active: true, weekend_surcharge_percent: 0, tier: 'central', tier_label: 'Quadis Central' },
 ]
 
-export const seedRoomTypes: RoomTypeRecord[] = seedProperties.flatMap((prop, index) => [
-  {
-    id: `room-${prop.id}-deluxe`,
+type RoomTemplate = Omit<RoomTypeRecord, 'id' | 'property_id'>
+
+const DELUXE: RoomTemplate = {
+  slug: 'deluxe-room',
+  name: 'Deluxe Room',
+  description: 'Calm, refined comfort designed for effortless rest. Features plush bedding and executive workspace.',
+  size_sqft: '240 sq ft',
+  bed_type: 'King / Twin Beds',
+  max_guests: 2,
+  price_offset: 0,
+  breakfast_offset: 300,
+  all_meals_offset: 800,
+  total_units: 5,
+  available_units: 5,
+  is_available: true,
+}
+
+const SUPERIOR: RoomTemplate = {
+  slug: 'superior-room',
+  name: 'Superior Room with Balcony',
+  description: 'Elevated space with private outdoor seating and expansive city views.',
+  size_sqft: '310 sq ft',
+  bed_type: 'King Bed + Balcony',
+  max_guests: 3,
+  price_offset: 400,
+  breakfast_offset: 350,
+  all_meals_offset: 900,
+  total_units: 3,
+  available_units: 3,
+  is_available: true,
+}
+
+const ROYAL: RoomTemplate = {
+  slug: 'royal-suite',
+  name: 'Royal Suite',
+  description: 'Our most luxurious sanctuary featuring separate master bedroom, private lounge and dining area.',
+  size_sqft: '450 sq ft',
+  bed_type: 'Master Suite + Living Room',
+  max_guests: 4,
+  price_offset: 1200,
+  breakfast_offset: 450,
+  all_meals_offset: 1200,
+  total_units: 2,
+  available_units: 2,
+  is_available: true,
+}
+
+const SUPER_DELUXE: RoomTemplate = {
+  slug: 'super-deluxe',
+  name: 'Super Deluxe',
+  description: 'A larger, more considered room with an upgraded seating area, high-speed Wi-Fi and evening turndown.',
+  size_sqft: '290 sq ft',
+  bed_type: 'King Bed',
+  max_guests: 3,
+  price_offset: 400,
+  breakfast_offset: 350,
+  all_meals_offset: 900,
+  total_units: 4,
+  available_units: 4,
+  is_available: true,
+}
+
+const SUPER_DELUXE_BALCONY: RoomTemplate = {
+  slug: 'super-deluxe-balcony',
+  name: 'Super Deluxe with Balcony',
+  description: 'The Super Deluxe with a private balcony — outdoor seating and open city views.',
+  size_sqft: '330 sq ft',
+  bed_type: 'King Bed + Balcony',
+  max_guests: 3,
+  price_offset: 650,
+  breakfast_offset: 350,
+  all_meals_offset: 900,
+  total_units: 3,
+  available_units: 3,
+  is_available: true,
+}
+
+/**
+ * Room categories differ by property (client brief, July 2026). Must stay in
+ * step with ROOMS_BY_SLUG in the frontend's src/data/hotels.ts — a category the
+ * site offers but the API has not seeded cannot be booked.
+ */
+const ROOMS_BY_SLUG: Record<string, RoomTemplate[]> = {
+  'hotel-quadis-sector-51-noida': [DELUXE, SUPER_DELUXE, SUPER_DELUXE_BALCONY],
+  'hotel-downtown-sector-51-noida': [DELUXE, SUPER_DELUXE, SUPER_DELUXE_BALCONY],
+  'hotel-downtown-sector-15-noida': [DELUXE, SUPERIOR],
+}
+
+const DEFAULT_ROOMS: RoomTemplate[] = [DELUXE, SUPERIOR, ROYAL]
+
+export const seedRoomTypes: RoomTypeRecord[] = seedProperties.flatMap((prop) =>
+  (ROOMS_BY_SLUG[prop.slug] ?? DEFAULT_ROOMS).map((t) => ({
+    ...t,
+    id: `room-${prop.id}-${t.slug}`,
     property_id: prop.id,
-    slug: 'deluxe-room',
-    name: 'Deluxe Room',
-    description: 'Calm, refined comfort designed for effortless rest. Features plush bedding and executive workspace.',
-    size_sqft: '240 sq ft',
-    bed_type: 'King / Twin Beds',
-    max_guests: 2,
-    price_offset: 0,
-    breakfast_offset: 300,
-    all_meals_offset: 800,
-    total_units: 5,
-    available_units: 5,
-    is_available: true,
-  },
-  {
-    id: `room-${prop.id}-superior`,
-    property_id: prop.id,
-    slug: 'superior-room',
-    name: 'Superior Room with Balcony',
-    description: 'Elevated space with private outdoor seating and expansive city views.',
-    size_sqft: '310 sq ft',
-    bed_type: 'King Bed + Balcony',
-    max_guests: 3,
-    price_offset: 400,
-    breakfast_offset: 350,
-    all_meals_offset: 900,
-    total_units: 3,
-    available_units: 3,
-    is_available: true,
-  },
-  {
-    id: `room-${prop.id}-royal`,
-    property_id: prop.id,
-    slug: 'royal-suite',
-    name: 'Royal Suite',
-    description: 'Our most luxurious sanctuary featuring separate master bedroom, private lounge and dining area.',
-    size_sqft: '450 sq ft',
-    bed_type: 'Master Suite + Living Room',
-    max_guests: 4,
-    price_offset: 1200,
-    breakfast_offset: 450,
-    all_meals_offset: 1200,
-    total_units: 2,
-    available_units: 2,
-    is_available: true,
-  },
-])
+  }))
+)

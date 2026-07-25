@@ -59,7 +59,7 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
   test('a full room type on one set of dates is still sellable on other dates', async () => {
     const base = {
       propertySlug: 'hotel-quadis-sector-51-noida',
-      roomTypeSlug: 'royal-suite', // total_units = 2
+      roomTypeSlug: 'super-deluxe-balcony', // total_units = 3
       guestsCount: 2,
       guestName: 'Date Isolation',
       guestPhone: '9876543210',
@@ -95,10 +95,10 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
   test('POST /api/bookings/initiate prevents double booking when room units are sold out', async () => {
     const payload = {
       propertySlug: 'hotel-quadis-sector-51-noida',
-      roomTypeSlug: 'royal-suite',
+      roomTypeSlug: 'super-deluxe-balcony',
       checkIn: '2026-11-12',
       checkOut: '2026-11-14',
-      roomsCount: 3, // Total units for Royal Suite is 2, so asking for 3 should fail
+      roomsCount: 4, // Super Deluxe with Balcony has 3 units, so asking for 4 must fail
       guestsCount: 4,
       guestName: 'Ananya Sharma',
       guestPhone: '9123456780',
@@ -107,13 +107,13 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
     const res = await request(app).post('/api/bookings/initiate').send(payload)
     expect(res.status).toBe(400)
     expect(res.body.success).toBe(false)
-    expect(res.body.error).toContain('Only 2 units available')
+    expect(res.body.error).toContain('Only 3 units available')
   })
 
   test('GET /api/bookings/:code retrieves booking correctly', async () => {
     const payload = {
       propertySlug: 'hotel-quadis-sector-51-noida',
-      roomTypeSlug: 'superior-room',
+      roomTypeSlug: 'super-deluxe',
       checkIn: '2026-12-01',
       checkOut: '2026-12-03',
       roomsCount: 1,
