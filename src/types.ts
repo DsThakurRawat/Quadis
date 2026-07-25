@@ -29,6 +29,7 @@ export interface Hotel {
   area: string
   city: City
   address: string
+  mapLink?: string
   price: number // INR per night
   rating: number // 0–5
   tier: QuadisTier
@@ -131,6 +132,7 @@ export interface PropertyRecord {
   name: string
   city: City
   address: string
+  map_link?: string
   phone: string
   whatsapp: string
   email: string

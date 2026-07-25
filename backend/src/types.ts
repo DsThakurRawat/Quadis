@@ -96,6 +96,7 @@ export interface PropertyRecord {
   name: string
   city: City
   address: string
+  map_link?: string
   phone: string
   whatsapp: string
   email: string
