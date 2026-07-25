@@ -135,6 +135,27 @@ export class DatabaseEngine {
   }
 
   /**
+   * A guest's own bookings. Matched by account id *or* email, so stays booked
+   * as a guest before signing up still appear once they register with the same
+   * address.
+   */
+  public async getBookingsForUser(userId: string, email: string): Promise<BookingRecord[]> {
+    const key = email.trim().toLowerCase()
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `SELECT * FROM bookings
+          WHERE user_id = $1 OR LOWER(guest_email) = $2
+          ORDER BY created_at DESC`,
+        [userId, key]
+      )
+      return res.rows
+    }
+    return Array.from(this.memoryBookings.values())
+      .filter((b) => b.user_id === userId || (b.guest_email || '').toLowerCase() === key)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }
+
+  /**
    * Units still sellable across every night of the stay — the tightest night
    * wins, since one full night blocks the whole range.
    */
@@ -204,6 +225,7 @@ export class DatabaseEngine {
     companyName?: string
     gstin?: string
     mealPlan?: MealPlan
+    userId?: string
   }): Promise<{ success: boolean; booking?: BookingRecord; error?: string }> {
     if (new Date(payload.checkOut).getTime() <= new Date(payload.checkIn).getTime()) {
       return { success: false, error: 'Check-out date must be strictly after check-in date' }
@@ -260,11 +282,12 @@ export class DatabaseEngine {
 
         const insertRes = await client.query(
           `INSERT INTO bookings (
-            booking_code, property_id, room_type_id, guest_name, guest_phone, guest_email, company_name, gstin,
+            booking_code, user_id, property_id, room_type_id, guest_name, guest_phone, guest_email, company_name, gstin,
             check_in, check_out, rooms_count, guests_count, total_amount, booking_status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'PENDING_PAYMENT', NOW()) RETURNING *`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDING_PAYMENT', NOW()) RETURNING *`,
           [
             bookingCode,
+            payload.userId || null,
             room.prop_id,
             room.id,
             payload.guestName,
@@ -334,6 +357,7 @@ export class DatabaseEngine {
     const bookingRecord: BookingRecord = {
       id: `booking-${Date.now()}-${randomSuffix}`,
       booking_code: bookingCode,
+      user_id: payload.userId ?? null,
       property_id: prop.id,
       room_type_id: room.id,
       guest_name: payload.guestName,

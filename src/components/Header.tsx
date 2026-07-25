@@ -3,6 +3,7 @@ import { NavLink, Link, useLocation } from 'react-router-dom'
 import { useHotels, BANQUETS } from '../data/hotels.ts'
 import { IconChevron } from './icons.tsx'
 import { Button } from './ui.tsx'
+import { useSession } from '../data/useSession.ts'
 
 interface MenuItem { label: string; to: string }
 const BANQUET_MENU: MenuItem[] = BANQUETS.map((b) => ({ label: b.name, to: `/banquets/${b.slug}` }))
@@ -70,6 +71,7 @@ export default function Header() {
   const [drawer, setDrawer] = useState(false)
   const [openMobile, setOpenMobile] = useState<string | null>(null)
   const loc = useLocation()
+  const { user } = useSession()
   
   const hotels = useHotels()
   const HOTEL_MENU = useMemo<MenuItem[]>(() => [
@@ -106,8 +108,14 @@ export default function Header() {
         </nav>
 
         <div className="nav__right">
-          <Button to="/register" variant="ghost" className="nav__register">Register</Button>
-          <Button to="/login" variant="gold" className="nav__login">Login</Button>
+          {user ? (
+            <Button to="/account" variant="gold" className="nav__login">{user.full_name.split(' ')[0]}</Button>
+          ) : (
+            <>
+              <Button to="/register" variant="ghost" className="nav__register">Register</Button>
+              <Button to="/login" variant="gold" className="nav__login">Login</Button>
+            </>
+          )}
         </div>
 
         <button
@@ -133,8 +141,14 @@ export default function Header() {
           <li><Link to="/contact" className="drawer__link">Contact</Link></li>
         </ul>
         <div className="drawer__actions">
-          <Button to="/register" variant="ghost">Register</Button>
-          <Button to="/login" variant="gold">Login</Button>
+          {user ? (
+            <Button to="/account" variant="gold">My account</Button>
+          ) : (
+            <>
+              <Button to="/register" variant="ghost">Register</Button>
+              <Button to="/login" variant="gold">Login</Button>
+            </>
+          )}
         </div>
       </div>
       {drawer && <button className="drawer__scrim" aria-label="Close menu" onClick={() => setDrawer(false)} />}

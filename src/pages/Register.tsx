@@ -1,12 +1,14 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { registerImages } from '../data/images.ts'
 import { Field, PasswordField, Button } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
 import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
 import { register } from '../data/auth.ts'
+import { refreshSession } from '../data/useSession.ts'
 import type { RegisterPayload } from '../types.ts'
 
 export default function Register() {
+  const nav = useNavigate()
   const bg = registerImages[0]
 
   const f = useForm<RegisterPayload>(
@@ -40,6 +42,8 @@ export default function Register() {
           ) : (
             <form className="auth__form" onSubmit={f.submit(async (v) => {
               await register({ fullName: v.fullName, email: v.email, phone: v.phone, password: v.password })
+              await refreshSession()
+              nav('/account')
             })} noValidate>
               <div className="auth__two">
                 <Field label="Full name" value={f.values.fullName} onChange={f.set('fullName')} error={f.errors.fullName} autoComplete="name" />

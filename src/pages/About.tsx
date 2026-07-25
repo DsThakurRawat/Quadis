@@ -18,8 +18,11 @@ const VALUES: Value[] = [
 ]
 
 export default function About() {
-  const heroImg = aboutBanner || aboutImages[0] || '/images/home/hero.jpg'
-  const faImg = aboutImages[1] ?? galleryFacade[0] ?? '/images/home/hero.jpg'
+  // The supplied banner is a wide 2149x732 strip — it reads as a band, not a
+  // hero, so it sits in the full-bleed section and the original photo stays on
+  // top (client brief, July 2026).
+  const heroImg = aboutImages[0] || '/images/home/hero.jpg'
+  const faImg = aboutBanner || aboutImages[1] || galleryFacade[0] || '/images/home/hero.jpg'
   const leadershipImg = aboutServiceLeadership || heroImg
   const welfareImg = aboutWelfare || heroImg
   const airlinesImg = aboutAirlines || heroImg

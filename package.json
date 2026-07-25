@@ -3,12 +3,14 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "description": "Quadis Hotels — premium-but-approachable frontend (Delhi NCR)",
+  "description": "Quadis Hotels \u2014 premium-but-approachable frontend (Delhi NCR)",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:all": "./scripts/dev.sh",
+    "dev:api": "./scripts/dev.sh api"
   },
   "dependencies": {
     "react": "^18.3.1",

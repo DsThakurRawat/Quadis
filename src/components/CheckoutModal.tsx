@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { BookingRecord, MealPlan } from '../types'
 import { inr } from '../data/hotels'
 import { getApiUrl } from '../config/api'
+import { getToken } from '../data/auth'
 
 
 interface CheckoutModalProps {
@@ -70,7 +71,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     try {
       const res = await fetch(getApiUrl('bookings/initiate'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Optional: links the stay to the guest's account when signed in.
+          ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+        },
         body: JSON.stringify({
           propertySlug,
           roomTypeSlug,

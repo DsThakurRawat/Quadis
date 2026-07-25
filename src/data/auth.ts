@@ -86,3 +86,31 @@ export async function currentUser(): Promise<AccountUser | null> {
     return null
   }
 }
+
+export interface AccountBooking {
+  booking_code: string
+  property_name: string
+  property_address: string
+  property_slug: string
+  room_type_name: string
+  check_in: string
+  check_out: string
+  rooms_count: number
+  guests_count: number
+  total_amount: number
+  booking_status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED'
+  payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+  created_at: string
+}
+
+export async function myBookings(): Promise<AccountBooking[]> {
+  const token = getToken()
+  if (!token) return []
+  const res = await fetch(getApiUrl('auth/bookings'), { headers: { Authorization: `Bearer ${token}` } })
+  if (!res.ok) {
+    if (res.status === 401) signOut()
+    throw new Error('Could not load your bookings')
+  }
+  const json = await res.json()
+  return json?.data ?? []
+}

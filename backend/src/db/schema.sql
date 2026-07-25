@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_code VARCHAR(16) UNIQUE NOT NULL,
+  -- Null for guest checkout; set when a signed-in guest books.
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   property_id VARCHAR(64) REFERENCES properties(id),
   room_type_id VARCHAR(64) REFERENCES room_types(id),
   guest_name VARCHAR(128) NOT NULL,

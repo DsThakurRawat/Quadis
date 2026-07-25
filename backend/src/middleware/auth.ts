@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { timingSafeEqual } from 'crypto'
+import { verifySession } from '../lib/auth'
 
 /**
  * Lives in its own module on purpose: routers need this guard, and app.ts needs
@@ -13,6 +14,20 @@ function tokensMatch(provided: string, expected: string): boolean {
   const b = Buffer.from(expected)
   if (a.length !== b.length) return false
   return timingSafeEqual(a, b)
+}
+
+/** Resolves a guest session, or 401s. Attaches `req.session`. */
+export const requireUser = (req: Request, res: Response, next: NextFunction) => {
+  const header = req.headers.authorization
+  if (!header?.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Not signed in' })
+  }
+  const session = verifySession(header.slice('Bearer '.length))
+  if (!session) {
+    return res.status(401).json({ success: false, error: 'Session expired' })
+  }
+  ;(req as any).session = session
+  next()
 }
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {

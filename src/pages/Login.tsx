@@ -1,12 +1,14 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { loginImages } from '../data/images.ts'
 import { Field, PasswordField, Button } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
 import { useForm, SuccessPanel, FormError, required } from '../components/forms.tsx'
 import { login } from '../data/auth.ts'
+import { refreshSession } from '../data/useSession.ts'
 import type { LoginPayload } from '../types.ts'
 
 export default function Login() {
+  const nav = useNavigate()
   // Own-property photo, never generic stock (§6.8). Dark placeholder until then.
   const bg = loginImages[0]
 
@@ -37,6 +39,8 @@ export default function Login() {
           ) : (
             <form className="auth__form" onSubmit={f.submit(async (v) => {
                 await login({ email: v.id, password: v.password })
+                await refreshSession()
+                nav('/account')
               })} noValidate>
               <Field label="Email or Username" value={f.values.id} onChange={f.set('id')} error={f.errors.id} autoComplete="username" />
               <PasswordField label="Password" value={f.values.password} onChange={f.set('password')} error={f.errors.password} autoComplete="current-password" />

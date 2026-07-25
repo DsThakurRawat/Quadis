@@ -13,6 +13,7 @@ import Restaurant from './pages/Restaurant.tsx'
 import CateringDetail from './pages/CateringDetail.tsx'
 import Contact from './pages/Contact.tsx'
 import Login from './pages/Login.tsx'
+import Account from './pages/Account.tsx'
 import Register from './pages/Register.tsx'
 import NotFound from './pages/NotFound.tsx'
 import AdminDashboard from './pages/AdminDashboard.tsx'
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/restaurant/outdoor-catering-service" element={<CateringDetail />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<NotFound />} />
       </Route>

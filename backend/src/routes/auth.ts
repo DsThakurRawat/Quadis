@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import { z } from 'zod'
 import { db } from '../db'
 import { hashPassword, verifyPassword, signSession, verifySession } from '../lib/auth'
+import { requireUser } from '../middleware/auth'
 import type { PublicUser, UserRecord } from '../types'
 
 export const authRouter = Router()
@@ -112,4 +113,35 @@ authRouter.get('/me', async (req: Request, res: Response) => {
   }
 
   res.json({ success: true, data: toPublic(user) })
+})
+
+// GET /api/auth/bookings — the signed-in guest's own stays
+authRouter.get('/bookings', requireUser, async (req: Request, res: Response) => {
+  try {
+    const session = (req as any).session as { sub: string; email: string }
+    const bookings = await db.getBookingsForUser(session.sub, session.email)
+
+    // Join in the names a guest actually recognises — a property id is useless
+    // on a "My bookings" page.
+    const enriched = await Promise.all(
+      bookings.map(async (b) => {
+        const [prop, room] = await Promise.all([
+          db.getPropertyById(b.property_id),
+          db.getRoomTypeById(b.room_type_id),
+        ])
+        return {
+          ...b,
+          property_name: prop?.name ?? 'Quadis Hotel',
+          property_address: prop?.address ?? '',
+          property_slug: prop?.slug ?? '',
+          room_type_name: room?.name ?? '',
+        }
+      })
+    )
+
+    res.json({ success: true, count: enriched.length, data: enriched })
+  } catch (err: any) {
+    console.error('Failed to load bookings:', err)
+    res.status(500).json({ success: false, error: 'Could not load your bookings' })
+  }
 })

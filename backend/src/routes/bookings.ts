@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { z } from 'zod'
 import { db } from '../db'
+import { verifySession } from '../lib/auth'
 import { invoiceService } from '../services/InvoiceService'
 
 export const bookingsRouter = Router()
@@ -43,7 +44,13 @@ bookingsRouter.post('/initiate', async (req: Request, res: Response) => {
     }
 
     const payload = validation.data
-    const result = await db.initiateBookingHold(payload)
+
+    // Optional: if the guest is signed in, tie the stay to their account so it
+    // shows under "My bookings". Anonymous checkout stays supported.
+    const header = req.headers.authorization
+    const session = header?.startsWith('Bearer ') ? verifySession(header.slice('Bearer '.length)) : null
+
+    const result = await db.initiateBookingHold({ ...payload, userId: session?.sub })
     if (!result.success || !result.booking) {
       return res.status(400).json({ success: false, error: result.error || 'Failed to initiate booking hold' })
     }

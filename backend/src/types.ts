@@ -150,6 +150,8 @@ export interface RoomTypeRecord {
 export interface BookingRecord {
   id: string
   booking_code: string
+  /** Null for guest checkout. */
+  user_id?: string | null
   property_id: string
   room_type_id: string
   guest_name: string
