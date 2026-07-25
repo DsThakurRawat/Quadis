@@ -10,6 +10,7 @@ import { webhooksRouter } from './routes/webhooks'
 import { enquiriesRouter } from './routes/enquiries'
 import { adminRouter, adminAuthRouter } from './routes/admin'
 import { aiRouter } from './routes/ai'
+import { authRouter } from './routes/auth'
 import { requireAdmin } from './middleware/auth'
 
 // Re-exported for existing importers; the implementation lives in middleware/auth
@@ -72,6 +73,8 @@ export function createApp(): Express {
     message: { success: false, error: 'Too many sign-in attempts. Try again later.' },
   })
   app.use('/api/admin/auth', authLimiter)
+  // Guest sign-in is equally brute-forceable; registration equally spammable.
+  app.use('/api/auth', authLimiter)
 
   // Health check endpoint
   app.get('/api/health', (_req: Request, res: Response) => {
@@ -84,6 +87,7 @@ export function createApp(): Express {
   app.use('/api/payments', paymentsRouter)
   app.use('/api/webhooks', webhooksRouter)
   app.use('/api/enquiries', enquiriesRouter)
+  app.use('/api/auth', authRouter)
   
   // Sign-in must be reachable without a token; everything else is guarded.
   app.use('/api/admin', adminAuthRouter)

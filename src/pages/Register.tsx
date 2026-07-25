@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { registerImages } from '../data/images.ts'
 import { Field, PasswordField, Button } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
-import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
+import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
+import { register } from '../data/auth.ts'
 import type { RegisterPayload } from '../types.ts'
 
 export default function Register() {
@@ -16,7 +17,7 @@ export default function Register() {
       if (!required(v.username)) e.username = 'Choose a username'
       if (!isEmail(v.email)) e.email = 'Enter a valid email'
       if (!isPhone(v.phone)) e.phone = 'Enter a valid 10-digit phone'
-      if (!v.password || v.password.length < 6) e.password = 'Minimum 6 characters'
+      if (!v.password || v.password.length < 8) e.password = 'Minimum 8 characters'
       if (!v.terms) e.terms = 'Please accept the terms to continue'
       return e
     }
@@ -37,7 +38,9 @@ export default function Register() {
           {f.done ? (
             <SuccessPanel title="Account created">Welcome to Quadis. You can now sign in and start planning your stay.</SuccessPanel>
           ) : (
-            <form className="auth__form" onSubmit={f.submit()} noValidate>
+            <form className="auth__form" onSubmit={f.submit(async (v) => {
+              await register({ fullName: v.fullName, email: v.email, phone: v.phone, password: v.password })
+            })} noValidate>
               <div className="auth__two">
                 <Field label="Full name" value={f.values.fullName} onChange={f.set('fullName')} error={f.errors.fullName} autoComplete="name" />
                 <Field label="Username" value={f.values.username} onChange={f.set('username')} error={f.errors.username} autoComplete="username" />
@@ -51,6 +54,7 @@ export default function Register() {
                 <span>I agree to the <Link to="#">Terms</Link> &amp; <Link to="#">Privacy Policy</Link></span>
               </label>
               {f.errors.terms && <span className="field__error" role="alert">{f.errors.terms}</span>}
+              <FormError message={f.submitError} />
               <Button as="button" type="submit" variant="primary" className="auth__submit" disabled={f.pending}>
                 {f.pending ? 'Creating…' : 'CREATE FREE ACCOUNT'}
               </Button>

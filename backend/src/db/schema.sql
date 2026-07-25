@@ -41,6 +41,16 @@ CREATE TABLE IF NOT EXISTS room_types (
   CONSTRAINT check_available_positive CHECK (available_units >= 0 AND available_units <= total_units)
 );
 
+-- Guest accounts. password_hash holds a salted scrypt digest, never plaintext.
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name VARCHAR(128) NOT NULL,
+  email VARCHAR(190) UNIQUE NOT NULL,
+  phone VARCHAR(20),
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_code VARCHAR(16) UNIQUE NOT NULL,

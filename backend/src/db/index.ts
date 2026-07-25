@@ -1,5 +1,5 @@
 import { Pool } from 'pg'
-import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan } from '../types'
+import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan, UserRecord } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
 import { computeStayTotal, mealOffsetFor } from '../lib/pricing'
 import { nightsBetween, todayIso } from '../lib/nights'
@@ -17,6 +17,7 @@ export class DatabaseEngine {
   public memoryBookings: Map<string, BookingRecord> = new Map()
   public memoryEnquiries: Map<string, EnquiryRecord> = new Map()
   public memoryChatLogs: Map<string, ChatLogRecord> = new Map()
+  public memoryUsers: Map<string, UserRecord> = new Map()
   /** Night-level holds: `${roomTypeId}|${YYYY-MM-DD}` → [{ bookingId, units }]. */
   public memoryNightHolds: Map<string, Array<{ bookingId: string; units: number }>> = new Map()
 
@@ -38,6 +39,7 @@ export class DatabaseEngine {
     this.memoryEnquiries.clear()
     this.memoryChatLogs.clear()
     this.memoryNightHolds.clear()
+    this.memoryUsers.clear()
 
     seedProperties.forEach((p) => {
       this.memoryProperties.set(p.id, { ...p })
@@ -85,6 +87,51 @@ export class DatabaseEngine {
       .filter((r) => r.property_id === prop.id)
       .map((r) => this.withTonightAvailability(r))
     return { property: prop, roomTypes: rooms }
+  }
+
+  /** Lookup is case-insensitive: nobody expects Bob@x.com to be a second account. */
+  public async getUserByEmail(email: string): Promise<UserRecord | null> {
+    const key = email.trim().toLowerCase()
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('SELECT * FROM users WHERE LOWER(email) = $1', [key])
+      return res.rows[0] || null
+    }
+    return Array.from(this.memoryUsers.values()).find((u) => u.email.toLowerCase() === key) || null
+  }
+
+  public async getUserById(id: string): Promise<UserRecord | null> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('SELECT * FROM users WHERE id = $1', [id])
+      return res.rows[0] || null
+    }
+    return this.memoryUsers.get(id) || null
+  }
+
+  public async createUser(payload: {
+    fullName: string
+    email: string
+    phone?: string
+    passwordHash: string
+  }): Promise<UserRecord> {
+    const email = payload.email.trim().toLowerCase()
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `INSERT INTO users (full_name, email, phone, password_hash)
+         VALUES ($1, $2, $3, $4) RETURNING *`,
+        [payload.fullName, email, payload.phone || null, payload.passwordHash]
+      )
+      return res.rows[0]
+    }
+    const user: UserRecord = {
+      id: `user-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      full_name: payload.fullName,
+      email,
+      phone: payload.phone,
+      password_hash: payload.passwordHash,
+      created_at: new Date(),
+    }
+    this.memoryUsers.set(user.id, user)
+    return user
   }
 
   /**

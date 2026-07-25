@@ -1,0 +1,88 @@
+import { getApiUrl } from '../config/api'
+
+/**
+ * Guest accounts. Until this existed, Login and Register validated their
+ * fields, showed "success" and created nothing at all.
+ */
+
+export interface AccountUser {
+  id: string
+  full_name: string
+  email: string
+  phone?: string
+}
+
+const TOKEN_KEY = 'quadis_session'
+
+export const getToken = (): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null // private mode / storage disabled
+  }
+}
+
+const setToken = (t: string) => {
+  try {
+    localStorage.setItem(TOKEN_KEY, t)
+  } catch {
+    // Storage unavailable — the session lasts this page view only.
+  }
+}
+
+export const signOut = () => {
+  try {
+    localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    /* nothing to clear */
+  }
+}
+
+/** Surfaces the server's own field message rather than a generic failure. */
+async function post(path: string, body: unknown): Promise<{ token: string; user: AccountUser }> {
+  let res: Response
+  try {
+    res = await fetch(getApiUrl(path), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new Error("We couldn't reach our servers. Please check your connection and try again.")
+  }
+
+  const json = await res.json().catch(() => null)
+  if (!res.ok || !json?.success) {
+    const fieldErrors = json?.details ? Object.values(json.details).flat().filter(Boolean) : []
+    throw new Error((fieldErrors[0] as string) || json?.error || `Request failed (${res.status})`)
+  }
+
+  setToken(json.token)
+  return { token: json.token, user: json.data }
+}
+
+export const register = (input: {
+  fullName: string
+  email: string
+  phone?: string
+  password: string
+}) => post('auth/register', input)
+
+export const login = (input: { email: string; password: string }) => post('auth/login', input)
+
+/** Resolves the signed-in user, or null if the session is missing or expired. */
+export async function currentUser(): Promise<AccountUser | null> {
+  const token = getToken()
+  if (!token) return null
+  try {
+    const res = await fetch(getApiUrl('auth/me'), { headers: { Authorization: `Bearer ${token}` } })
+    if (!res.ok) {
+      signOut() // expired or revoked — don't keep a dead token around
+      return null
+    }
+    const json = await res.json()
+    return json?.data ?? null
+  } catch {
+    return null
+  }
+}

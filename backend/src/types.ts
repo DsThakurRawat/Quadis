@@ -112,6 +112,24 @@ export interface PropertyRecord {
   tier_label?: string
 }
 
+export interface UserRecord {
+  id: string
+  full_name: string
+  email: string
+  phone?: string
+  /** Salted scrypt digest. Never serialise this to a client. */
+  password_hash: string
+  created_at: Date | string
+}
+
+/** A user as the API is allowed to return it. */
+export interface PublicUser {
+  id: string
+  full_name: string
+  email: string
+  phone?: string
+}
+
 export interface RoomTypeRecord {
   id: string
   property_id: string

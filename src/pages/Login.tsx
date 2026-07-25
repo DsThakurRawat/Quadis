@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { loginImages } from '../data/images.ts'
 import { Field, PasswordField, Button } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
-import { useForm, SuccessPanel, required } from '../components/forms.tsx'
+import { useForm, SuccessPanel, FormError, required } from '../components/forms.tsx'
+import { login } from '../data/auth.ts'
 import type { LoginPayload } from '../types.ts'
 
 export default function Login() {
@@ -34,7 +35,9 @@ export default function Login() {
           {f.done ? (
             <SuccessPanel title="Signed in">You're logged in. Enjoy your stay planning with Quadis.</SuccessPanel>
           ) : (
-            <form className="auth__form" onSubmit={f.submit()} noValidate>
+            <form className="auth__form" onSubmit={f.submit(async (v) => {
+                await login({ email: v.id, password: v.password })
+              })} noValidate>
               <Field label="Email or Username" value={f.values.id} onChange={f.set('id')} error={f.errors.id} autoComplete="username" />
               <PasswordField label="Password" value={f.values.password} onChange={f.set('password')} error={f.errors.password} autoComplete="current-password" />
               <div className="auth__row">
@@ -43,6 +46,7 @@ export default function Login() {
                 </label>
                 <Link to="/login" className="auth__link">Forgot password?</Link>
               </div>
+              <FormError message={f.submitError} />
               <Button as="button" type="submit" variant="primary" className="auth__submit" disabled={f.pending}>
                 {f.pending ? 'Signing in…' : 'LOGIN TO ACCOUNT'}
               </Button>
