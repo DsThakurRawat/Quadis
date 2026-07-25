@@ -100,7 +100,7 @@ export default function HotelDetail() {
               <h1 className="h2 detail-head__name">{hotel.name}</h1>
               <p className="detail-head__addr">
                 <IconPin /> <span>{hotel.address}</span>
-                <a className="map-link" href={`https://maps.google.com/?q=${mapQuery}`} target="_blank" rel="noreferrer">View on map</a>
+                <a className="map-link ext" href={`https://maps.google.com/?q=${mapQuery}`} target="_blank" rel="noopener noreferrer">View on map</a>
               </p>
             </div>
             <div className="detail-head__meta">

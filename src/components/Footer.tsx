@@ -55,10 +55,10 @@ export default function Footer() {
 
       <div className="container footer__bottom">
         <div className="footer__social" aria-label="Social links">
-          <a href="https://facebook.com" aria-label="Facebook" target="_blank" rel="noreferrer"><IconFacebook /></a>
-          <a href="https://x.com" aria-label="X" target="_blank" rel="noreferrer"><IconX /></a>
-          <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noreferrer"><IconInstagram /></a>
-          <a href="https://linkedin.com" aria-label="LinkedIn" target="_blank" rel="noreferrer"><IconLinkedin /></a>
+          <a href="https://facebook.com" aria-label="Facebook" target="_blank" rel="noopener noreferrer"><IconFacebook /></a>
+          <a href="https://x.com" aria-label="X" target="_blank" rel="noopener noreferrer"><IconX /></a>
+          <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noopener noreferrer"><IconInstagram /></a>
+          <a href="https://linkedin.com" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer"><IconLinkedin /></a>
         </div>
         <p className="footer__copy">© {FOUNDED_YEAR}–{new Date().getFullYear()} Quadis Services Private Limited. All Rights Reserved.</p>
       </div>

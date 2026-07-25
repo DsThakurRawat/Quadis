@@ -125,21 +125,37 @@ export function useHotels(): Hotel[] {
         .then(res => res.json())
         .then(json => {
           if (json.success && Array.isArray(json.data)) {
-            cachedHotels = json.data.map((h: any) => ({
-              slug: h.slug,
-              name: h.name,
-              area: h.name.includes('Sector') ? `Sector ${h.name.split('Sector ')[1]}` : h.name.split(' ').slice(-2).join(' '),
-              city: h.city as City,
-              address: h.address,
-              coords: h.lat != null && h.lng != null
-                ? { lat: Number(h.lat), lng: Number(h.lng), placeId: h.place_id ?? undefined }
-                : undefined,
-              price: h.base_price,
-              weekendSurchargePercent: h.weekend_surcharge_percent,
-              rating: h.rating,
-              tier: h.tier || 'central',
-              tierLabel: h.tier_label || 'Quadis Central'
-            }))
+            // Merge over the static record rather than replacing it. The API is
+            // authoritative for operational data (price, surcharge, tier), but
+            // editorial content — transit facts, hand-written area labels — only
+            // lives here. Replacing outright silently blanked the "Getting here"
+            // panel the moment the API responded.
+            const staticBySlug = new Map(STATIC_HOTELS.map((s) => [s.slug, s]))
+
+            cachedHotels = json.data.map((h: any): Hotel => {
+              const base = staticBySlug.get(h.slug)
+              const derivedArea = h.name.includes('Sector')
+                ? `Sector ${h.name.split('Sector ')[1]}`
+                : h.name.split(' ').slice(-2).join(' ')
+
+              return {
+                ...base,
+                slug: h.slug,
+                name: h.name,
+                area: base?.area ?? derivedArea,
+                city: h.city as City,
+                address: h.address,
+                coords:
+                  h.lat != null && h.lng != null
+                    ? { lat: Number(h.lat), lng: Number(h.lng), placeId: h.place_id ?? undefined }
+                    : base?.coords,
+                price: h.base_price,
+                weekendSurchargePercent: h.weekend_surcharge_percent,
+                rating: h.rating,
+                tier: h.tier || 'central',
+                tierLabel: h.tier_label || 'Quadis Central',
+              }
+            })
             listeners.forEach(l => l())
           }
         })

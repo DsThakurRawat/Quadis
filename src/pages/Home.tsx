@@ -73,7 +73,7 @@ export default function Home() {
             <h2 className="h2 on-dark stay-promise__title">
               Great <span className="script gold-text" style={{ fontSize: '1.2em' }}>sleep.</span> Refreshing <span className="script gold-text" style={{ fontSize: '1.2em' }}>showers.</span>
             </h2>
-            <p className="lead stay-promise__sub">Hassle free stay, else we pay. <a href="#" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>Know more.</a></p>
+            <p className="lead stay-promise__sub">Hassle free stay, else we pay. <a href="#promise">Know more.</a></p>
             
             <div className="stay-promise__icons">
               <div className="stay-promise__icon-item">

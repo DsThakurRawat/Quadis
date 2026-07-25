@@ -32,8 +32,16 @@
 
   /* Derived / utility (still spec colors) */
   --scrim: linear-gradient(rgba(20,19,16,.35), rgba(20,19,16,.65));
-  --error: #b0563c;
   --whatsapp: #25d366;
+
+  /* Semantic states. Success uses the approved olive alternate rather than a
+     stock green, so a confirmed booking still reads as Quadis. */
+  --error:      #b0563c;
+  --error-bg:   rgba(176,86,60,.08);
+  --success:    #5c7048;
+  --success-bg: rgba(122,138,92,.14);
+  --warning:    #a07d3d;
+  --warning-bg: rgba(200,162,74,.14);
 
   /* Type families */
   --font-display: 'Marcellus', Georgia, serif;
@@ -46,11 +54,38 @@
 
   --maxw: 1440px;
   --pad-x: 56px;
-  --radius: 8px;
 
-  --shadow-card:  0 12px 32px rgba(33,31,27,.10);
-  --shadow-bar:   0 24px 48px rgba(20,19,16,.18);
+  /* Radius scale. Cards sit at --radius; anything larger reads as a different
+     product. --radius-pill is for chips and filter pills only. */
+  --radius-sm:   4px;
+  --radius:      8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-pill: 999px;
+
+  /* Elevation. Warm-tinted rather than neutral grey, so shadows sit in the
+     cream palette instead of greying it. */
+  --shadow-sm:    0 2px 8px rgba(33,31,27,.06);
+  --shadow-md:    0 12px 32px rgba(33,31,27,.10);
+  --shadow-lg:    0 24px 48px rgba(20,19,16,.18);
+  --shadow-card:  var(--shadow-md);
+  --shadow-bar:   var(--shadow-lg);
   --ring-gold:    0 0 0 3px rgba(200,162,74,.25);
+
+  /* Surfaces — the white a card sits on, and its dark-band counterpart. */
+  --surface:       #ffffff;
+  --surface-dark:  #232119;
+
+  /* Aliases used across components. Kept here so there is still exactly one
+     place that defines a colour. */
+  --primary:      var(--gold-deep);
+  --text-dark:    var(--text-primary);
+  --border-light: #f0e9db;
+  --font-sans:    var(--font-body);
+
+  /* Link policy — see .prose a in global.css. */
+  --link:       var(--gold-deep);
+  --link-hover: var(--gold);
 }
 
 @media (max-width: 768px) {

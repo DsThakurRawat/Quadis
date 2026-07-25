@@ -18,7 +18,45 @@ body {
   overflow-x: hidden;
 }
 img, picture, svg, video { display: block; max-width: 100%; }
+/* Links inherit by default so nav, cards and buttons stay untouched — but a
+   link sitting in prose must look like a link. Previously `color: inherit` was
+   the ONLY link rule, so every inline link was invisible until hover and got
+   patched with a one-off inline style. */
 a { color: inherit; text-decoration: none; }
+
+.prose a,
+.prose__p a,
+.intro__body a,
+p a:not([class]) {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .15em;
+  transition: color .16s ease;
+}
+.prose a:hover,
+.prose__p a:hover,
+.intro__body a:hover,
+p a:not([class]):hover { color: var(--link-hover); }
+
+.bg-dark .prose a, .bg-darkest .prose a,
+.bg-dark p a:not([class]), .bg-darkest p a:not([class]) { color: var(--gold); }
+
+/* The active page must be distinguishable, not just hoverable. */
+.nav__link[aria-current='page'] { color: var(--gold-deep); }
+.bg-dark .nav__link[aria-current='page'] { color: var(--gold); }
+
+/* External links carry a visible glyph so a new tab is never a surprise. */
+a[target='_blank'].ext::after {
+  content: '↗';
+  display: inline-block;
+  margin-left: .3em;
+  font-size: .85em;
+  line-height: 1;
+}
+
+/* tel: and mailto: must be comfortably tappable on a phone. */
+a[href^='tel:'], a[href^='mailto:'] { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 ul { list-style: none; padding: 0; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -38,7 +76,6 @@ ul { list-style: none; padding: 0; }
 .bg-warm    { background: var(--bg-warm); }
 .bg-dark    { background: var(--bg-dark);    color: var(--text-on-dark); }
 .bg-darkest { background: var(--bg-darkest); color: var(--text-on-dark); }
-.bg-blue    { background: #1a56b8; color: white; border-radius: 12px; margin: 0 var(--pad-x); }
 
 /* ---------- type ---------- */
 h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; }

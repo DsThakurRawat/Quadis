@@ -119,7 +119,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setStep('CONFIRMED')
         if (onSuccess) onSuccess(booking.booking_code)
       } else {
-        setError('❌ Payment transaction failed or declined. Room hold has been released back to inventory.')
+        setError('Payment transaction failed or declined. Room hold has been released back to inventory.')
       }
     } catch (err: any) {
       setError(err.message || 'Payment simulation error')
@@ -151,7 +151,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <div style={styles.summaryBar}>
           <div style={styles.datesBox}>
             <span style={styles.datesLabel}>Check-In / Out ({nights} Night{nights > 1 ? 's' : ''})</span>
-            <strong style={styles.datesText}>{checkIn} ➔ {checkOut}</strong>
+            <strong style={styles.datesText}>{checkIn} → {checkOut}</strong>
           </div>
           <div style={styles.totalBox}>
             <span style={styles.totalLabel}>Total Payable (Incl. {gstRatePercent}% GST)</span>
@@ -207,7 +207,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   checked={showCorporate}
                   onChange={(e) => setShowCorporate(e.target.checked)}
                 />
-                <span>🏢 Add Company GSTIN for Corporate Tax Invoice (SAC 996311)</span>
+                <span>Add Company GSTIN for Corporate Tax Invoice (SAC 996311)</span>
               </label>
             </div>
 
@@ -238,13 +238,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
             {/* GST Slab note */}
             <div style={styles.gstInfo}>
-              <span style={{ fontSize: 13, color: '#4B5563' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-muted-2)' }}>
                 ℹ️ SAC Code 996311: Base Tariff ₹{taxableBase.toLocaleString('en-IN')} + {gstRatePercent}% GST (₹{gstAmount.toLocaleString('en-IN')}) = <strong>{inr(totalAmount)}</strong>
               </span>
             </div>
 
             <button type="submit" disabled={loading} style={styles.ctaBtn}>
-              {loading ? 'Securing 15-Min Soft Hold...' : 'Proceed to Payment ➔'}
+              {loading ? 'Securing 15-Min Soft Hold...' : 'Proceed to Payment'}
             </button>
           </form>
         )}
@@ -253,11 +253,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {step === 'PAYMENT' && booking && (
           <div style={styles.body}>
             <div style={styles.holdBanner}>
-              🔒 <strong>15-Minute Soft Hold Active!</strong> Booking Code: <code style={styles.code}>{booking.booking_code}</code>
+              <strong>15-minute hold active.</strong> Booking Code: <code style={styles.code}>{booking.booking_code}</code>
             </div>
 
             <div style={styles.sectionTitle}>2. Choose Payment Option</div>
-            <p style={{ color: '#4B5563', fontSize: 14, marginBottom: 16 }}>
+            <p style={{ color: 'var(--text-muted-2)', fontSize: 14, marginBottom: 16 }}>
               You are paying <strong>{inr(totalAmount)}</strong> to confirm room category <strong>{roomTypeName}</strong>.
             </p>
 
@@ -279,7 +279,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 disabled={loading}
                 style={styles.failDemoBtn}
               >
-                ⚠️ Simulate Payment Failure / Decline (Releases Hold)
+                Simulate payment failure (releases hold)
               </button>
             </div>
           </div>
@@ -289,7 +289,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {step === 'CONFIRMED' && booking && (
           <div style={styles.body}>
             <div style={styles.successHeader}>
-              <div style={styles.successIcon}>🎉</div>
+              <div style={styles.successIcon}>✓</div>
               <h4 style={styles.successTitle}>Reservation Confirmed & Paid!</h4>
               <p style={styles.successSubtitle}>Booking Code: <strong>{booking.booking_code}</strong></p>
             </div>
@@ -298,18 +298,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div style={styles.ticketRow}><span>Guest Name:</span> <strong>{booking.guest_name}</strong></div>
               <div style={styles.ticketRow}><span>WhatsApp Number:</span> <strong>+91 {booking.guest_phone}</strong></div>
               <div style={styles.ticketRow}><span>Property:</span> <strong>{propertyName}</strong></div>
-              <div style={styles.ticketRow}><span>Dates:</span> <strong>{booking.check_in} ➔ {booking.check_out}</strong></div>
+              <div style={styles.ticketRow}><span>Dates:</span> <strong>{booking.check_in} → {booking.check_out}</strong></div>
               <div style={styles.ticketRow}><span>Payment ID:</span> <strong>{booking.razorpay_payment_id || 'ONLINE_INSTANT'}</strong></div>
               <div style={styles.ticketRow}><span>Amount Paid:</span> <strong>{inr(booking.total_amount)} ({gstRatePercent}% GST)</strong></div>
             </div>
 
             <div style={styles.whatsAppBadge}>
-              ✅ Instant WhatsApp Confirmation Receipt dispatched to +91 {booking.guest_phone}!
+              WhatsApp confirmation sent to +91 {booking.guest_phone}!
             </div>
 
             <div style={styles.confirmButtons}>
               <button onClick={handleDownloadInvoice} style={styles.invoiceBtn}>
-                📄 Download SAC 996311 GST Invoice (PDF)
+                Download GST invoice (SAC 996311)
               </button>
               <button onClick={onClose} style={styles.returnBtn}>
                 Done & Return
@@ -398,22 +398,22 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 16,
   },
   modal: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'var(--surface)',
     borderRadius: 16,
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     width: '100%',
     maxWidth: 600,
     maxHeight: '90vh',
     overflowY: 'auto',
-    border: '1px solid #E5E7EB',
+    border: '1px solid var(--border-card)',
   },
   header: {
     padding: '20px 24px',
-    borderBottom: '1px solid #E5E7EB',
+    borderBottom: '1px solid var(--border-card)',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: 'var(--bg-cream)',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
@@ -422,8 +422,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    backgroundColor: '#FEF3C7',
-    color: '#D97706',
+    backgroundColor: 'var(--warning-bg)',
+    color: 'var(--warning)',
     padding: '3px 8px',
     borderRadius: 9999,
     display: 'inline-block',
@@ -433,25 +433,25 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: 20,
     fontWeight: 700,
-    color: '#111827',
+    color: 'var(--text-primary)',
   },
   subtitle: {
     margin: '4px 0 0 0',
     fontSize: 14,
-    color: '#6B7280',
+    color: 'var(--text-muted)',
   },
   closeBtn: {
     background: 'transparent',
     border: 'none',
     fontSize: 24,
-    color: '#9CA3AF',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     padding: 4,
     lineHeight: 1,
   },
   summaryBar: {
-    backgroundColor: '#111827',
-    color: '#FFFFFF',
+    backgroundColor: 'var(--text-primary)',
+    color: 'var(--surface)',
     padding: '16px 24px',
     display: 'flex',
     justifyContent: 'space-between',
@@ -465,11 +465,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   datesLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: 'var(--text-muted)',
   },
   datesText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: 'var(--surface)',
   },
   totalBox: {
     display: 'flex',
@@ -478,11 +478,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   totalLabel: {
     fontSize: 11,
-    color: '#D1D5DB',
+    color: 'var(--border-card-2)',
   },
   totalAmount: {
     fontSize: 18,
-    color: '#F3F4F6',
+    color: 'var(--bg-warm)',
     fontWeight: 700,
   },
   body: {
@@ -491,7 +491,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionTitle: {
     fontSize: 16,
     fontWeight: 600,
-    color: '#111827',
+    color: 'var(--text-primary)',
     marginBottom: 16,
   },
   formGrid: {
@@ -505,14 +505,14 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     fontSize: 13,
     fontWeight: 500,
-    color: '#374151',
+    color: 'var(--text-body)',
     gap: 6,
     marginBottom: 16,
   },
   input: {
     padding: '10px 12px',
     borderRadius: 8,
-    border: '1px solid #D1D5DB',
+    border: '1px solid var(--border-card-2)',
     fontSize: 14,
     outline: 'none',
     width: '100%',
@@ -527,21 +527,21 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     fontSize: 13,
     fontWeight: 500,
-    color: '#1E3A8A',
+    color: 'var(--gold-deepest)',
     cursor: 'pointer',
   },
   gstInfo: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'var(--bg-warm)',
     padding: '10px 14px',
     borderRadius: 8,
     marginBottom: 20,
-    borderLeft: '4px solid #3B82F6',
+    borderLeft: '4px solid var(--gold)',
   },
   ctaBtn: {
     width: '100%',
     padding: '14px 20px',
-    backgroundColor: '#111827',
-    color: '#FFFFFF',
+    backgroundColor: 'var(--text-primary)',
+    color: 'var(--surface)',
     border: 'none',
     borderRadius: 8,
     fontSize: 15,
@@ -550,9 +550,9 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'background-color 0.2s',
   },
   holdBanner: {
-    backgroundColor: '#ECFDF5',
-    border: '1px solid #A7F3D0',
-    color: '#065F46',
+    backgroundColor: 'var(--success-bg)',
+    border: '1px solid var(--success-bg)',
+    color: 'var(--success)',
     padding: '12px 16px',
     borderRadius: 8,
     fontSize: 14,
@@ -560,7 +560,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   code: {
     fontWeight: 700,
-    backgroundColor: '#D1FAE5',
+    backgroundColor: 'var(--success-bg)',
     padding: '2px 6px',
     borderRadius: 4,
   },
@@ -571,8 +571,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   payOnlineBtn: {
     padding: '16px',
-    backgroundColor: '#059669',
-    color: '#FFFFFF',
+    backgroundColor: 'var(--success)',
+    color: 'var(--surface)',
     border: 'none',
     borderRadius: 8,
     fontSize: 16,
@@ -582,15 +582,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   demoDivider: {
     textAlign: 'center',
-    color: '#9CA3AF',
+    color: 'var(--text-muted)',
     fontSize: 12,
     margin: '8px 0',
   },
   failDemoBtn: {
     padding: '12px',
-    backgroundColor: '#FEF2F2',
-    color: '#DC2626',
-    border: '1px solid #FECACA',
+    backgroundColor: 'var(--error-bg)',
+    color: 'var(--error)',
+    border: '1px solid var(--error-bg)',
     borderRadius: 8,
     fontSize: 13,
     fontWeight: 600,
@@ -608,16 +608,16 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: 22,
     fontWeight: 700,
-    color: '#065F46',
+    color: 'var(--success)',
   },
   successSubtitle: {
     margin: '4px 0 0 0',
-    color: '#4B5563',
+    color: 'var(--text-muted-2)',
     fontSize: 15,
   },
   ticketBox: {
-    backgroundColor: '#F9FAFB',
-    border: '1px solid #E5E7EB',
+    backgroundColor: 'var(--bg-cream)',
+    border: '1px solid var(--border-card)',
     borderRadius: 12,
     padding: 16,
     display: 'flex',
@@ -629,11 +629,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: 14,
-    color: '#374151',
+    color: 'var(--text-body)',
   },
   whatsAppBadge: {
-    backgroundColor: '#DCFCE7',
-    color: '#166534',
+    backgroundColor: 'var(--success-bg)',
+    color: 'var(--success)',
     padding: '10px 14px',
     borderRadius: 8,
     fontSize: 13,
@@ -648,8 +648,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   invoiceBtn: {
     padding: '14px',
-    backgroundColor: '#1E3A8A',
-    color: '#FFFFFF',
+    backgroundColor: 'var(--gold-deepest)',
+    color: 'var(--surface)',
     border: 'none',
     borderRadius: 8,
     fontSize: 15,
@@ -659,8 +659,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   returnBtn: {
     padding: '12px',
-    backgroundColor: '#F3F4F6',
-    color: '#374151',
+    backgroundColor: 'var(--bg-warm)',
+    color: 'var(--text-body)',
     border: 'none',
     borderRadius: 8,
     fontSize: 14,
@@ -668,9 +668,9 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   errorAlert: {
-    backgroundColor: '#FEF2F2',
-    borderBottom: '1px solid #FECACA',
-    color: '#B91C1C',
+    backgroundColor: 'var(--error-bg)',
+    borderBottom: '1px solid var(--error-bg)',
+    color: 'var(--error)',
     padding: '12px 24px',
     fontSize: 13,
     fontWeight: 500,

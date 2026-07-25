@@ -359,7 +359,7 @@ export default function AdminDashboard() {
             <div style={{ marginTop: '1.25rem', padding: '1rem', background: '#047857', borderRadius: '8px', color: '#fff' }}>
               <strong style={{ display: 'block', marginBottom: '0.3rem' }}>✅ Payment Link Dispatched!</strong>
               <div style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>
-                Shareable URL: <a href={generatedLink.shortUrl} target="_blank" rel="noreferrer" style={{ color: '#a7f3d0', textDecoration: 'underline' }}>{generatedLink.shortUrl}</a>
+                Shareable URL: <a href={generatedLink.shortUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>{generatedLink.shortUrl}</a>
               </div>
             </div>
           )}
