@@ -17,6 +17,7 @@ const initiateBookingSchema = z.object({
   guestEmail: z.string().trim().email('Invalid email address').optional(),
   companyName: z.string().trim().optional(),
   gstin: z.string().trim().optional(),
+  mealPlan: z.enum(['Room Only', 'With Breakfast', 'All Meals Included']).optional(),
 }).refine(
   (data) => new Date(data.checkOut).getTime() > new Date(data.checkIn).getTime(),
   { message: 'Check-out date must be strictly after check-in date', path: ['checkOut'] }

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { aiService } from '../services/AIService'
 import { db } from '../db'
+import { requireAdmin } from '../middleware/auth'
 
 export const aiRouter = Router()
 
@@ -44,7 +45,7 @@ aiRouter.post('/chat', async (req: Request, res: Response) => {
 })
 
 // GET /api/ai/logs — Retrieve recent AI turns for debugging and quality review
-aiRouter.get('/logs', async (_req: Request, res: Response) => {
+aiRouter.get('/logs', requireAdmin, async (_req: Request, res: Response) => {
   try {
     const logs = Array.from(db.memoryChatLogs.values()).sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

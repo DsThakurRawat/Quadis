@@ -135,12 +135,23 @@ interface HeroVideoShowcaseProps {
  */
 export function HeroVideoShowcase({
   videoUrl = '/videos/Quadis.mp4',
-  posterUrl = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80'
+  posterUrl = '/images/home/hero.jpg'
 }: HeroVideoShowcaseProps) {
   const [videoFailed, setVideoFailed] = useState(false)
+  const [reduceMotion, setReduceMotion] = useState(false)
 
-  if (videoFailed) {
-    return <img className="hero-media" src={posterUrl} alt="Quadis Hotel Showcase" />
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+      setReduceMotion(mq.matches)
+      const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches)
+      mq.addEventListener('change', handler)
+      return () => mq.removeEventListener('change', handler)
+    }
+  }, [])
+
+  if (videoFailed || reduceMotion) {
+    return <img className="hero-media" src={posterUrl} alt="Quadis Hotel Showcase" style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', inset: 0 }} />
   }
 
   return (
@@ -155,7 +166,7 @@ export function HeroVideoShowcase({
       style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', inset: 0 }}
     >
       <source src={videoUrl} type="video/mp4" />
-      <img className="hero-media" src={posterUrl} alt="Quadis Hotel Showcase" />
+      <img className="hero-media" src={posterUrl} alt="Quadis Hotel Showcase" style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', inset: 0 }} />
     </video>
   )
 }

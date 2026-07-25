@@ -48,7 +48,7 @@ export default function Register() {
               <Field label="Referral ID (optional)" value={f.values.referral} onChange={f.set('referral')} />
               <label className={`checkbox checkbox--terms ${f.errors.terms ? 'is-error' : ''}`}>
                 <input type="checkbox" checked={f.values.terms} onChange={f.set('terms')} aria-invalid={!!f.errors.terms} />
-                <span>I agree to the <Link to="/contactus">Terms</Link> &amp; <Link to="/contactus">Privacy Policy</Link></span>
+                <span>I agree to the <Link to="#">Terms</Link> &amp; <Link to="#">Privacy Policy</Link></span>
               </label>
               {f.errors.terms && <span className="field__error" role="alert">{f.errors.terms}</span>}
               <Button as="button" type="submit" variant="primary" className="auth__submit" disabled={f.pending}>

@@ -42,7 +42,7 @@ describe('Phase 3: Owner Switchboard & WhatsApp Quick-Commands Suite', () => {
     expect(typeof res.body.data.metrics.pendingEnquiries).toBe('number')
     expect(typeof res.body.data.metrics.todayRevenue).toBe('number')
     expect(Array.isArray(res.body.data.properties)).toBe(true)
-    expect(res.body.data.properties.length).toBe(10)
+    expect(res.body.data.properties.length).toBe(9)
   })
 
   it('PATCH /api/admin/room-availability toggles inventory availability ([ Sold Out ] vs [ Available ])', async () => {
@@ -93,7 +93,7 @@ describe('Phase 3: Owner Switchboard & WhatsApp Quick-Commands Suite', () => {
       amount: 12000,
       guestName: 'Rohit Sharma (VIP Walk-in)',
       description: 'Grand Ballroom Token Deposit',
-      propertyName: 'Hotel Cladis Sector 51',
+      propertyName: 'Hotel Quadis Sector 51',
     }
 
     const res = await request(app)

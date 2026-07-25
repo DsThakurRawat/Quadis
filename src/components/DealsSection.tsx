@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { SectionHeader } from './blocks.tsx'
 
 interface Deal {
@@ -62,13 +63,13 @@ export default function DealsSection() {
                   <div className="deal-card-fern__circle">
                     {/* Fallback styling for images if missing */}
                     <img src={deal.image} alt={deal.title} loading="lazy" onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80'
+                      (e.target as HTMLImageElement).src = '/images/home/hero.jpg'
                     }} />
                   </div>
                 </div>
                 <h3 className="h3 deal-card-fern__title">{deal.title}</h3>
                 <p className="deal-card-fern__desc">{deal.description}</p>
-                <a href={deal.link} className="deal-card-fern__btn">VIEW OFFER</a>
+                <Link to={deal.link} className="deal-card-fern__btn">VIEW OFFER</Link>
               </div>
             ))}
           </div>

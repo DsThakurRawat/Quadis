@@ -1,14 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
-import { HOTELS, BANQUETS } from '../data/hotels.ts'
+import { useHotels, BANQUETS } from '../data/hotels.ts'
 import { IconChevron } from './icons.tsx'
 import { Button } from './ui.tsx'
 
 interface MenuItem { label: string; to: string }
-const HOTEL_MENU: MenuItem[] = [
-  ...HOTELS.map((h) => ({ label: h.name, to: `/hotels/${h.slug}` })),
-  { label: 'Upcoming Destinations (Rishikesh, Agra...)', to: '/hotels?city=Upcoming' },
-]
 const BANQUET_MENU: MenuItem[] = BANQUETS.map((b) => ({ label: b.name, to: `/banquets/${b.slug}` }))
 const RESTAURANT_MENU: MenuItem[] = [
   { label: 'In-house Restaurant', to: '/restaurant' },
@@ -74,6 +70,12 @@ export default function Header() {
   const [drawer, setDrawer] = useState(false)
   const [openMobile, setOpenMobile] = useState<string | null>(null)
   const loc = useLocation()
+  
+  const hotels = useHotels()
+  const HOTEL_MENU = useMemo<MenuItem[]>(() => [
+    ...hotels.map((h) => ({ label: h.name, to: `/hotels/${h.slug}` })),
+    { label: 'Upcoming Destinations (Rishikesh, Agra...)', to: '/hotels#upcoming' },
+  ], [hotels])
 
   useEffect(() => { setDrawer(false); setOpenMobile(null) }, [loc.pathname])
   useEffect(() => {
@@ -99,7 +101,7 @@ export default function Header() {
             <Dropdown label="Banquet" items={BANQUET_MENU} />
             <li className="nav__item"><NavLink to="/corporate-hotel-booking" className="nav__link">Corporate Booking</NavLink></li>
             <Dropdown label="Restaurant" items={RESTAURANT_MENU} />
-            <li className="nav__item"><NavLink to="/contactus" className="nav__link">Contact</NavLink></li>
+            <li className="nav__item"><NavLink to="/contact" className="nav__link">Contact</NavLink></li>
           </ul>
         </nav>
 
@@ -128,7 +130,7 @@ export default function Header() {
           <MobileGroup id="banquet" label="Banquet" items={BANQUET_MENU} open={openMobile} setOpen={setOpenMobile} />
           <li><Link to="/corporate-hotel-booking" className="drawer__link">Corporate Booking</Link></li>
           <MobileGroup id="restaurant" label="Restaurant" items={RESTAURANT_MENU} open={openMobile} setOpen={setOpenMobile} />
-          <li><Link to="/contactus" className="drawer__link">Contact</Link></li>
+          <li><Link to="/contact" className="drawer__link">Contact</Link></li>
         </ul>
         <div className="drawer__actions">
           <Button to="/register" variant="ghost">Register</Button>

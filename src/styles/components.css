@@ -38,6 +38,7 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
 .field__input:focus { outline: none; border-color: var(--gold); box-shadow: var(--ring-gold); }
 .field__input.is-error { border-color: var(--error); }
 .field__error { font-size: 13px; color: var(--error); }
+.form-error { margin-bottom: 14px; padding: 12px 14px; border-left: 2px solid var(--error); background: rgba(176,86,60,.08); border-radius: var(--radius); font-size: 13.5px; line-height: 1.5; color: var(--error); }
 .field__hint { font-size: 13px; color: var(--text-muted); }
 .field__pw { position: relative; }
 .field__pw .field__input { padding-right: 46px; }
@@ -62,6 +63,10 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
 .card-grid { display: grid; gap: 30px; grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 1199px){ .card-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 767px){ .card-grid { grid-template-columns: 1fr; gap: 24px; } }
+/* Two-up variant. Without this, a two-card grid inherits .card-grid's three
+   columns and leaves a dead third column on the row. */
+.card-grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 767px){ .card-grid.grid-2 { grid-template-columns: 1fr; } }
 .card-grid--anim > * { animation: cardIn .28s ease both; }
 @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { getApiUrl } from '../config/api'
-
+import { IconWhatsapp, IconSparkles, IconBot, IconSend, IconX } from './icons'
 
 interface ChatMessage {
   id: string
@@ -19,7 +19,8 @@ const QUICK_SUGGESTIONS = [
 ]
 
 export default function QuadisAssistChat() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -33,10 +34,10 @@ export default function QuadisAssistChat() {
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isChatOpen) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, isOpen, loading])
+  }, [messages, isChatOpen, loading])
 
   const handleSend = async (textToSend?: string) => {
     const text = textToSend ?? input
@@ -59,123 +60,135 @@ export default function QuadisAssistChat() {
         body: JSON.stringify({ message: text, history: messages })
       })
 
-      const json = await res.json()
-      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to fetch reply')
+      const data = await res.json()
+      
+      const assistMsg: ChatMessage = {
+        id: `a_${Date.now()}`,
+        role: 'assistant',
+        content: data.reply || 'I am currently offline. Please connect via WhatsApp or Call.',
+        toolsInvoked: data.toolsInvoked,
+        handoffTriggered: data.handoffTriggered,
+      }
 
+      setMessages((prev) => [...prev, assistMsg])
+    } catch (err) {
       setMessages((prev) => [
         ...prev,
-        {
-          id: `a_${Date.now()}`,
-          role: 'assistant',
-          content: json.data.reply,
-          toolsInvoked: json.data.toolsInvoked,
-          handoffTriggered: json.data.handoffTriggered
-        },
+        { id: `err_${Date.now()}`, role: 'assistant', content: 'Connection error. Please try again or use WhatsApp.' }
       ])
-    } catch (err) {
-      console.error('Chat error:', err)
     } finally {
       setLoading(false)
     }
   }
 
+  const formatText = (text: string) => {
+    return text.split('\n').map((line, i) => (
+      <span key={i}>
+        {line.split(/\*(.*?)\*/).map((part, j) => 
+          j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+        )}
+        <br />
+      </span>
+    ))
+  }
+
   return (
     <>
-      {/* Floating Action Trigger Button */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          style={{
-            position: 'fixed',
-            bottom: '90px',
-            right: '20px',
-            zIndex: 9998,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            padding: '0.75rem 1.25rem',
-            background: 'linear-gradient(135deg, #1c1917 0%, #0c0a09 100%)',
-            color: '#c9a86a',
-            border: '1.5px solid rgba(201, 168, 106, 0.4)',
-            borderRadius: '9999px',
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(201, 168, 106, 0.2)',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            fontWeight: 600,
-            fontSize: '0.95rem',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-3px) scale(1.03)'
-            e.currentTarget.style.boxShadow = '0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(201, 168, 106, 0.4)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0) scale(1)'
-            e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(201, 168, 106, 0.2)'
-          }}
-        >
-          <span style={{ fontSize: '1.2rem', animation: 'pulse 2s infinite' }}>✨</span>
-          <span>Quadis Assist AI</span>
-        </button>
+      {/* Floating Speed Dial */}
+      {!isChatOpen && (
+        <div className="fab-container" style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' }}>
+          {isMenuOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', animation: 'fadeUp 0.2s ease-out forwards' }}>
+              <a
+                href="https://wa.me/919217373532"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  backgroundColor: 'var(--bg-dark)', color: 'var(--text-on-dark)',
+                  padding: '12px 20px', borderRadius: '99px',
+                  textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
+                  boxShadow: 'var(--shadow-card)', border: '1px solid var(--border-card-2)'
+                }}
+              >
+                WhatsApp Us <span style={{ color: 'var(--whatsapp)', display: 'flex' }}><IconWhatsapp /></span>
+              </a>
+              <button
+                onClick={() => { setIsMenuOpen(false); setIsChatOpen(true); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  backgroundColor: 'var(--gold)', color: 'var(--bg-darkest)',
+                  padding: '12px 20px', borderRadius: '99px',
+                  border: 'none', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+                  boxShadow: 'var(--shadow-card)'
+                }}
+              >
+                Quadis Assist AI <span style={{ display: 'flex' }}><IconSparkles /></span>
+              </button>
+            </div>
+          )}
+          
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Contact Options"
+            style={{
+              width: '56px', height: '56px', borderRadius: '50%',
+              backgroundColor: 'var(--bg-darkest)', color: 'var(--gold)',
+              border: '2px solid var(--gold)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', boxShadow: 'var(--shadow-card)',
+              transition: 'transform 0.3s ease',
+              transform: isMenuOpen ? 'rotate(45deg)' : 'rotate(0deg)'
+            }}
+          >
+            {isMenuOpen ? <IconX /> : <IconBot />}
+          </button>
+        </div>
       )}
 
       {/* Glassmorphic AI Drawer / Modal */}
-      {isOpen && (
+      {isChatOpen && (
         <div
           style={{
-            position: 'fixed',
-            bottom: '90px',
-            right: '20px',
-            width: '380px',
-            maxWidth: 'calc(100vw - 40px)',
-            height: '560px',
-            maxHeight: 'calc(100vh - 120px)',
-            zIndex: 9999,
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#12100e',
-            backgroundImage: 'radial-gradient(circle at 10% 10%, rgba(201, 168, 106, 0.08) 0%, transparent 60%)',
-            border: '1px solid rgba(201, 168, 106, 0.3)',
+            position: 'fixed', bottom: '90px', right: '24px',
+            width: '380px', maxWidth: 'calc(100vw - 48px)',
+            height: '560px', maxHeight: 'calc(100vh - 120px)',
+            zIndex: 9999, display: 'flex', flexDirection: 'column',
+            backgroundColor: 'var(--bg-darkest)',
+            backgroundImage: 'radial-gradient(circle at 10% 10%, rgba(200,162,74,0.08) 0%, transparent 60%)',
+            border: '1px solid rgba(200,162,74, 0.3)',
             borderRadius: '20px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(201, 168, 106, 0.15)',
-            overflow: 'hidden',
-            fontFamily: 'inherit',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(200,162,74, 0.15)',
+            overflow: 'hidden', fontFamily: 'inherit',
           }}
         >
           {/* Header Panel */}
           <div
             style={{
               padding: '1rem 1.25rem',
-              background: 'linear-gradient(135deg, #1c1917 0%, #0c0a09 100%)',
+              background: 'linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darkest) 100%)',
               borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <div
                 style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'rgba(201, 168, 106, 0.15)',
-                  border: '1px solid rgba(201, 168, 106, 0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#c9a86a',
-                  fontSize: '1rem',
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: 'rgba(200,162,74, 0.15)',
+                  border: '1px solid rgba(200,162,74, 0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--gold)', fontSize: '1rem',
                 }}
               >
-                ✨
+                <IconSparkles />
               </div>
               <div>
-                <h4 style={{ margin: 0, fontSize: '1rem', color: '#fff', fontWeight: 700, letterSpacing: '0.3px' }}>
+                <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-on-dark)', fontWeight: 700, letterSpacing: '0.3px' }}>
                   Quadis Assist
                 </h4>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '2px' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: 'var(--whatsapp)' }} />
                   <span style={{ fontSize: '0.72rem', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase' }}>
                     Agentic AI Online
                   </span>
@@ -183,30 +196,22 @@ export default function QuadisAssistChat() {
               </div>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => setIsChatOpen(false)}
               style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontSize: '1.4rem',
-                cursor: 'pointer',
-                padding: '4px',
-                lineHeight: 1,
+                background: 'transparent', border: 'none',
+                color: 'rgba(255, 255, 255, 0.6)', fontSize: '1.2rem',
+                cursor: 'pointer', padding: '4px', lineHeight: 1, display: 'flex'
               }}
             >
-              ×
+              <IconX />
             </button>
           </div>
 
           {/* Messages Container */}
           <div
             style={{
-              flex: 1,
-              padding: '1rem',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.85rem',
+              flex: 1, padding: '1rem', overflowY: 'auto',
+              display: 'flex', flexDirection: 'column', gap: '0.85rem',
             }}
           >
             {messages.map((m) => (
@@ -214,25 +219,17 @@ export default function QuadisAssistChat() {
                 key={m.id}
                 style={{
                   alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '85%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
+                  maxWidth: '85%', display: 'flex', flexDirection: 'column', gap: '4px',
                 }}
               >
                 {m.toolsInvoked && m.toolsInvoked.length > 0 && (
                   <div
                     style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '4px',
-                      fontSize: '0.68rem',
-                      color: '#c9a86a',
-                      backgroundColor: 'rgba(201, 168, 106, 0.1)',
-                      padding: '2px 8px',
-                      borderRadius: '9999px',
-                      alignSelf: 'flex-start',
-                      border: '1px solid rgba(201, 168, 106, 0.2)',
+                      display: 'flex', flexWrap: 'wrap', gap: '4px',
+                      fontSize: '0.68rem', color: 'var(--gold)',
+                      backgroundColor: 'rgba(200,162,74, 0.1)',
+                      padding: '2px 8px', borderRadius: '9999px',
+                      alignSelf: 'flex-start', border: '1px solid rgba(200,162,74, 0.2)',
                     }}
                   >
                     ⚡ Tool: {m.toolsInvoked.join(', ')}
@@ -242,68 +239,47 @@ export default function QuadisAssistChat() {
                 {m.handoffTriggered && (
                   <div
                     style={{
-                      fontSize: '0.72rem',
-                      color: '#ef4444',
-                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                      padding: '3px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      fontSize: '0.72rem', color: 'var(--error)',
+                      backgroundColor: 'rgba(176, 86, 60, 0.1)',
+                      padding: '3px 8px', borderRadius: '4px',
+                      border: '1px solid rgba(176, 86, 60, 0.3)',
                     }}
                   >
-                    🚨 Human Manager Alert Dispatched
+                    ⚠️ Human handoff initiated.
                   </div>
                 )}
 
                 <div
                   style={{
-                    padding: '0.75rem 0.95rem',
-                    borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    backgroundColor: m.role === 'user' ? '#c9a86a' : '#1c1917',
-                    color: m.role === 'user' ? '#0c0a09' : '#e7e5e4',
-                    border: m.role === 'assistant' ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
-                    fontSize: '0.88rem',
-                    lineHeight: 1.5,
-                    whiteSpace: 'pre-wrap',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                    backgroundColor: m.role === 'user' ? 'var(--gold)' : '#262420',
+                    color: m.role === 'user' ? 'var(--bg-darkest)' : 'var(--text-on-dark)',
+                    padding: '10px 14px',
+                    borderRadius: m.role === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                    fontSize: '0.9rem', lineHeight: 1.4,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
                   }}
                 >
-                  {m.content}
+                  {formatText(m.content)}
                 </div>
               </div>
             ))}
 
             {loading && (
-              <div
-                style={{
-                  alignSelf: 'flex-start',
-                  padding: '0.6rem 1rem',
-                  borderRadius: '16px 16px 16px 4px',
-                  backgroundColor: '#1c1917',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  color: '#c9a86a',
-                  fontSize: '0.82rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                <span>🤖 Quadis Assist is thinking</span>
-                <span className="dot-pulse">...</span>
+              <div style={{ alignSelf: 'flex-start', backgroundColor: '#262420', padding: '10px 14px', borderRadius: '16px 16px 16px 2px', display: 'flex', gap: '4px' }}>
+                <span className="dot-pulse" style={{ backgroundColor: 'var(--gold)', width: '6px', height: '6px', borderRadius: '50%' }}></span>
+                <span className="dot-pulse" style={{ backgroundColor: 'var(--gold)', width: '6px', height: '6px', borderRadius: '50%', animationDelay: '0.2s' }}></span>
+                <span className="dot-pulse" style={{ backgroundColor: 'var(--gold)', width: '6px', height: '6px', borderRadius: '50%', animationDelay: '0.4s' }}></span>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Quick Suggestions Pills */}
+          {/* Quick Suggestions */}
           <div
             style={{
-              padding: '0.5rem 0.8rem',
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              padding: '0.5rem 0.8rem', backgroundColor: 'rgba(0, 0, 0, 0.2)',
               borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-              display: 'flex',
-              gap: '6px',
-              overflowX: 'auto',
-              scrollbarWidth: 'none',
+              display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none',
             }}
           >
             {QUICK_SUGGESTIONS.map((q) => (
@@ -312,15 +288,9 @@ export default function QuadisAssistChat() {
                 onClick={() => handleSend(q)}
                 disabled={loading}
                 style={{
-                  flexShrink: 0,
-                  padding: '4px 10px',
-                  borderRadius: '9999px',
-                  backgroundColor: 'rgba(201, 168, 106, 0.1)',
-                  border: '1px solid rgba(201, 168, 106, 0.25)',
-                  color: '#c9a86a',
-                  fontSize: '0.72rem',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s',
+                  flexShrink: 0, padding: '4px 10px', borderRadius: '9999px',
+                  backgroundColor: 'rgba(200,162,74, 0.1)', border: '1px solid rgba(200,162,74, 0.25)',
+                  color: 'var(--gold)', fontSize: '0.72rem', cursor: 'pointer', transition: 'background 0.2s',
                 }}
               >
                 {q}
@@ -331,51 +301,36 @@ export default function QuadisAssistChat() {
           {/* Input Footer */}
           <div
             style={{
-              padding: '0.75rem',
-              backgroundColor: '#1c1917',
+              padding: '0.75rem', backgroundColor: 'var(--bg-dark)',
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              gap: '0.5rem',
+              display: 'flex', gap: '0.5rem',
             }}
           >
             <input
               type="text"
-              placeholder="Ask anything or check availability..."
+              placeholder="Ask anything..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               disabled={loading}
               style={{
-                flex: 1,
-                padding: '0.6rem 0.9rem',
-                borderRadius: '9999px',
-                backgroundColor: '#0c0a09',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#fff',
-                fontSize: '0.85rem',
-                outline: 'none',
+                flex: 1, padding: '0.6rem 0.9rem', borderRadius: '9999px',
+                backgroundColor: 'var(--bg-darkest)', border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: 'var(--text-on-dark)', fontSize: '0.85rem', outline: 'none',
               }}
             />
             <button
               onClick={() => handleSend()}
               disabled={loading || !input.trim()}
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                backgroundColor: '#c9a86a',
-                color: '#0c0a09',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                width: '36px', height: '36px', borderRadius: '50%',
+                backgroundColor: 'var(--gold)', color: 'var(--bg-darkest)',
+                border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
                 opacity: loading || !input.trim() ? 0.5 : 1,
-                fontWeight: 700,
-                fontSize: '1rem',
               }}
             >
-              →
+              <IconSend />
             </button>
           </div>
         </div>

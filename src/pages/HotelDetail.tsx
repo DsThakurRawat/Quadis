@@ -2,10 +2,13 @@ import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import type { ComponentType, SVGProps } from 'react'
 import type { MealPlan } from '../types.ts'
-import { HOTELS, priceNight, inr, getHotelRooms } from '../data/hotels.ts'
+import { useHotels, priceNight, inr, getHotelRooms } from '../data/hotels.ts'
+import { computeStayTotal, countWeekendNights } from '../lib/pricing.ts'
 import { hotelImages, roomImages } from '../data/images.ts'
 import { HotelCard, Button } from '../components/ui.tsx'
 import { CtaBand } from '../components/blocks.tsx'
+import { MapFacade, GettingHere, LocationActions } from '../components/Location.tsx'
+import { QUADIS_PHONE } from '../data/site.ts'
 import Gallery from '../components/Gallery.tsx'
 import { Photo } from '../components/media.tsx'
 import { IconPin, IconStar, IconWifi, IconAc, IconBreakfast, IconParking, IconDesk, IconRoom } from '../components/icons.tsx'
@@ -30,7 +33,8 @@ function nights(a: string, b: string): number {
 
 export default function HotelDetail() {
   const { slug } = useParams()
-  const hotel = HOTELS.find((h) => h.slug === slug)
+  const hotels = useHotels()
+  const hotel = hotels.find((h) => h.slug === slug)
   const images = slug ? hotelImages(slug) : []
   const hotelRooms = useMemo(() => (hotel ? getHotelRooms(hotel) : []), [hotel])
 
@@ -46,10 +50,10 @@ export default function HotelDetail() {
 
   const nearby = useMemo(() => {
     if (!hotel) return []
-    const same = HOTELS.filter((h) => h.slug !== slug && h.city === hotel.city)
-    const pool = same.length >= 3 ? same : HOTELS.filter((h) => h.slug !== slug)
+    const same = hotels.filter((h) => h.slug !== slug && h.city === hotel.city)
+    const pool = same.length >= 3 ? same : hotels.filter((h) => h.slug !== slug)
     return pool.slice(0, 3)
-  }, [hotel, slug])
+  }, [hotel, slug, hotels])
 
   if (!hotel) return <NotFound />
 
@@ -59,8 +63,23 @@ export default function HotelDetail() {
   const mealOffset = activeMeal?.priceOffset ?? 0
   const effectiveNightPrice = hotel.price + roomOffset + mealOffset
 
+  const surchargePercent = hotel.weekendSurchargePercent ?? 0
   const n = nights(checkin, checkout)
-  const total = n * rooms * effectiveNightPrice
+  const total = checkin && checkout
+    ? computeStayTotal({
+        basePrice: hotel.price,
+        roomOffset,
+        mealOffset,
+        weekendSurchargePercent: surchargePercent,
+        checkIn: checkin,
+        checkOut: checkout,
+        roomsCount: rooms,
+      })
+    : 0
+  const hasWeekendNight = surchargePercent > 0 && checkin && checkout
+    ? countWeekendNights(checkin, checkout) > 0
+    : false
+
   const mapQuery = encodeURIComponent(`${hotel.name}, ${hotel.address}`)
 
   const book = (e: React.FormEvent) => {
@@ -189,14 +208,11 @@ export default function HotelDetail() {
 
               <section className="detail-block">
                 <span className="overline">LOCATION</span>
-                <div className="map-embed">
-                  <iframe
-                    title={`Map of ${hotel.name}`}
-                    src={`https://maps.google.com/maps?q=${mapQuery}&z=15&output=embed`}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
+                <div className="loc-split">
+                  <MapFacade hotel={hotel} />
+                  <GettingHere transit={hotel.transit} />
                 </div>
+                <LocationActions hotel={hotel} phone={QUADIS_PHONE} />
               </section>
             </div>
 
@@ -242,6 +258,11 @@ export default function HotelDetail() {
                   <span>{n > 0 ? `${inr(effectiveNightPrice)} × ${n} night${n > 1 ? 's' : ''} × ${rooms} room${rooms > 1 ? 's' : ''}` : 'Select your dates'}</span>
                   <strong>{n > 0 ? inr(total) : '—'}</strong>
                 </div>
+                {hasWeekendNight && (
+                  <p className="book-card__note">
+                    Includes a {surchargePercent}% weekend surcharge on Friday and Saturday nights.
+                  </p>
+                )}
 
                 <Button as="button" type="submit" variant="primary" className="book-card__cta">BOOK NOW</Button>
                 {confirmed && (
@@ -278,6 +299,7 @@ export default function HotelDetail() {
           checkOut={checkout}
           roomsCount={rooms}
           guestsCount={guests}
+          mealPlan={activeMeal.plan}
           totalAmount={total}
           onClose={() => setShowCheckoutModal(false)}
           onSuccess={(code) => {

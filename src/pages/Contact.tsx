@@ -1,9 +1,9 @@
-import { SectionHeader } from '../components/blocks.tsx'
+import { SectionHeader, LocationMap } from '../components/blocks.tsx'
 import { Field, Button } from '../components/ui.tsx'
-import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
+import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
 import { IconPhone, IconMail, IconPin } from '../components/icons.tsx'
 import type { ContactPayload, ContactType } from '../types.ts'
-import { getApiUrl } from '../config/api'
+import { submitEnquiry, enquiryTypeFor } from '../data/enquiries.ts'
 
 
 const TYPES: ContactType[] = ['General', 'Booking', 'Banquet', 'Corporate', 'Feedback']
@@ -16,7 +16,9 @@ export default function Contact() {
       const e: Partial<Record<keyof ContactPayload, string>> = {}
       if (!required(v.name)) e.name = 'Please enter your name'
       if (!isEmail(v.email)) e.email = 'Enter a valid email'
-      if (v.phone && !isPhone(v.phone)) e.phone = 'Enter a valid 10-digit phone'
+      // Required: the backend needs a phone number to route the enquiry to the property.
+      if (!required(v.phone)) e.phone = 'Please enter your phone number'
+      else if (!isPhone(v.phone)) e.phone = 'Enter a valid 10-digit phone'
       if (!required(v.message)) e.message = 'Please add a message'
       return e
     }
@@ -34,17 +36,14 @@ export default function Contact() {
                 Thank you for reaching out — our team will get back to you shortly.
               </SuccessPanel>
             ) : (
-              <form className="form-grid form-grid--card" onSubmit={f.submit(async (_) => {
-                try {
-                  const res = await fetch(getApiUrl('enquiries'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(f.values)
-                  })
-                  if (!res.ok) throw new Error('Submission failed')
-                } catch (err) {
-                  console.error('Failed to submit contact form:', err)
-                }
+              <form className="form-grid form-grid--card" onSubmit={f.submit(async (v) => {
+                await submitEnquiry({
+                  enquiryType: enquiryTypeFor(v.type),
+                  guestName: v.name,
+                  guestPhone: v.phone,
+                  guestEmail: v.email,
+                  message: v.message,
+                })
               })} noValidate>
                 <Field label="Name" className="form-grid__full" value={f.values.name} onChange={f.set('name')} error={f.errors.name} />
                 <Field label="Email" type="email" value={f.values.email} onChange={f.set('email')} error={f.errors.email} />
@@ -54,6 +53,7 @@ export default function Contact() {
                 </Field>
                 <Field label="Message" as="textarea" className="form-grid__full" value={f.values.message} onChange={f.set('message')} error={f.errors.message} />
                 <div className="form-grid__full">
+                  <FormError message={f.submitError} />
                   <Button as="button" type="submit" variant="primary" disabled={f.pending}>{f.pending ? 'Sending…' : 'SUBMIT'}</Button>
                 </div>
               </form>
@@ -62,12 +62,7 @@ export default function Contact() {
 
           <aside className="contact-side">
             <div className="map-embed map-embed--tall">
-              <iframe
-                title="Quadis HQ — Sector 51, Noida"
-                src={`https://maps.google.com/maps?q=${HQ}&z=15&output=embed`}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+              <LocationMap query={HQ} />
             </div>
             <ul className="contact-info">
               <li><span className="contact-info__ic"><IconPhone /></span><a href="tel:+919217373532">+91 92173 73532</a></li>

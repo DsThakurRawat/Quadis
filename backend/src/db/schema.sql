@@ -13,7 +13,14 @@ CREATE TABLE IF NOT EXISTS properties (
   base_price NUMERIC(10, 2) NOT NULL,
   rating NUMERIC(3, 2) DEFAULT 4.50,
   is_active BOOLEAN DEFAULT TRUE,
-  weekend_surcharge_percent NUMERIC(5, 2) DEFAULT 0.00
+  weekend_surcharge_percent NUMERIC(5, 2) DEFAULT 0.00,
+  -- Null until a real coordinate is confirmed for the property. The UI falls
+  -- back to an address search rather than showing an invented pin.
+  lat NUMERIC(10, 7),
+  lng NUMERIC(10, 7),
+  place_id VARCHAR(128),
+  tier VARCHAR(32) DEFAULT 'central',
+  tier_label VARCHAR(64) DEFAULT 'Quadis Central'
 );
 
 CREATE TABLE IF NOT EXISTS room_types (
@@ -26,6 +33,8 @@ CREATE TABLE IF NOT EXISTS room_types (
   bed_type VARCHAR(64),
   max_guests INTEGER NOT NULL DEFAULT 2,
   price_offset NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  breakfast_offset NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  all_meals_offset NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
   total_units INTEGER NOT NULL DEFAULT 5,
   available_units INTEGER NOT NULL DEFAULT 5,
   is_available BOOLEAN DEFAULT TRUE,

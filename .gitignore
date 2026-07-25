@@ -38,14 +38,21 @@ pnpm-debug.log*
 *.sw?
 Thumbs.db
 
-# Exclude design reference screenshots and scraper scripts
-Reference-images/
+# Scraper script
 scrape_quadis.py
 .aider*
 
-# Local documentation, PR bodies, specs, and root video (kept locally, not pushed to GitHub)
-AWS_DEPLOYMENT_GUIDE.md
-Quadis-Frontend-Spec*
-quadis-readme-*
-pr_*_body.md
+# Raw client deliverables: source zips, unpacked folders, design references and
+# working screenshots. Everything the site actually ships is committed under
+# public/ — these are the originals we cut those from, kept locally only.
+client-assets/
+
+# Local-only documentation. docs/Quadis-Audit-1.md IS tracked; these are not.
+docs/AWS_DEPLOYMENT_GUIDE.md
+docs/Quadis-Frontend-Spec*
+docs/quadis-readme-*
+docs/pr_*_body.md
 /Quadis.mp4
+
+# One-off scratch scripts from earlier refactors
+scripts/rewrite*.js

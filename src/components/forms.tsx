@@ -17,6 +17,7 @@ export interface UseForm<T> {
   submit: (onValid?: (values: T) => void | Promise<void>) => (e: FormEvent) => void
   pending: boolean
   done: boolean
+  submitError: string | null
   reset: () => void
 }
 
@@ -26,6 +27,7 @@ export function useForm<T extends object>(initial: T, validate: Validate<T>): Us
   const [errors, setErrors] = useState<FormErrors<T>>({})
   const [pending, setPending] = useState(false)
   const [done, setDone] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const set = (name: keyof T) => (e: FieldEvent) => {
     const target = e.target as HTMLInputElement
@@ -44,19 +46,40 @@ export function useForm<T extends object>(initial: T, validate: Validate<T>): Us
       return
     }
     setPending(true)
+    setSubmitError(null)
     try {
       if (onValid) {
         await onValid(values)
       }
+      setDone(true)
     } catch (err) {
+      // Never show the success panel on a failed submit, and never fail silently —
+      // the guest needs to know the message did not go through.
       console.error('Error submitting form:', err)
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
       setPending(false)
-      setDone(true)
     }
   }
 
-  return { values, errors, set, submit, pending, done, reset: () => { setValues(initial); setErrors({}); setDone(false) } }
+  return {
+    values,
+    errors,
+    set,
+    submit,
+    pending,
+    done,
+    submitError,
+    reset: () => { setValues(initial); setErrors({}); setDone(false); setSubmitError(null) },
+  }
+}
+
+/** Renders nothing until a submit actually fails. */
+export function FormError({ message }: { message: string | null }) {
+  if (!message) return null
+  return (
+    <p className="form-error" role="alert">{message}</p>
+  )
 }
 
 interface SuccessPanelProps {

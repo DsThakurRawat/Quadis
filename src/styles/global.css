@@ -90,11 +90,17 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; }
 .muted { color: var(--text-muted); }
 
 /* ---------- motion ---------- */
-.reveal { opacity: 0; transform: translateY(12px); }
-.reveal.in { opacity: 1; transform: none; transition: opacity .4s ease-out, transform .4s ease-out; }
+/* Reveal content is VISIBLE by default and only hidden once JS has confirmed it
+   can reveal it again (`js-reveal` is set on <html> at startup). Hiding it
+   unconditionally means any failure — no JS, a missed observer callback, an
+   element that never satisfies the threshold — leaves a blank gap on the page
+   forever. Never make content invisible unless something is guaranteed to
+   bring it back. */
+.js-reveal .reveal { opacity: 0; transform: translateY(12px); }
+.js-reveal .reveal.in { opacity: 1; transform: none; transition: opacity .4s ease-out, transform .4s ease-out; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .reveal { opacity: 1; transform: none; transition: none; }
+  .js-reveal .reveal, .js-reveal .reveal.in { opacity: 1; transform: none; transition: none; }
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
 

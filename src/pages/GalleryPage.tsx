@@ -1,3 +1,4 @@
+import { PROPERTY_COUNT, GALLERY_COUNT } from '../data/site.ts'
 import { useState, useMemo } from 'react'
 import {
   galleryAll,
@@ -47,11 +48,11 @@ export default function GalleryPage() {
 
   return (
     <>
-      <PhotoHero image={heroImg} title="Photo Gallery" sub="A visual journey across our 10 considered properties, refined suites, and grand banquets." height="short" />
+      <PhotoHero image={heroImg} title="Photo Gallery" sub={`A visual journey across our ${PROPERTY_COUNT} considered properties, refined suites, and grand banquets.`} height="short" />
 
       <section className="section bg-cream gallery-page">
         <div className="container center-col">
-          <SectionHeader overline="EXPLORE OUR SPACES" title="128 Moments of Calm & Comfort" />
+          <SectionHeader overline="EXPLORE OUR SPACES" title={`${GALLERY_COUNT} Moments of Calm & Comfort`} />
           
           <div className="gallery-page__filters">
             <FilterPills options={TABS} value={tab} onChange={setTab} ariaLabel="Filter photo gallery categories" />

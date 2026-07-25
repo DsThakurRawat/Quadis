@@ -36,6 +36,7 @@ export default function AdminDashboard() {
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem('quadis_admin_token'))
   const [pinInput, setPinInput] = useState('')
   const [authError, setAuthError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const [metrics, setMetrics] = useState<GlanceMetrics>({ todayCheckIns: 0, pendingHolds: 0, pendingEnquiries: 0, todayRevenue: 0 })
@@ -57,6 +58,13 @@ export default function AdminDashboard() {
       const res = await fetch(getApiUrl('admin/dashboard'), {
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (res.status === 401 || res.status === 503) {
+        // Stale or unaccepted token — drop it rather than showing an empty dashboard.
+        sessionStorage.removeItem('quadis_admin_token')
+        setToken(null)
+        setAuthError(res.status === 503 ? 'Admin access is not configured on the server.' : 'Session expired. Please sign in again.')
+        return
+      }
       if (!res.ok) throw new Error('Failed to fetch dashboard')
       const json = await res.json()
       if (json.success) {
@@ -78,28 +86,56 @@ export default function AdminDashboard() {
     }
   }, [token])
 
+  const authedFetch = async (endpoint: string, init: RequestInit = {}) => {
+    const res = await fetch(getApiUrl(endpoint), {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(init.headers || {}),
+      },
+    })
+    const json = await res.json().catch(() => null)
+    if (!res.ok || !json?.success) {
+      throw new Error(json?.error || `Request failed (${res.status})`)
+    }
+    return json
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setAuthError('')
     try {
-      await new Promise(r => setTimeout(r, 600))
-      // Accept any PIN as success for frontend mock
-      if (pinInput.length >= 4) {
-        const dummyToken = 'mock_admin_token_123'
-        sessionStorage.setItem('quadis_admin_token', dummyToken)
-        setToken(dummyToken)
-      } else {
-        setAuthError('Invalid PIN code. Enter any 4+ digit PIN for demo.')
+      const res = await fetch(getApiUrl('admin/auth'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pinInput }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success || !json?.token) {
+        setAuthError(json?.error || 'Invalid PIN code.')
+        return
       }
+      sessionStorage.setItem('quadis_admin_token', json.token)
+      setToken(json.token)
     } catch (err) {
-      setAuthError('Authentication server error')
+      setAuthError('Could not reach the authentication server.')
     }
+  }
+
+  const signOut = () => {
+    sessionStorage.removeItem('quadis_admin_token')
+    setToken(null)
+    setPinInput('')
   }
 
   const toggleRoom = async (roomTypeId: string, currentStatus: boolean) => {
     if (!token) return
     try {
-      await new Promise(r => setTimeout(r, 300))
+      await authedFetch('admin/room-availability', {
+        method: 'PATCH',
+        body: JSON.stringify({ roomTypeId, isAvailable: !currentStatus }),
+      })
       setProperties((prev) =>
         prev.map((item) => ({
           ...item,
@@ -108,6 +144,7 @@ export default function AdminDashboard() {
       )
     } catch (err) {
       console.error('Error toggling room:', err)
+      setActionError(err instanceof Error ? err.message : 'Could not update room availability.')
     }
   }
 
@@ -115,15 +152,15 @@ export default function AdminDashboard() {
     if (!token) return
     const newPercent = currentSurcharge > 0 ? 0 : 15
     try {
-      await new Promise(r => setTimeout(r, 400))
-      setProperties((prev) =>
-        prev.map((item) => ({
-          ...item,
-          property: { ...item.property, weekend_surcharge_percent: newPercent },
-        }))
-      )
+      await authedFetch('admin/surcharge', {
+        method: 'PATCH',
+        body: JSON.stringify({ surchargePercent: newPercent, propertyId: 'all' }),
+      })
+      // Re-read from the server so the dashboard shows what was actually stored.
+      await fetchDashboard()
     } catch (err) {
       console.error('Error toggling surcharge:', err)
+      setActionError(err instanceof Error ? err.message : 'Could not update the surcharge.')
     }
   }
 
@@ -132,18 +169,26 @@ export default function AdminDashboard() {
     if (!token || !linkPhone || !linkAmount) return
     setLinkPending(true)
     setGeneratedLink(null)
+    setActionError('')
     try {
-      await new Promise(r => setTimeout(r, 1000))
+      const json = await authedFetch('admin/payment-link', {
+        method: 'POST',
+        body: JSON.stringify({
+          phone: linkPhone.trim(),
+          amount: Number(linkAmount),
+          guestName: linkName.trim() || undefined,
+        }),
+      })
       setGeneratedLink({
-        shortUrl: `https://rzp.io/i/demo${Math.floor(Math.random() * 10000)}`,
-        paymentLinkId: `plink_sim_${Date.now()}`
+        shortUrl: json.data.shortUrl,
+        paymentLinkId: json.data.paymentLinkId,
       })
       setLinkPhone('')
       setLinkAmount('')
       setLinkName('')
-
     } catch (err) {
       console.error('Error generating link:', err)
+      setActionError(err instanceof Error ? err.message : 'Could not generate the payment link.')
     } finally {
       setLinkPending(false)
     }
@@ -197,15 +242,28 @@ export default function AdminDashboard() {
             <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: '0' }}>Quadis Owner Dashboard</h1>
           </div>
           <button
-            onClick={() => {
-              sessionStorage.removeItem('quadis_admin_token')
-              setToken(null)
-            }}
+            onClick={signOut}
             style={{ background: '#292524', color: '#a8a29e', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
           >
             Sign Out
           </button>
         </div>
+
+        {actionError && (
+          <div
+            role="alert"
+            style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', background: 'rgba(239,68,68,.12)', border: '1px solid #7f1d1d', color: '#fca5a5', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.85rem' }}
+          >
+            <span>{actionError}</span>
+            <button
+              onClick={() => setActionError('')}
+              style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '1rem', lineHeight: 1 }}
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* 1. Daily Glance Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>

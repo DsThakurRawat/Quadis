@@ -10,26 +10,26 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
     db.initializeInMemorySeed()
   })
 
-  test('GET /api/properties returns exact 10 seeded active properties', async () => {
+  test('GET /api/properties returns exact 9 seeded active properties', async () => {
     const res = await request(app).get('/api/properties')
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
-    expect(res.body.count).toBe(10)
-    expect(res.body.data[0].slug).toBe('hotel-cladis-sector-51-noida')
+    expect(res.body.count).toBe(9)
+    expect(res.body.data[0].slug).toBe('hotel-quadis-sector-51-noida')
   })
 
   test('GET /api/properties/:slug returns property and room types', async () => {
-    const res = await request(app).get('/api/properties/hotel-cladis-sector-51-noida')
+    const res = await request(app).get('/api/properties/hotel-quadis-sector-51-noida')
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
-    expect(res.body.data.name).toBe('Hotel Cladis Sector 51')
+    expect(res.body.data.name).toBe('Hotel Quadis Sector 51')
     expect(Array.isArray(res.body.data.rooms)).toBe(true)
     expect(res.body.data.rooms.length).toBe(3) // Deluxe, Superior, Royal
   })
 
   test('POST /api/bookings/initiate creates a 15-minute soft hold and decrements available units', async () => {
     const payload = {
-      propertySlug: 'hotel-cladis-sector-51-noida',
+      propertySlug: 'hotel-quadis-sector-51-noida',
       roomTypeSlug: 'deluxe-room',
       checkIn: '2026-11-12',
       checkOut: '2026-11-14',
@@ -48,14 +48,14 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
     expect(res.body.data.rooms_count).toBe(2)
 
     // Verify inventory was decremented from 5 to 3
-    const propRes = await request(app).get('/api/properties/hotel-cladis-sector-51-noida')
+    const propRes = await request(app).get('/api/properties/hotel-quadis-sector-51-noida')
     const deluxeRoom = propRes.body.data.rooms.find((r: any) => r.slug === 'deluxe-room')
     expect(deluxeRoom.available_units).toBe(3)
   })
 
   test('POST /api/bookings/initiate prevents double booking when room units are sold out', async () => {
     const payload = {
-      propertySlug: 'hotel-cladis-sector-51-noida',
+      propertySlug: 'hotel-quadis-sector-51-noida',
       roomTypeSlug: 'royal-suite',
       checkIn: '2026-11-12',
       checkOut: '2026-11-14',
@@ -73,7 +73,7 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
 
   test('GET /api/bookings/:code retrieves booking correctly', async () => {
     const payload = {
-      propertySlug: 'hotel-cladis-sector-51-noida',
+      propertySlug: 'hotel-quadis-sector-51-noida',
       roomTypeSlug: 'superior-room',
       checkIn: '2026-12-01',
       checkOut: '2026-12-03',
@@ -94,7 +94,7 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
 
   test('POST /api/bookings/initiate rejects when check-out date is equal to or before check-in date', async () => {
     const payload = {
-      propertySlug: 'hotel-cladis-sector-51-noida',
+      propertySlug: 'hotel-quadis-sector-51-noida',
       roomTypeSlug: 'deluxe-room',
       checkIn: '2026-11-14',
       checkOut: '2026-11-12', // Check-out before check-in
@@ -111,7 +111,7 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
 
   test('POST /api/bookings/initiate rejects when check-in date is in the past', async () => {
     const payload = {
-      propertySlug: 'hotel-cladis-sector-51-noida',
+      propertySlug: 'hotel-quadis-sector-51-noida',
       roomTypeSlug: 'deluxe-room',
       checkIn: '2020-01-01',
       checkOut: '2020-01-03',

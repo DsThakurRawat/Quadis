@@ -5,7 +5,7 @@ import { UPCOMING_HOTELS } from '../data/hotels.ts'
 
 export default function UpcomingHotels() {
   return (
-    <section className="section bg-warm">
+    <section id="upcoming" className="section bg-warm">
       <div className="container">
         <SectionHeader overline="UPCOMING" title="Expanding across North India" align="center" />
         

@@ -18,7 +18,7 @@ export default function BusinessCtaBanner() {
             <p className="biz-card-modern__text">
               We increase occupancy, lower your marketing costs, and help provide fabulous stays to your guests.
             </p>
-            <Button to="/contactus" className="biz-card-modern__btn">
+            <Button to="/contact" className="biz-card-modern__btn">
               Join our family &rarr;
             </Button>
           </div>

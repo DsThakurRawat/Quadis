@@ -4,8 +4,9 @@ import { banquetImages } from '../data/images.ts'
 import type { EnquiryPayload } from '../types.ts'
 import Gallery from '../components/Gallery.tsx'
 import { Field, Button } from '../components/ui.tsx'
-import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
+import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
 import { SectionHeader } from '../components/blocks.tsx'
+import { submitEnquiry } from '../data/enquiries.ts'
 
 import NotFound from './NotFound.tsx'
 
@@ -73,12 +74,16 @@ export default function BanquetDetail() {
               Thank you — our banquet team will contact you shortly about {venue.name}.
             </SuccessPanel>
           ) : (
-            <form className="form-grid" onSubmit={f.submit(async (_) => {
-              try {
-                await new Promise(r => setTimeout(r, 1500))
-              } catch (err) {
-                console.error('Failed to submit banquet enquiry:', err)
-              }
+            <form className="form-grid" onSubmit={f.submit(async (v) => {
+              await submitEnquiry({
+                enquiryType: 'BANQUET',
+                guestName: v.name,
+                guestPhone: v.phone,
+                guestEmail: v.email,
+                eventDate: v.date || undefined,
+                guestCount: v.guests ? Number(v.guests) : undefined,
+                message: `Venue: ${venue.name}\n${v.message}`.trim(),
+              })
             })} noValidate>
               <Field label="Name" value={f.values.name} onChange={f.set('name')} error={f.errors.name} />
               <Field label="Phone" type="tel" value={f.values.phone} onChange={f.set('phone')} error={f.errors.phone} />
@@ -87,6 +92,7 @@ export default function BanquetDetail() {
               <Field label="Guests" type="number" min="1" value={f.values.guests} onChange={f.set('guests')} error={f.errors.guests} />
               <Field label="Message" as="textarea" className="form-grid__full" value={f.values.message} onChange={f.set('message')} placeholder="Occasion, preferred timing, catering notes…" />
               <div className="form-grid__full">
+                <FormError message={f.submitError} />
                 <Button as="button" type="submit" variant="primary" disabled={f.pending}>{f.pending ? 'Sending…' : 'SEND ENQUIRY'}</Button>
               </div>
             </form>

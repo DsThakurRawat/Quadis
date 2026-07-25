@@ -46,10 +46,17 @@ export const galleryRoyal: string[] = at('rooms/royal')
 export const galleryFacade: string[] = at('facade')
 export const galleryDining: string[] = at('restaurant/dining')
 
+// Section artwork — page banners and the Airlines/Homes concept renders. These
+// are design assets, not property photography, so they must never surface in the
+// "Moments of Calm & Comfort" gallery.
+const SECTION_ARTWORK = ['banner', 'service-leadership', 'employee-vendor-welfare', 'quadis-airlines', 'quadis-homes']
+const isSectionArtwork = (name: string): boolean =>
+  SECTION_ARTWORK.some((slug) => name.toLowerCase().startsWith(slug))
+
 // Master unique gallery list across all categories
 export const galleryAll: string[] = Object.values(buckets)
   .flat()
-  .filter((e) => !e.name.toLowerCase().endsWith('.png'))
+  .filter((e) => !e.name.toLowerCase().endsWith('.png') && !isSectionArtwork(e.name))
   .map((e) => e.url)
 
 const allPhotos = galleryAll
@@ -172,6 +179,20 @@ export const cateringImages = (): string[] => {
 // Site-level hero/section photo sets.
 export const homeImages: string[] = at('home').filter((url) => !url.toLowerCase().endsWith('.png'))
 export const aboutImages: string[] = at('about').length ? at('about') : homeImages
+
+/**
+ * Client-supplied About page artwork, addressed by name rather than by index
+ * into `aboutImages` — a glob index silently repoints at a different photo the
+ * moment a file is added to the folder.
+ */
+const aboutNamed = (file: string, fallback: string[]): string =>
+  at('about').find((url) => url.includes(`/${file}`)) ?? fallback[0] ?? homeImages[0] ?? ''
+
+export const aboutBanner: string = aboutNamed('banner', aboutImages)
+export const aboutServiceLeadership: string = aboutNamed('service-leadership', galleryFacade)
+export const aboutWelfare: string = aboutNamed('employee-vendor-welfare', galleryDining)
+export const aboutAirlines: string = aboutNamed('quadis-airlines', galleryFacade)
+export const aboutHomes: string = aboutNamed('quadis-homes', galleryRoyal)
 export const restaurantHero: string[] = at('restaurant').length ? at('restaurant') : homeImages
 export const banquetHero: string[] = at('banquets').length ? at('banquets') : homeImages
 export const hotelsHero: string[] = at('hotels').length ? at('hotels') : homeImages

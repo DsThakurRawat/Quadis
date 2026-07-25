@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { HOTELS } from '../data/hotels.ts'
+import { useHotels } from '../data/hotels.ts'
+import { PROPERTY_COUNT, FOUNDED_YEAR, spellOut } from '../data/site.ts'
 import { heroShowcaseImages } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
 import BookingBar from '../components/BookingBar.tsx'
@@ -10,7 +11,6 @@ import { HeroVideoShowcase } from '../components/media.tsx'
 import { SectionHeader, StatsStrip, CtaBand, Reveal } from '../components/blocks.tsx'
 import { IconWifi, IconTv, IconAc, IconShield, IconTowel, IconShower, IconToiletries, IconBell } from '../components/icons.tsx'
 
-import UpcomingHotels from '../components/UpcomingHotels.tsx'
 import DestinationsGrid from '../components/DestinationsGrid.tsx'
 import BusinessCtaBanner from '../components/BusinessCtaBanner.tsx'
 import OurOfferings from '../components/OurOfferings.tsx'
@@ -20,14 +20,15 @@ import HappyClientsSection from '../components/HappyClientsSection.tsx'
 
 
 
-const PARTNERS = ['Blackcomb Springs', 'Hitachi', 'Polycab', 'Aditya Birla Grasim']
+import { PARTNER_LOGOS } from '../data/logos.ts'
 import { CITY_FILTERS } from '../data/hotels.ts'
 export default function Home() {
   const [filter, setFilter] = useState<CityFilter>('All')
+  const hotels = useHotels()
 
   const filtered = useMemo(
-    () => (filter === 'All' ? HOTELS : HOTELS.filter((h) => h.city === filter)),
-    [filter]
+    () => (filter === 'All' ? hotels : hotels.filter((h) => h.city === filter)),
+    [filter, hotels]
   )
 
   return (
@@ -36,9 +37,9 @@ export default function Home() {
       <section className="home-hero scrim" style={{ minHeight: '100vh', height: '100vh' }}>
         <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
         <div className="container home-hero__content">
-          <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE 2017</span>
-          <h2 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h2>
-          <p className="lead home-hero__sub">Ten thoughtfully run hotels across Noida & Delhi — refined rooms, warm service, and grand banquets, all a few taps from your stay.</p>
+          <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE {FOUNDED_YEAR}</span>
+          <h1 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h1>
+          <p className="lead home-hero__sub">{spellOut(PROPERTY_COUNT)} thoughtfully run hotels across Noida &amp; Delhi — refined rooms, warm service, and grand banquets, all a few taps from your stay.</p>
         </div>
       </section>
 
@@ -115,9 +116,6 @@ export default function Home() {
       {/* 6. Our Offerings Section */}
       <OurOfferings />
 
-      {/* 7. Upcoming Hotels Section */}
-      <UpcomingHotels />
-
       {/* 8. Destinations For You Section */}
       <DestinationsGrid />
 
@@ -185,7 +183,9 @@ export default function Home() {
             </p>
           </Reveal>
           <div className="partners">
-            {PARTNERS.map((p) => (<span className="partner" key={p}>{p}</span>))}
+            {PARTNER_LOGOS.slice(0, 6).map((p) => (
+              <img className="partner-logo" key={p.name} src={p.src} alt={p.name} loading="lazy" />
+            ))}
           </div>
           <Button to="/about-us" variant="primary">EXPLORE OUR VISION &amp; ROADMAP</Button>
         </div>

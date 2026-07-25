@@ -283,7 +283,7 @@ INSTRUCTIONS:
             type: 'object',
             required: ['propertySlug', 'roomTypeSlug', 'checkIn', 'checkOut', 'guestName', 'guestPhone'],
             properties: {
-              propertySlug: { type: 'string', description: 'Property slug from hotel knowledge e.g. hotel-cladis-sector-51-noida' },
+              propertySlug: { type: 'string', description: 'Property slug from hotel knowledge e.g. hotel-quadis-sector-51-noida' },
               roomTypeSlug: { type: 'string', description: 'Room slug e.g. deluxe-room, superior-room, royal-suite' },
               checkIn: { type: 'string', description: 'Check-in date YYYY-MM-DD' },
               checkOut: { type: 'string', description: 'Check-out date YYYY-MM-DD' },
@@ -471,8 +471,10 @@ INSTRUCTIONS:
 
     if (lower.includes('hold') || lower.includes('reserve') || lower.includes('book a room') || lower.includes('book a hotel')) {
       toolsInvoked.push('initiate_soft_hold')
+      // Resolve against live data — hardcoding a slug breaks whenever a property is retired.
+      const activeProperties = await db.getProperties()
       const { result } = await this.executeTool('initiate_soft_hold', {
-        propertySlug: 'hotel-cladis-sector-51-noida',
+        propertySlug: activeProperties[0]?.slug,
         roomTypeSlug: 'deluxe-room',
         checkIn: '2026-11-20',
         checkOut: '2026-11-22',

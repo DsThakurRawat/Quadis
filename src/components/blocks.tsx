@@ -1,3 +1,5 @@
+import { GUESTS_SERVED_CLAIM } from '../data/site.ts'
+import { useState } from 'react'
 import type { ReactNode, ElementType } from 'react'
 import { useReveal } from './useReveal.ts'
 import { SectionHeader, Button } from './ui.tsx'
@@ -26,15 +28,21 @@ export function PhotoHero({ image, overline, title, sub, height = 'band', childr
   )
 }
 
-const STATS = [
-  { n: '10', label: 'Properties' },
-  { n: '2', label: 'Cities' },
-  { n: '5000+', label: 'Happy Guests' },
-  { n: '4.5★', label: 'Rating' },
-  { n: '95%', label: 'Repeat Guests' },
-] as const
+import { useHotels } from '../data/hotels'
+
 export function StatsStrip() {
   const ref = useReveal()
+  const hotels = useHotels()
+  const cityCount = new Set(hotels.map(h => h.city)).size
+
+  const STATS = [
+    { n: hotels.length.toString(), label: 'Properties' },
+    { n: cityCount.toString(), label: 'Cities' },
+    { n: GUESTS_SERVED_CLAIM, label: 'Happy Guests' },
+    { n: '4.5★', label: 'Rating' },
+    { n: '95%', label: 'Repeat Guests' },
+  ]
+
   return (
     <section className="section bg-cream">
       <div ref={ref} className="container reveal stats">
@@ -59,6 +67,30 @@ export function CtaBand({ title = 'Ready to book your stay?', cta = 'BOOK A RESE
         <Button to={to} variant="primary">{cta}</Button>
       </div>
     </section>
+  )
+}
+
+export function LocationMap({ query }: { query: string }) {
+  const [mounted, setMounted] = useState(false)
+  return (
+    <div className="map-facade" style={{ position: 'relative', width: '100%', height: '300px', backgroundColor: '#e5e3df', cursor: 'pointer', overflow: 'hidden', borderRadius: 'var(--radius)' }} onClick={() => setMounted(true)}>
+      {!mounted ? (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: 'url(/images/home/hero.jpg)', backgroundSize: 'cover' }}>
+          <div style={{ backgroundColor: 'var(--bg-dark)', color: 'var(--text-on-dark)', padding: '12px 24px', borderRadius: '4px', zIndex: 1 }}>
+            Load Interactive Map
+          </div>
+          <div className="scrim" style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
+        </div>
+      ) : (
+        <iframe
+          title={`Map for ${query}`}
+          src={`https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed`}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          style={{ width: '100%', height: '100%', border: 0 }}
+        />
+      )}
+    </div>
   )
 }
 

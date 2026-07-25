@@ -33,7 +33,7 @@ export default function App() {
         <Route path="/corporate-hotel-booking" element={<Corporate />} />
         <Route path="/restaurant" element={<Restaurant />} />
         <Route path="/restaurant/outdoor-catering-service" element={<CateringDetail />} />
-        <Route path="/contactus" element={<Contact />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<NotFound />} />

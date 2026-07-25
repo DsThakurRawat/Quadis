@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { HOTELS, CITIES } from '../data/hotels.ts'
+import { useHotels, CITIES } from '../data/hotels.ts'
 
 // §4 booking bar. Client-side: builds /hotels query until backend lands.
 function Stepper({ label, value, setValue, min, max }: {
@@ -20,6 +20,7 @@ function Stepper({ label, value, setValue, min, max }: {
 
 export default function BookingBar({ overlap = true }: { overlap?: boolean }) {
   const nav = useNavigate()
+  const hotels = useHotels()
   const [dest, setDest] = useState('All')
   const [checkin, setCheckin] = useState('')
   const [checkout, setCheckout] = useState('')
@@ -29,7 +30,7 @@ export default function BookingBar({ overlap = true }: { overlap?: boolean }) {
     e.preventDefault()
     const p = new URLSearchParams()
     if (dest !== 'All') {
-      const hotel = HOTELS.find((h) => h.slug === dest)
+      const hotel = hotels.find((h) => h.slug === dest)
       p.set('city', hotel ? hotel.city : dest)
     }
     if (checkin) p.set('checkin', checkin)
@@ -46,7 +47,7 @@ export default function BookingBar({ overlap = true }: { overlap?: boolean }) {
           <option value="All">All properties</option>
           {CITIES.map((c) => (<option key={c} value={c}>{c}</option>))}
           <optgroup label="By hotel">
-            {HOTELS.map((h) => (<option key={h.slug} value={h.slug}>{h.name}</option>))}
+            {hotels.map((h) => (<option key={h.slug} value={h.slug}>{h.name}</option>))}
           </optgroup>
         </select>
       </div>

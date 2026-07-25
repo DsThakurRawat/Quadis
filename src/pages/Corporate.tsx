@@ -4,7 +4,8 @@ import type { CorporateRFPPayload } from '../types.ts'
 import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
 import { Photo } from '../components/media.tsx'
 import { Field, Button } from '../components/ui.tsx'
-import { useForm, SuccessPanel, isEmail, isPhone, required } from '../components/forms.tsx'
+import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
+import { submitEnquiry } from '../data/enquiries.ts'
 
 
 interface Benefit { title: string; body: string }
@@ -78,12 +79,19 @@ export default function Corporate() {
               Thank you — our corporate desk will respond with negotiated rates and terms shortly.
             </SuccessPanel>
           ) : (
-            <form className="form-grid form-grid--card" onSubmit={f.submit(async (_) => {
-              try {
-                await new Promise(r => setTimeout(r, 1500))
-              } catch (err) {
-                console.error('Failed to submit corporate RFP:', err)
-              }
+            <form className="form-grid form-grid--card" onSubmit={f.submit(async (v) => {
+              await submitEnquiry({
+                enquiryType: 'CORPORATE_RFP',
+                guestName: `${v.person} (${v.company})`,
+                guestPhone: v.phone,
+                guestEmail: v.email,
+                message: [
+                  `Company: ${v.company}`,
+                  `City: ${v.city}`,
+                  v.rooms ? `Rooms per month: ${v.rooms}` : '',
+                  v.message,
+                ].filter(Boolean).join('\n'),
+              })
             })} noValidate>
               <Field label="Company" value={f.values.company} onChange={f.set('company')} error={f.errors.company} />
               <Field label="Contact person" value={f.values.person} onChange={f.set('person')} error={f.errors.person} />
@@ -96,6 +104,7 @@ export default function Corporate() {
               <Field label="Rooms / month (approx.)" type="number" min="1" value={f.values.rooms} onChange={f.set('rooms')} />
               <Field label="Message" as="textarea" className="form-grid__full" value={f.values.message} onChange={f.set('message')} placeholder="Tell us about your travel patterns and requirements…" />
               <div className="form-grid__full">
+                <FormError message={f.submitError} />
                 <Button as="button" type="submit" variant="primary" disabled={f.pending}>{f.pending ? 'Sending…' : 'REQUEST CORPORATE RATES'}</Button>
               </div>
             </form>

@@ -25,7 +25,7 @@ describe('Master End-to-End Acceptance Suite: All 5 Phases of Quadis Hotels Plat
       const res = await request(app).get('/api/properties')
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
-      expect(res.body.count).toBeGreaterThanOrEqual(10)
+      expect(res.body.count).toBeGreaterThanOrEqual(9)
 
       targetPropertySlug = res.body.data[0].slug
     })

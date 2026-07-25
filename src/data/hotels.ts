@@ -49,45 +49,66 @@ export const getHotelRooms = (hotel: Hotel): HotelRoom[] => hotel.rooms ?? DEFAU
 
 import { getApiUrl } from '../config/api'
 
-// §5 — single source of truth. Every hotel UI renders from this array.
-// Backend drop-in: dynamically fetching from API
-let fetchedHotels: Hotel[] = []
-try {
-  const res = await fetch(getApiUrl('properties'))
-  if (res.ok) {
-    const json = await res.json()
-    if (json.success && Array.isArray(json.data)) {
-      fetchedHotels = json.data.map((h: any) => ({
-        slug: h.slug,
-        name: h.name,
-        area: h.name.includes('Sector') ? `Sector ${h.name.split('Sector ')[1]}` : h.name.split(' ').slice(-2).join(' '),
-        city: h.city as City,
-        address: h.address,
-        mapLink: h.map_link,
-        price: h.base_price,
-        rating: h.rating,
-        tier: h.tier || 'central',
-        tierLabel: h.tier_label || 'Quadis Central'
-      }))
-    }
-  }
-} catch (e) {
-  console.error("Failed to fetch hotels", e)
-}
+import { useState, useEffect } from 'react'
 
-const STATIC_HOTELS: Hotel[] = [
-  { slug: 'hotel-quadis-sector-51-noida', name: 'Hotel Quadis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', mapLink: 'https://share.google/X3cBuD2gbz27Jf5Ct', price: 1599, rating: 4.6, tier: 'central', tierLabel: 'Quadis Central' },
-  { slug: 'hotel-quadis-central-sector-27-noida', name: 'Hotel Quadis Central', area: 'Sector 27', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida, Uttar Pradesh 201301', mapLink: 'https://share.google/VGqI5StPFPeLyZIMO', price: 1799, rating: 4.5, tier: 'central', tierLabel: 'Quadis Central' },
-  { slug: 'hotel-downtown-sector-15-noida', name: 'Hotel Downtown Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', mapLink: 'https://share.google/oTnXw9glnDyZei1tL', price: 1599, rating: 4.4, tier: 'central', tierLabel: 'Quadis Central' },
-  { slug: 'hotel-cladis-sector-15-noida', name: 'Hotel Cladis Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'New Ashok Nagar Rd, opposite metro pillar no. 36, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', mapLink: 'https://share.google/nHWsuom2pwTNGRgfY', price: 1499, rating: 4.4, tier: 'central', tierLabel: 'Quadis Central' },
-  { slug: 'hotel-cladis-sector-19-noida', name: 'Hotel Cladis Sector 19 Noida', area: 'Sector 19', city: 'Noida', address: 'A-369, A Block, Pocket A, Sector 19, Noida, Uttar Pradesh 201301', mapLink: 'https://share.google/2YthY0ZjkrW3jnT3n', price: 1399, rating: 4.3, tier: 'central', tierLabel: 'Quadis Central' },
-  { slug: 'hotel-downtown-sector-51-noida', name: 'Hotel Downtown Sector 51 Noida', area: 'Sector 51', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', mapLink: 'https://share.google/Mwl1FiCVC8ucqXrd', price: 1699, rating: 4.5, tier: 'central', tierLabel: 'Quadis Central' },
-  { slug: 'hotel-downtown-east-of-kailash', name: 'Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', mapLink: 'https://share.google/3RsBzxkp8xV1e0AuY', price: 1999, rating: 4.6, tier: 'central', tierLabel: 'Quadis Central' },
-  { slug: 'hotel-amby-inn-lajpat-nagar-ii', name: 'Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', mapLink: 'https://share.google/pSTT03I5OWszpSj5c', price: 1899, rating: 4.5, tier: 'central', tierLabel: 'Quadis Central' },
-  { slug: 'hotel-amar-in', name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', mapLink: 'https://share.google/IQLx35cfOmLf93S2o', price: 1799, rating: 4.4, tier: 'central', tierLabel: 'Quadis Central' },
+export const STATIC_HOTELS: Hotel[] = [
+  { slug: 'hotel-quadis-sector-51-noida', name: 'Hotel Quadis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', price: 1599, rating: 4.6, tier: 'central', tierLabel: 'Quadis Central' },
+  { slug: 'hotel-quadis-central-sector-27-noida', name: 'Hotel Quadis Central', area: 'Sector 27', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida, Uttar Pradesh 201301', price: 1799, rating: 4.5, tier: 'central', tierLabel: 'Quadis Central' },
+  { slug: 'hotel-downtown-sector-15-noida', name: 'Hotel Downtown Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 1599, rating: 4.4, tier: 'central', tierLabel: 'Quadis Central' },
+  { slug: 'hotel-cladis-sector-15-noida', name: 'Hotel Cladis Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'New Ashok Nagar Rd, opposite metro pillar no. 36, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 1499, rating: 4.4, tier: 'central', tierLabel: 'Quadis Central' },
+  { slug: 'hotel-cladis-sector-19-noida', name: 'Hotel Cladis Sector 19 Noida', area: 'Sector 19', city: 'Noida', address: 'A-369, A Block, Pocket A, Sector 19, Noida, Uttar Pradesh 201301', price: 1399, rating: 4.3, tier: 'central', tierLabel: 'Quadis Central' },
+  { slug: 'hotel-downtown-sector-51-noida', name: 'Hotel Downtown Sector 51 Noida', area: 'Sector 51', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', price: 1699, rating: 4.5, tier: 'central', tierLabel: 'Quadis Central' },
+  { slug: 'hotel-downtown-east-of-kailash', name: 'Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', price: 1999, rating: 4.6, tier: 'central', tierLabel: 'Quadis Central' },
+  { slug: 'hotel-amby-inn-lajpat-nagar-ii', name: 'Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', price: 1899, rating: 4.5, tier: 'central', tierLabel: 'Quadis Central' },
+  { slug: 'hotel-amar-in', name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', price: 1799, rating: 4.4, tier: 'central', tierLabel: 'Quadis Central' },
 ]
 
-export const HOTELS: Hotel[] = fetchedHotels.length ? fetchedHotels : STATIC_HOTELS
+export const HOTELS: Hotel[] = STATIC_HOTELS
+
+let cachedHotels: Hotel[] | null = null
+let fetchPromise: Promise<void> | null = null
+const listeners = new Set<() => void>()
+
+export function useHotels(): Hotel[] {
+  const [hotels, setHotels] = useState<Hotel[]>(cachedHotels || HOTELS)
+
+  useEffect(() => {
+    if (cachedHotels) return
+    if (!fetchPromise) {
+      fetchPromise = fetch(getApiUrl('properties'))
+        .then(res => res.json())
+        .then(json => {
+          if (json.success && Array.isArray(json.data)) {
+            cachedHotels = json.data.map((h: any) => ({
+              slug: h.slug,
+              name: h.name,
+              area: h.name.includes('Sector') ? `Sector ${h.name.split('Sector ')[1]}` : h.name.split(' ').slice(-2).join(' '),
+              city: h.city as City,
+              address: h.address,
+              coords: h.lat != null && h.lng != null
+                ? { lat: Number(h.lat), lng: Number(h.lng), placeId: h.place_id ?? undefined }
+                : undefined,
+              price: h.base_price,
+              weekendSurchargePercent: h.weekend_surcharge_percent,
+              rating: h.rating,
+              tier: h.tier || 'central',
+              tierLabel: h.tier_label || 'Quadis Central'
+            }))
+            listeners.forEach(l => l())
+          }
+        })
+        .catch(e => console.error('Failed to fetch hotels', e))
+    }
+
+    const listener = () => {
+      if (cachedHotels) setHotels(cachedHotels)
+    }
+    listeners.add(listener)
+    return () => { listeners.delete(listener) }
+  }, [])
+
+  return hotels
+}
 
 export const UPCOMING_HOTELS: UpcomingHotel[] = [
   { name: 'Rishikesh', location: 'Rishikesh, Uttarakhand', image: '/images/upcoming/rishikesh.png', badge: 'COMING SOON' },

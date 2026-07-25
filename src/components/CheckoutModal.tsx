@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { BookingRecord } from '../types'
+import { BookingRecord, MealPlan } from '../types'
 import { inr } from '../data/hotels'
 import { getApiUrl } from '../config/api'
 
@@ -14,6 +14,7 @@ interface CheckoutModalProps {
   checkOut: string
   roomsCount: number
   guestsCount: number
+  mealPlan?: MealPlan
   totalAmount: number
   onClose: () => void
   onSuccess?: (bookingCode: string) => void
@@ -29,6 +30,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   checkOut,
   roomsCount,
   guestsCount,
+  mealPlan,
   totalAmount,
   onClose,
   onSuccess,
@@ -80,7 +82,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           guestPhone: guestPhone.trim(),
           guestEmail: guestEmail.trim() || undefined,
           companyName: companyName.trim() || undefined,
-          gstin: gstin.trim() || undefined
+          gstin: gstin.trim() || undefined,
+          mealPlan
         })
       })
 

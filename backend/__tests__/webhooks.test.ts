@@ -17,7 +17,7 @@ describe('Phase 2: Razorpay Webhooks & WhatsApp Confirmation Suite', () => {
     const holdRes1 = await request(app)
       .post('/api/bookings/initiate')
       .send({
-        propertySlug: 'hotel-cladis-sector-51-noida',
+        propertySlug: 'hotel-quadis-sector-51-noida',
         roomTypeSlug: 'deluxe-room',
         checkIn: '2026-12-01',
         checkOut: '2026-12-03',
@@ -37,7 +37,7 @@ describe('Phase 2: Razorpay Webhooks & WhatsApp Confirmation Suite', () => {
     const holdRes2 = await request(app)
       .post('/api/bookings/initiate')
       .send({
-        propertySlug: 'hotel-cladis-sector-51-noida',
+        propertySlug: 'hotel-quadis-sector-51-noida',
         roomTypeSlug: 'deluxe-room',
         checkIn: '2026-12-05',
         checkOut: '2026-12-07',

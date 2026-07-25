@@ -20,9 +20,9 @@ const DESTINATIONS: Destination[] = [
 
 export default function DestinationsGrid() {
   return (
-    <section className="section bg-cream">
+    <section id="where-we-are" className="section bg-cream">
       <div className="container">
-        <SectionHeader overline="" title="Destinations For You" />
+        <SectionHeader overline="WHERE WE ARE" title="Destinations For You" />
 
         <Reveal className="destinations-grid">
           {DESTINATIONS.map((dest) => (

@@ -104,6 +104,12 @@ export interface PropertyRecord {
   rating: number
   is_active: boolean
   weekend_surcharge_percent: number
+  /** Null until a real coordinate is confirmed; the UI falls back to address search. */
+  lat?: number | null
+  lng?: number | null
+  place_id?: string | null
+  tier?: string
+  tier_label?: string
 }
 
 export interface RoomTypeRecord {
@@ -116,6 +122,8 @@ export interface RoomTypeRecord {
   bed_type: string
   max_guests: number
   price_offset: number
+  breakfast_offset: number
+  all_meals_offset: number
   total_units: number
   available_units: number
   is_available: boolean

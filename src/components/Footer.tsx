@@ -1,3 +1,4 @@
+import { FOUNDED_YEAR } from '../data/site.ts'
 import { Link } from 'react-router-dom'
 import { IconFacebook, IconX, IconInstagram, IconLinkedin, IconPhone, IconMail, IconPin } from './icons.tsx'
 
@@ -10,11 +11,7 @@ const HOTELS_LINKS: FooterLink[] = [
   { label: 'Hotel Quadis', to: '/hotels/hotel-quadis-sector-51-noida' },
 ]
 const IMPORTANT: FooterLink[] = [
-  { label: 'Privacy & Policy', to: '/contactus' },
-  { label: 'Contact Us', to: '/contactus' },
-  { label: 'Terms & Conditions', to: '/contactus' },
-  { label: 'Career', to: '/contactus' },
-  { label: 'Blog', to: '/contactus' },
+  { label: 'Contact Us', to: '/contact' },
 ]
 
 export default function Footer() {
@@ -63,7 +60,7 @@ export default function Footer() {
           <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noreferrer"><IconInstagram /></a>
           <a href="https://linkedin.com" aria-label="LinkedIn" target="_blank" rel="noreferrer"><IconLinkedin /></a>
         </div>
-        <p className="footer__copy">© 2017–2026 Quadis Services Private Limited. All Rights Reserved.</p>
+        <p className="footer__copy">© {FOUNDED_YEAR}–{new Date().getFullYear()} Quadis Services Private Limited. All Rights Reserved.</p>
       </div>
     </footer>
   )

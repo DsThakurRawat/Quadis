@@ -1,6 +1,14 @@
-import { aboutImages, galleryFacade, galleryRoyal, galleryDining } from '../data/images.ts'
+import {
+  aboutImages,
+  galleryFacade,
+  aboutBanner,
+  aboutServiceLeadership,
+  aboutWelfare,
+  aboutAirlines,
+  aboutHomes,
+} from '../data/images.ts'
 import { HeroMedia, Photo } from '../components/media.tsx'
-import { PhotoHero, SectionHeader, StatsStrip, CtaBand, Reveal } from '../components/blocks.tsx'
+import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
 
 interface Value { title: string; body: string }
 const VALUES: Value[] = [
@@ -10,12 +18,12 @@ const VALUES: Value[] = [
 ]
 
 export default function About() {
-  const heroImg = aboutImages[0] ?? '/images/home/hero.jpg'
+  const heroImg = aboutBanner || aboutImages[0] || '/images/home/hero.jpg'
   const faImg = aboutImages[1] ?? galleryFacade[0] ?? '/images/home/hero.jpg'
-  const leadershipImg = galleryFacade[1] ?? galleryFacade[0] ?? heroImg
-  const welfareImg = galleryDining[0] ?? heroImg
-  const airlinesImg = galleryFacade[2] ?? heroImg
-  const homesImg = galleryRoyal[0] ?? heroImg
+  const leadershipImg = aboutServiceLeadership || heroImg
+  const welfareImg = aboutWelfare || heroImg
+  const airlinesImg = aboutAirlines || heroImg
+  const homesImg = aboutHomes || heroImg
 
   return (
     <>
@@ -151,7 +159,6 @@ export default function About() {
         </div>
       </section>
 
-      <StatsStrip />
       <CtaBand />
     </>
   )

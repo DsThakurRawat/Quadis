@@ -13,7 +13,7 @@ describe('Phase 2: Razorpay Payments Engine & Link Generation Tests', () => {
     const holdRes = await request(app)
       .post('/api/bookings/initiate')
       .send({
-        propertySlug: 'hotel-cladis-sector-51-noida',
+        propertySlug: 'hotel-quadis-sector-51-noida',
         roomTypeSlug: 'deluxe-room',
         checkIn: '2026-11-20',
         checkOut: '2026-11-22',

@@ -9,7 +9,7 @@ export const webhooksRouter = Router()
 webhooksRouter.post('/razorpay', async (req: Request, res: Response) => {
   try {
     const signature = req.headers['x-razorpay-signature'] as string | undefined
-    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body)
+    const rawBody = (req as any).rawBody || (typeof req.body === 'string' ? req.body : JSON.stringify(req.body))
 
     // Verify signature unless in simulation mode
     const isSimulatedHeader = signature === 'simulated' || req.headers['x-simulated-webhook'] === 'true'

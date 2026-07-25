@@ -1,18 +1,7 @@
+import { GUESTS_SERVED_CLAIM } from '../data/site.ts'
+import { PARTNER_LOGOS } from '../data/logos.ts'
 import { SectionHeader } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-
-const CLIENT_LOGOS = [
-  { name: 'ABInBev', display: 'ABInBev', color: 'text-amber-700 font-black tracking-tighter text-xl' },
-  { name: 'Airtel', display: 'airtel', color: 'text-red-600 font-extrabold tracking-tight text-2xl lowercase font-sans' },
-  { name: 'Comviva', display: 'comviva', color: 'text-rose-600 font-bold tracking-normal text-xl lowercase font-mono' },
-  { name: 'Emcure', display: 'Emcure', color: 'text-red-700 font-serif font-bold tracking-wide text-xl' },
-  { name: 'Paytm', display: 'Paytm', color: 'text-sky-600 font-black tracking-tight text-2xl' },
-  { name: 'Zomato', display: 'zomato', color: 'text-red-600 font-extrabold tracking-tighter text-2xl lowercase italic font-sans' },
-  { name: 'Zepto', display: 'zepto', color: 'text-purple-700 font-black tracking-tight text-2xl lowercase' },
-  { name: 'Hitachi', display: 'HITACHI', style: 'text-stone-800 font-mono font-bold tracking-widest text-lg' },
-  { name: 'Polycab', display: 'POLYCAB', style: 'text-blue-900 font-sans font-black tracking-wider text-xl' },
-  { name: 'Aditya Birla Group', display: 'ADITYA BIRLA', style: 'text-amber-900 font-serif font-bold tracking-widest text-base' },
-]
 
 const VERIFIED_GUEST_REVIEWS = [
   {
@@ -46,21 +35,20 @@ export default function HappyClientsSection() {
             Proudly hosting executives and corporate teams from India&rsquo;s most respected enterprises.
           </p>
           <Reveal className="happy-clients-logos">
-            {CLIENT_LOGOS.map((client) => (
+            {PARTNER_LOGOS.map((client) => (
               <div key={client.name} className="happy-client-logo-card">
-                <span className={client.color || client.style || 'happy-client-text-default'}>{client.display}</span>
+                <img className="logo-mark" src={client.src} alt={client.name} loading="lazy" />
               </div>
             ))}
           </Reveal>
         </div>
 
-        {/* Trusted by 500,000+ verified guests */}
         <div className="guest-experience-banner">
           <div className="guest-experience-header">
             <div>
               <span className="guest-experience-overline">GUEST EXPERIENCE</span>
               <h3 className="h3 on-dark" style={{ marginTop: '4px' }}>
-                Trusted by <span className="gold-text">500,000+</span> verified guests
+                Trusted by <span className="gold-text">{GUESTS_SERVED_CLAIM}</span> verified guests
               </h3>
             </div>
             <div className="guest-experience-stats">

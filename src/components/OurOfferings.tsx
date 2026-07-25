@@ -1,3 +1,4 @@
+import { PROPERTY_COUNT } from '../data/site.ts'
 import { SectionHeader, Button } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
 import { homeImages, banquetHero, restaurantImages } from '../data/images.ts'
@@ -18,7 +19,7 @@ const OFFERINGS: Offering[] = [
     subtitle: 'Calm, considered rooms',
     description: 'Immaculate rooms designed around deep sleep, plush bedding, high-speed Wi-Fi, and 24x7 attentive room service across Sector 51, Sector 15, and Delhi.',
     badge: 'ROOMS & SUITES',
-    image: homeImages[0] || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=80',
+    image: homeImages[0] || '/images/home/hero.jpg',
     link: '/hotels',
     cta: 'EXPLORE ROOMS',
   },
@@ -27,16 +28,16 @@ const OFFERINGS: Offering[] = [
     subtitle: 'Celebrations up to 500 guests',
     description: 'Pillarless luxury halls in Sector 51 Noida and Lajpat Nagar Delhi, equipped with customized gourmet catering, valet parking, and dedicated event planners.',
     badge: 'BANQUETS & EVENTS',
-    image: banquetHero[0] || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80',
+    image: banquetHero[0] || '/images/home/hero.jpg',
     link: '/banquets',
     cta: 'EXPLORE VENUES',
   },
   {
     title: 'Corporate & Long Stays',
     subtitle: 'Tailored business packages',
-    description: 'Dedicated GST-compliant invoicing, express check-in, priority laundry, and discounted long-stay corporate tariffs across our 10 NCR properties.',
+    description: `Dedicated GST-compliant invoicing, express check-in, priority laundry, and discounted long-stay corporate tariffs across our ${PROPERTY_COUNT} NCR properties.`,
     badge: 'BUSINESS TRAVEL',
-    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+    image: '/images/home/hero.jpg',
     link: '/corporate-hotel-booking',
     cta: 'CORPORATE TARIFFS',
   },
@@ -45,7 +46,7 @@ const OFFERINGS: Offering[] = [
     subtitle: 'Refined culinary experiences',
     description: 'Multi-cuisine in-house kitchens serving freshly prepared breakfast spreads, wholesome room dining, and customized event menus tailored to every palate.',
     badge: 'RESTAURANT & BAR',
-    image: restaurantImages()[0] || 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=800&q=80',
+    image: restaurantImages()[0] || '/images/home/hero.jpg',
     link: '/restaurant',
     cta: 'VIEW MENUS',
   },

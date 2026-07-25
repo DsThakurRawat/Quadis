@@ -33,4 +33,7 @@ export const IconShower = (p: P) => (<svg {...base} {...p}><path d="M4 4h7a2 2 0
 export const IconTowel = (p: P) => (<svg {...base} {...p}><path d="M4 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Z" /><path d="M4 9h16M8 14h8" /></svg>)
 export const IconToiletries = (p: P) => (<svg {...base} {...p}><path d="M9 3h6v3H9zM10 6v3h4V6M8 9h8v12H8z" /></svg>)
 export const IconBell = (p: P) => (<svg {...base} {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" /></svg>)
-
+export const IconSparkles = (p: P) => (<svg {...base} {...p}><path d="m12 3-1.9 5.8a2 2 0 0 1-1.2 1.2L3 12l5.8 1.9a2 2 0 0 1 1.2 1.2L12 21l1.9-5.8a2 2 0 0 1 1.2-1.2L21 12l-5.8-1.9a2 2 0 0 1-1.2-1.2L12 3Z" /><path d="M19 3v4M21 5h-4" /></svg>)
+export const IconUser = (p: P) => (<svg {...base} {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>)
+export const IconBot = (p: P) => (<svg {...base} {...p}><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2M20 14h2M15 13v2M9 13v2" /></svg>)
+export const IconSend = (p: P) => (<svg {...base} {...p}><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>)

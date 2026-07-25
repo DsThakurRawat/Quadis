@@ -6,32 +6,35 @@ import { notificationService } from '../services/NotificationService'
 
 export const adminRouter = Router()
 
-const ADMIN_PIN = process.env.ADMIN_PIN || '998877'
+/**
+ * Public router — mounted ahead of the requireAdmin guard, because you cannot
+ * present a token you have not been issued yet. Everything else on /api/admin
+ * stays behind the guard.
+ */
+export const adminAuthRouter = Router()
 
-// Simple authentication check for non-tech mobile dashboard
-adminRouter.post('/auth', (req: Request, res: Response) => {
-  const { pin } = req.body
-  if (!pin || pin !== ADMIN_PIN) {
+// POST /api/admin/auth — exchange the staff PIN for the admin bearer token.
+adminAuthRouter.post('/auth', (req: Request, res: Response) => {
+  const expectedPin = process.env.ADMIN_PIN
+  const adminToken = process.env.ADMIN_PASSWORD
+
+  // Fail closed rather than shipping a guessable default PIN.
+  if (!expectedPin || !adminToken) {
+    console.error('ADMIN_PIN / ADMIN_PASSWORD are not set — refusing admin sign-in.')
+    return res.status(503).json({ success: false, error: 'Admin access is not configured' })
+  }
+
+  const { pin } = req.body ?? {}
+  if (typeof pin !== 'string' || pin !== expectedPin) {
     return res.status(401).json({ success: false, error: 'Invalid Admin PIN' })
   }
+
   res.json({
     success: true,
-    token: 'admin_token_active_quadis',
+    token: adminToken,
     message: 'Authenticated successfully as Hotel Management',
   })
 })
-
-// Middleware to verify basic admin header (for non-public admin actions)
-export function requireAdminAuth(req: Request, res: Response, next: () => void) {
-  const auth = req.headers.authorization
-  if (!auth || !auth.includes('admin_token_active_quadis')) {
-    // Also allow if running in test environment or dev mode for seamless UI/testing
-    if (process.env.NODE_ENV !== 'test' && !req.headers['x-admin-bypass']) {
-      return res.status(401).json({ success: false, error: 'Unauthorized. Admin access required.' })
-    }
-  }
-  next()
-}
 
 // GET /api/admin/dashboard — retrieve daily glance metrics, inventory, bookings, and leads
 adminRouter.get('/dashboard', async (_req: Request, res: Response) => {

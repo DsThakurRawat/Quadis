@@ -8,7 +8,7 @@ describe('Phase 1: 15-Minute Soft Hold Cleanup Cron Verification', () => {
   test('cleanupExpiredHolds(15) expires old unpaid holds and restores available units back to inventory', async () => {
     // Initiate two holds for Deluxe Rooms (which starts with 5 available units)
     const hold1 = await db.initiateBookingHold({
-      propertySlug: 'hotel-cladis-sector-51-noida',
+      propertySlug: 'hotel-quadis-sector-51-noida',
       roomTypeSlug: 'deluxe-room',
       checkIn: '2026-11-12',
       checkOut: '2026-11-14',
@@ -19,7 +19,7 @@ describe('Phase 1: 15-Minute Soft Hold Cleanup Cron Verification', () => {
     })
 
     const hold2 = await db.initiateBookingHold({
-      propertySlug: 'hotel-cladis-sector-51-noida',
+      propertySlug: 'hotel-quadis-sector-51-noida',
       roomTypeSlug: 'deluxe-room',
       checkIn: '2026-11-12',
       checkOut: '2026-11-14',
@@ -30,7 +30,7 @@ describe('Phase 1: 15-Minute Soft Hold Cleanup Cron Verification', () => {
     })
 
     // Verify room inventory decreased from 5 to 2 (since 2 + 1 = 3 units held)
-    const { roomTypes } = await db.getPropertyBySlug('hotel-cladis-sector-51-noida')
+    const { roomTypes } = await db.getPropertyBySlug('hotel-quadis-sector-51-noida')
     const deluxeRoom = roomTypes.find((r) => r.slug === 'deluxe-room')
     expect(deluxeRoom?.available_units).toBe(2)
 
@@ -53,7 +53,7 @@ describe('Phase 1: 15-Minute Soft Hold Cleanup Cron Verification', () => {
     expect(lookupHold2?.booking_status).toBe('PENDING_PAYMENT')
 
     // Verify room inventory restored 2 units (from hold1), moving from 2 up to 4 available units!
-    const { roomTypes: afterRoomTypes } = await db.getPropertyBySlug('hotel-cladis-sector-51-noida')
+    const { roomTypes: afterRoomTypes } = await db.getPropertyBySlug('hotel-quadis-sector-51-noida')
     const afterDeluxeRoom = afterRoomTypes.find((r) => r.slug === 'deluxe-room')
     expect(afterDeluxeRoom?.available_units).toBe(4)
   })

@@ -1,6 +1,7 @@
 import { Pool } from 'pg'
-import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord } from '../types'
+import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
+import { computeStayTotal, mealOffsetFor } from '../lib/pricing'
 
 // DatabaseEngine abstraction layer providing seamless support for real PostgreSQL via pg Pool
 // or structured in-memory ACID store when DATABASE_URL is not set (for zero-config local dev/tests).
@@ -92,6 +93,7 @@ export class DatabaseEngine {
     guestEmail?: string
     companyName?: string
     gstin?: string
+    mealPlan?: MealPlan
   }): Promise<{ success: boolean; booking?: BookingRecord; error?: string }> {
     if (new Date(payload.checkOut).getTime() <= new Date(payload.checkIn).getTime()) {
       return { success: false, error: 'Check-out date must be strictly after check-in date' }
@@ -103,7 +105,7 @@ export class DatabaseEngine {
         await client.query('BEGIN')
         // Lock room type row for update
         const roomRes = await client.query(
-          `SELECT rt.*, p.id as prop_id, p.base_price FROM room_types rt
+          `SELECT rt.*, p.id as prop_id, p.base_price, p.weekend_surcharge_percent FROM room_types rt
            JOIN properties p ON p.id = rt.property_id
            WHERE p.slug = $1 AND rt.slug = $2 FOR UPDATE`,
           [payload.propertySlug, payload.roomTypeSlug]
@@ -126,8 +128,15 @@ export class DatabaseEngine {
 
         const randomSuffix = Math.floor(1000 + Math.random() * 9000)
         const bookingCode = `QD-${randomSuffix}`
-        const nights = Math.max(1, Math.round((new Date(payload.checkOut).getTime() - new Date(payload.checkIn).getTime()) / (1000 * 60 * 60 * 24)))
-        const totalAmount = (Number(room.base_price) + Number(room.price_offset)) * nights * payload.roomsCount
+        const totalAmount = computeStayTotal({
+          basePrice: Number(room.base_price),
+          roomOffset: Number(room.price_offset),
+          mealOffset: mealOffsetFor(payload.mealPlan, room),
+          weekendSurchargePercent: Number(room.weekend_surcharge_percent) || 0,
+          checkIn: payload.checkIn,
+          checkOut: payload.checkOut,
+          roomsCount: payload.roomsCount,
+        })
 
         const insertRes = await client.query(
           `INSERT INTO bookings (
@@ -177,8 +186,15 @@ export class DatabaseEngine {
 
     const randomSuffix = Math.floor(1000 + Math.random() * 9000)
     const bookingCode = `QD-${randomSuffix}`
-    const nights = Math.max(1, Math.round((new Date(payload.checkOut).getTime() - new Date(payload.checkIn).getTime()) / (1000 * 60 * 60 * 24)))
-    const totalAmount = (prop.base_price + room.price_offset) * nights * payload.roomsCount
+    const totalAmount = computeStayTotal({
+      basePrice: prop.base_price,
+      roomOffset: room.price_offset,
+      mealOffset: mealOffsetFor(payload.mealPlan, room),
+      weekendSurchargePercent: prop.weekend_surcharge_percent,
+      checkIn: payload.checkIn,
+      checkOut: payload.checkOut,
+      roomsCount: payload.roomsCount,
+    })
 
     const bookingRecord: BookingRecord = {
       id: `booking-${Date.now()}-${randomSuffix}`,

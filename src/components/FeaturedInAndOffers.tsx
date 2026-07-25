@@ -1,17 +1,7 @@
 import { useState } from 'react'
 import { SectionHeader } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-
-const PRESS_LOGOS = [
-  { name: 'Navbharat Times', display: 'NBT', style: 'font-extrabold text-red-600 text-2xl tracking-tighter' },
-  { name: 'Condé Nast Traveller', display: 'Condé Nast TRAVELLER', style: 'font-serif tracking-widest text-stone-900 text-lg uppercase font-semibold' },
-  { name: 'CONVOY', display: 'CONVOY', style: 'font-mono font-black text-amber-600 text-xl tracking-widest' },
-  { name: 'Outlook Traveller', display: 'Outlook TRAVELLER', style: 'font-sans font-bold text-stone-800 text-lg tracking-tight' },
-  { name: 'Lifestyle Asia', display: 'LIFESTYLE ASIA', style: 'font-serif italic text-stone-700 text-base tracking-widest' },
-  { name: 'Pinkvilla', display: 'pinkvilla', style: 'font-sans font-bold text-pink-600 text-xl tracking-tight lowercase' },
-  { name: 'The Economic Times', display: 'THE ECONOMIC TIMES', style: 'font-serif font-bold text-stone-900 text-base tracking-normal' },
-  { name: 'Mint', display: 'mint', style: 'font-sans font-black text-orange-600 text-2xl tracking-tighter lowercase' },
-]
+import { PRESS_LOGOS } from '../data/logos.ts'
 
 interface OfferCard {
   bank: string
@@ -63,7 +53,7 @@ export default function FeaturedInAndOffers() {
           <Reveal className="press-logos-grid">
             {PRESS_LOGOS.map((logo) => (
               <div key={logo.name} className="press-logo-card">
-                <span className={logo.style}>{logo.display}</span>
+                <img className="logo-mark" src={logo.src} alt={logo.name} loading="lazy" />
               </div>
             ))}
           </Reveal>

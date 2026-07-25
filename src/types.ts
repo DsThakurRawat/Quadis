@@ -23,14 +23,40 @@ export interface HotelRoom {
 
 export type QuadisTier = 'central' | 'select' | 'experience'
 
+/**
+ * A real place, not a search string. When present, maps and directions point at
+ * exact coordinates instead of whatever Google's geocoder guesses from the
+ * address text. `placeId` makes a directions link resolve to the business
+ * listing rather than a dropped pin.
+ */
+export interface HotelCoords {
+  lat: number
+  lng: number
+  placeId?: string
+}
+
+/**
+ * The four facts an NCR guest actually needs, which a map cannot convey.
+ * Every field is optional — a fact we haven't verified is simply not shown.
+ * Never invent these; a wrong walk time is worse than a missing one.
+ */
+export interface HotelTransit {
+  metro?: string
+  airport?: string
+  rail?: string
+  landmark?: string
+}
+
 export interface Hotel {
   slug: string
   name: string
   area: string
   city: City
   address: string
-  mapLink?: string
+  coords?: HotelCoords
+  transit?: HotelTransit
   price: number // INR per night
+  weekendSurchargePercent?: number
   rating: number // 0–5
   tier: QuadisTier
   tierLabel: 'Quadis Central' | 'Quadis Select' | 'Quadis Experience'

@@ -1,12 +1,13 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { HOTELS, TIER_FILTERS, CITY_FILTERS } from '../data/hotels.ts'
+import { useHotels, TIER_FILTERS, CITY_FILTERS } from '../data/hotels.ts'
 import { hotelsHero } from '../data/images.ts'
 import type { CityFilter, TierFilter } from '../types.ts'
 import { HotelCard, FilterPills } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
 import { CtaBand } from '../components/blocks.tsx'
 import UpcomingHotels from '../components/UpcomingHotels.tsx'
+import NcrLocatorMap from '../components/NcrLocatorMap.tsx'
 
 const isCityFilter = (v: string | null): v is CityFilter => !!v && (CITY_FILTERS as readonly string[]).includes(v)
 const isTierFilter = (v: string | null): v is TierFilter => !!v && (TIER_FILTERS as readonly string[]).includes(v)
@@ -17,6 +18,9 @@ export default function HotelsList() {
   const tierParam = params.get('tier')
   const [cityFilter, setCityFilter] = useState<CityFilter>(isCityFilter(cityParam) ? cityParam : 'All')
   const [tierFilter, setTierFilter] = useState<TierFilter>(isTierFilter(tierParam) ? tierParam : 'All Tiers')
+  
+  const hotels = useHotels()
+  const [activeSlug, setActiveSlug] = useState<string | null>(null)
 
   // Honor query params on load / when it changes externally.
   useEffect(() => {
@@ -40,12 +44,16 @@ export default function HotelsList() {
   }
 
   const filtered = useMemo(() => {
-    return HOTELS.filter(h => {
+    return hotels.filter(h => {
       const cityMatch = cityFilter === 'All' || h.city === cityFilter
       const tierMatch = tierFilter === 'All Tiers' || h.tier === tierFilter
       return cityMatch && tierMatch
     })
-  }, [cityFilter, tierFilter])
+  }, [hotels, cityFilter, tierFilter])
+
+  // The locator renders nothing without coordinates. Only reserve a column for
+  // it when it will actually appear, otherwise the cards leave a dead gap.
+  const hasMap = filtered.some((h) => h.coords)
 
   return (
     <>
@@ -87,8 +95,20 @@ export default function HotelsList() {
           </p>
           
           {filtered.length > 0 ? (
-            <div className="card-grid card-grid--anim mt-8" key={`${cityFilter}-${tierFilter}`}>
-              {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
+            <div className={`mt-8 ${hasMap ? 'list-with-map' : ''}`}>
+              <div className={`card-grid card-grid--anim ${hasMap ? 'list-with-map__cards' : ''}`} key={`${cityFilter}-${tierFilter}`}>
+                {filtered.map((h) => (
+                  <div
+                    key={h.slug}
+                    className={activeSlug === h.slug ? 'is-located' : ''}
+                    onMouseEnter={() => setActiveSlug(h.slug)}
+                    onMouseLeave={() => setActiveSlug(null)}
+                  >
+                    <HotelCard hotel={h} />
+                  </div>
+                ))}
+              </div>
+              <NcrLocatorMap hotels={filtered} activeSlug={activeSlug} onHover={setActiveSlug} />
             </div>
           ) : (
             <div className="mt-8 py-12 text-center" style={{ border: '1px dashed var(--border-card-2)' }}>
