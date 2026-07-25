@@ -53,10 +53,15 @@ const SECTION_ARTWORK = ['banner', 'service-leadership', 'employee-vendor-welfar
 const isSectionArtwork = (name: string): boolean =>
   SECTION_ARTWORK.some((slug) => name.toLowerCase().startsWith(slug))
 
-// Master unique gallery list across all categories
+// Master gallery list — a true superset of the category tabs.
+//
+// This used to drop every .png, so "All" showed 58 of 178 photos while the
+// category tabs showed all of them: a guest could see a room under "Deluxe
+// Rooms" that "All" hid. Only section artwork is excluded, since that is design
+// material rather than photography.
 export const galleryAll: string[] = Object.values(buckets)
   .flat()
-  .filter((e) => !e.name.toLowerCase().endsWith('.png') && !isSectionArtwork(e.name))
+  .filter((e) => !isSectionArtwork(e.name))
   .map((e) => e.url)
 
 const allPhotos = galleryAll

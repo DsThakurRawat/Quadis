@@ -2,6 +2,7 @@ import { Pool } from 'pg'
 import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
 import { computeStayTotal, mealOffsetFor } from '../lib/pricing'
+import { nightsBetween, todayIso } from '../lib/nights'
 
 // DatabaseEngine abstraction layer providing seamless support for real PostgreSQL via pg Pool
 // or structured in-memory ACID store when DATABASE_URL is not set (for zero-config local dev/tests).
@@ -16,6 +17,8 @@ export class DatabaseEngine {
   public memoryBookings: Map<string, BookingRecord> = new Map()
   public memoryEnquiries: Map<string, EnquiryRecord> = new Map()
   public memoryChatLogs: Map<string, ChatLogRecord> = new Map()
+  /** Night-level holds: `${roomTypeId}|${YYYY-MM-DD}` → [{ bookingId, units }]. */
+  public memoryNightHolds: Map<string, Array<{ bookingId: string; units: number }>> = new Map()
 
   constructor() {
     const dbUrl = process.env.DATABASE_URL
@@ -34,6 +37,7 @@ export class DatabaseEngine {
     this.memoryBookings.clear()
     this.memoryEnquiries.clear()
     this.memoryChatLogs.clear()
+    this.memoryNightHolds.clear()
 
     seedProperties.forEach((p) => {
       this.memoryProperties.set(p.id, { ...p })
@@ -54,13 +58,13 @@ export class DatabaseEngine {
   public async getPropertiesWithRooms(): Promise<Array<{ property: PropertyRecord; rooms: RoomTypeRecord[] }>> {
     const props = await this.getProperties()
     if (!this.useInMemory && this.pool) {
-      const allRooms = await this.pool.query('SELECT * FROM room_types')
+      const allRooms = await this.pool.query(DatabaseEngine.ROOM_SELECT)
       return props.map((p) => ({
         property: p,
         rooms: allRooms.rows.filter((r) => r.property_id === p.id),
       }))
     }
-    const allRooms = Array.from(this.memoryRoomTypes.values())
+    const allRooms = Array.from(this.memoryRoomTypes.values()).map((r) => this.withTonightAvailability(r))
     return props.map((p) => ({
       property: p,
       rooms: allRooms.filter((r) => r.property_id === p.id),
@@ -72,13 +76,72 @@ export class DatabaseEngine {
       const propRes = await this.pool.query('SELECT * FROM properties WHERE slug = $1 AND is_active = true', [slug])
       if (propRes.rows.length === 0) return { property: null, roomTypes: [] }
       const prop: PropertyRecord = propRes.rows[0]
-      const roomsRes = await this.pool.query('SELECT * FROM room_types WHERE property_id = $1', [prop.id])
+      const roomsRes = await this.pool.query(`${DatabaseEngine.ROOM_SELECT} WHERE rt.property_id = $1`, [prop.id])
       return { property: prop, roomTypes: roomsRes.rows }
     }
     const prop = Array.from(this.memoryProperties.values()).find((p) => p.slug === slug && p.is_active) || null
     if (!prop) return { property: null, roomTypes: [] }
-    const rooms = Array.from(this.memoryRoomTypes.values()).filter((r) => r.property_id === prop.id)
+    const rooms = Array.from(this.memoryRoomTypes.values())
+      .filter((r) => r.property_id === prop.id)
+      .map((r) => this.withTonightAvailability(r))
     return { property: prop, roomTypes: rooms }
+  }
+
+  /**
+   * Units still sellable across every night of the stay — the tightest night
+   * wins, since one full night blocks the whole range.
+   */
+  public async getAvailableUnits(roomTypeId: string, checkIn: string, checkOut: string): Promise<number> {
+    const room = await this.getRoomTypeById(roomTypeId)
+    if (!room) return 0
+
+    const nights = nightsBetween(checkIn, checkOut)
+    if (!nights.length) return room.total_units
+
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `SELECT stay_date, SUM(units)::int AS held
+           FROM room_night_holds
+          WHERE room_type_id = $1 AND stay_date = ANY($2::date[])
+          GROUP BY stay_date`,
+        [roomTypeId, nights]
+      )
+      const peak = res.rows.reduce((m: number, r: any) => Math.max(m, Number(r.held)), 0)
+      return Math.max(0, room.total_units - peak)
+    }
+
+    const peak = nights.reduce((m, d) => {
+      const held = (this.memoryNightHolds.get(`${roomTypeId}|${d}`) || []).reduce((s, h) => s + h.units, 0)
+      return Math.max(m, held)
+    }, 0)
+    return Math.max(0, room.total_units - peak)
+  }
+
+  /**
+   * `available_units` is no longer a stored counter — it is derived per night.
+   * Read paths report tonight's figure, which is what "available now" means on
+   * the dashboard and in the chatbot. Date-specific answers use
+   * getAvailableUnits().
+   */
+  private withTonightAvailability(room: RoomTypeRecord): RoomTypeRecord {
+    const held = (this.memoryNightHolds.get(`${room.id}|${todayIso()}`) || []).reduce((s, h) => s + h.units, 0)
+    return { ...room, available_units: Math.max(0, room.total_units - held) }
+  }
+
+  /** SQL mirror of withTonightAvailability, for the Postgres read paths. */
+  private static readonly ROOM_SELECT = `
+    SELECT rt.*, GREATEST(0, rt.total_units - COALESCE((
+      SELECT SUM(h.units)::int FROM room_night_holds h
+       WHERE h.room_type_id = rt.id AND h.stay_date = CURRENT_DATE
+    ), 0)) AS available_units
+    FROM room_types rt`
+
+  private releaseNightHoldsInMemory(bookingId: string): void {
+    for (const [key, holds] of this.memoryNightHolds.entries()) {
+      const kept = holds.filter((h) => h.bookingId !== bookingId)
+      if (kept.length) this.memoryNightHolds.set(key, kept)
+      else this.memoryNightHolds.delete(key)
+    }
   }
 
   public async initiateBookingHold(payload: {
@@ -115,16 +178,26 @@ export class DatabaseEngine {
           return { success: false, error: 'Property or room category not found' }
         }
         const room = roomRes.rows[0]
-        if (room.available_units < payload.roomsCount) {
+        if (!room.is_available) {
           await client.query('ROLLBACK')
-          return { success: false, error: `Only ${room.available_units} units available for this room category` }
+          return { success: false, error: 'This room category is currently unavailable' }
         }
 
-        // Decrement available units
-        await client.query('UPDATE room_types SET available_units = available_units - $1 WHERE id = $2', [
-          payload.roomsCount,
-          room.id,
-        ])
+        // Availability is per night: find the busiest night in the requested range.
+        const nights = nightsBetween(payload.checkIn, payload.checkOut)
+        const heldRes = await client.query(
+          `SELECT COALESCE(MAX(held), 0)::int AS peak FROM (
+             SELECT SUM(units)::int AS held FROM room_night_holds
+              WHERE room_type_id = $1 AND stay_date = ANY($2::date[])
+              GROUP BY stay_date
+           ) t`,
+          [room.id, nights]
+        )
+        const free = room.total_units - Number(heldRes.rows[0]?.peak || 0)
+        if (free < payload.roomsCount) {
+          await client.query('ROLLBACK')
+          return { success: false, error: `Only ${Math.max(0, free)} units available for these dates` }
+        }
 
         const randomSuffix = Math.floor(1000 + Math.random() * 9000)
         const bookingCode = `QD-${randomSuffix}`
@@ -159,8 +232,16 @@ export class DatabaseEngine {
             totalAmount,
           ]
         )
+        // Claim each night of the stay for this booking.
+        const created = insertRes.rows[0]
+        await client.query(
+          `INSERT INTO room_night_holds (room_type_id, booking_id, stay_date, units)
+           SELECT $1, $2, d::date, $3 FROM unnest($4::date[]) AS d`,
+          [room.id, created.id, payload.roomsCount, nights]
+        )
+
         await client.query('COMMIT')
-        return { success: true, booking: insertRes.rows[0] }
+        return { success: true, booking: created }
       } catch (err: any) {
         await client.query('ROLLBACK')
         return { success: false, error: err.message || 'Transaction error during booking hold' }
@@ -176,13 +257,20 @@ export class DatabaseEngine {
       (r) => r.property_id === prop.id && r.slug === payload.roomTypeSlug
     )
     if (!room) return { success: false, error: 'Room category not found' }
-    if (room.available_units < payload.roomsCount) {
-      return { success: false, error: `Only ${room.available_units} units available for this room category` }
+    if (!room.is_available) {
+      return { success: false, error: 'This room category is currently unavailable' }
     }
 
-    // Decrement available units
-    room.available_units -= payload.roomsCount
-    this.memoryRoomTypes.set(room.id, room)
+    // Availability is per night: the busiest night in the range caps the stay.
+    const nights = nightsBetween(payload.checkIn, payload.checkOut)
+    const peakHeld = nights.reduce((m, d) => {
+      const held = (this.memoryNightHolds.get(`${room.id}|${d}`) || []).reduce((s, h) => s + h.units, 0)
+      return Math.max(m, held)
+    }, 0)
+    const free = room.total_units - peakHeld
+    if (free < payload.roomsCount) {
+      return { success: false, error: `Only ${Math.max(0, free)} units available for these dates` }
+    }
 
     const randomSuffix = Math.floor(1000 + Math.random() * 9000)
     const bookingCode = `QD-${randomSuffix}`
@@ -217,6 +305,15 @@ export class DatabaseEngine {
       created_at: new Date(),
     }
     this.memoryBookings.set(bookingRecord.id, bookingRecord)
+
+    // Claim each night of the stay for this booking.
+    for (const d of nights) {
+      const key = `${room.id}|${d}`
+      const holds = this.memoryNightHolds.get(key) || []
+      holds.push({ bookingId: bookingRecord.id, units: payload.roomsCount })
+      this.memoryNightHolds.set(key, holds)
+    }
+
     return { success: true, booking: bookingRecord }
   }
 
@@ -245,10 +342,11 @@ export class DatabaseEngine {
 
   public async getRoomTypeById(id: string): Promise<RoomTypeRecord | null> {
     if (!this.useInMemory && this.pool) {
-      const res = await this.pool.query('SELECT * FROM room_types WHERE id = $1', [id])
+      const res = await this.pool.query(`${DatabaseEngine.ROOM_SELECT} WHERE rt.id = $1`, [id])
       return res.rows[0] || null
     }
-    return this.memoryRoomTypes.get(id) || null
+    const room = this.memoryRoomTypes.get(id)
+    return room ? this.withTonightAvailability(room) : null
   }
 
   public async updateBookingPayment(
@@ -279,10 +377,8 @@ export class DatabaseEngine {
       try {
         await client.query('BEGIN')
         if (shouldReleaseInventory) {
-          await client.query(
-            `UPDATE room_types SET available_units = LEAST(total_units, available_units + $1) WHERE id = $2`,
-            [existing.rooms_count, existing.room_type_id]
-          )
+          // Dropping the night rows returns exactly the nights this booking held.
+          await client.query(`DELETE FROM room_night_holds WHERE booking_id = $1`, [existing.id])
         }
         const res = await client.query(
           `UPDATE bookings SET
@@ -306,11 +402,7 @@ export class DatabaseEngine {
 
     // In-memory update
     if (shouldReleaseInventory) {
-      const room = this.memoryRoomTypes.get(existing.room_type_id)
-      if (room) {
-        room.available_units = Math.min(room.total_units, room.available_units + existing.rooms_count)
-        this.memoryRoomTypes.set(room.id, room)
-      }
+      this.releaseNightHoldsInMemory(existing.id)
     }
 
     existing.payment_status = newPaymentStatus
@@ -336,10 +428,7 @@ export class DatabaseEngine {
         let count = 0
         for (const booking of expiredRes.rows) {
           await client.query(`UPDATE bookings SET booking_status = 'EXPIRED' WHERE id = $1`, [booking.id])
-          await client.query(
-            `UPDATE room_types SET available_units = LEAST(total_units, available_units + $1) WHERE id = $2`,
-            [booking.rooms_count, booking.room_type_id]
-          )
+          await client.query(`DELETE FROM room_night_holds WHERE booking_id = $1`, [booking.id])
           count++
         }
         await client.query('COMMIT')
@@ -357,11 +446,7 @@ export class DatabaseEngine {
     this.memoryBookings.forEach((booking) => {
       if (booking.booking_status === 'PENDING_PAYMENT' && booking.created_at < thresholdDate) {
         booking.booking_status = 'EXPIRED'
-        const room = this.memoryRoomTypes.get(booking.room_type_id)
-        if (room) {
-          room.available_units = Math.min(room.total_units, room.available_units + booking.rooms_count)
-          this.memoryRoomTypes.set(room.id, room)
-        }
+        this.releaseNightHoldsInMemory(booking.id)
         this.memoryBookings.set(booking.id, booking)
         count++
       }

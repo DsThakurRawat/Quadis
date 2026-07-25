@@ -61,6 +61,30 @@ webhooksRouter.post('/razorpay', async (req: Request, res: Response) => {
     }
 
     if (eventType === 'order.paid' || eventType === 'payment.captured') {
+      // Razorpay retries on timeout. Replaying a confirmation must not fire a
+      // second set of guest/owner receipts.
+      if (booking.booking_status === 'CONFIRMED' && booking.payment_status === 'PAID') {
+        return res.json({ success: true, message: 'Booking already confirmed; webhook ignored as duplicate' })
+      }
+
+      // The hold was already released back to inventory, so the room may since
+      // have been sold. Confirming here would oversell it — record the payment
+      // and flag it for a human instead.
+      if (booking.booking_status === 'CANCELLED' || booking.booking_status === 'EXPIRED') {
+        await db.updateBookingPayment(booking.booking_code, {
+          paymentStatus: 'PAID',
+          razorpayPaymentId: paymentId,
+        })
+        console.error(
+          `[webhook] Payment ${paymentId} captured for ${booking.booking_code}, which is already ` +
+          `${booking.booking_status}. Inventory was released — needs manual review or refund.`
+        )
+        return res.status(409).json({
+          success: false,
+          error: 'Booking is no longer held; payment recorded and flagged for manual review',
+        })
+      }
+
       const updated = await db.updateBookingPayment(booking.booking_code, {
         paymentStatus: 'PAID',
         bookingStatus: 'CONFIRMED',
@@ -84,6 +108,12 @@ webhooksRouter.post('/razorpay', async (req: Request, res: Response) => {
     }
 
     if (eventType === 'payment.failed') {
+      // Releasing inventory is only safe once. A replayed failure must not add
+      // the same rooms back a second time.
+      if (booking.booking_status === 'CANCELLED' || booking.booking_status === 'EXPIRED') {
+        return res.json({ success: true, message: 'Booking already released; webhook ignored as duplicate' })
+      }
+
       // Payment failed — mark status and immediately release inventory
       await db.updateBookingPayment(booking.booking_code, {
         paymentStatus: 'FAILED',

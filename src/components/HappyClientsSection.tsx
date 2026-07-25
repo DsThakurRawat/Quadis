@@ -30,7 +30,7 @@ export default function HappyClientsSection() {
       <div className="container">
         {/* Our Happy Clients */}
         <div className="happy-clients-container">
-          <SectionHeader overline="CORPORATE TRUST" title="Our Happy Clients" />
+          <SectionHeader overline="CORPORATE TRUST" title="Our Corporate Clients" />
           <p className="intro__body mb-10 text-center">
             Proudly hosting executives and corporate teams from India&rsquo;s most respected enterprises.
           </p>

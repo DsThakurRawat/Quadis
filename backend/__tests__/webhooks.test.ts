@@ -29,9 +29,8 @@ describe('Phase 2: Razorpay Webhooks & WhatsApp Confirmation Suite', () => {
     confirmedBookingCode = holdRes1.body.data.booking_code
     roomTypeId = holdRes1.body.data.room_type_id
 
-    // Check units before creating Booking 2
-    const roomBefore2 = await db.getRoomTypeById(roomTypeId)
-    initialRoomAvailableUnits = roomBefore2?.available_units || 0
+    // Availability for Booking 2's dates, before it is held.
+    initialRoomAvailableUnits = await db.getAvailableUnits(roomTypeId, '2026-12-05', '2026-12-07')
 
     // Create Booking 2 (for payment failure verification) with 2 rooms
     const holdRes2 = await request(app)
@@ -79,9 +78,8 @@ describe('Phase 2: Razorpay Webhooks & WhatsApp Confirmation Suite', () => {
   })
 
   test('POST /api/webhooks/razorpay (payment.failed) cancels booking and IMMEDIATELY releases held inventory', async () => {
-    // Check available units right after Booking 2 held 2 rooms
-    const roomAfterHold = await db.getRoomTypeById(roomTypeId)
-    expect(roomAfterHold?.available_units).toBe(initialRoomAvailableUnits - 2)
+    // Booking 2 holds 2 rooms across its own nights only.
+    expect(await db.getAvailableUnits(roomTypeId, '2026-12-05', '2026-12-07')).toBe(initialRoomAvailableUnits - 2)
 
     // Send failure webhook
     const res = await request(app)
@@ -108,8 +106,61 @@ describe('Phase 2: Razorpay Webhooks & WhatsApp Confirmation Suite', () => {
     expect(booking?.booking_status).toBe('CANCELLED')
     expect(booking?.payment_status).toBe('FAILED')
 
-    // Verify room inventory released back!
-    const roomAfterFailure = await db.getRoomTypeById(roomTypeId)
-    expect(roomAfterFailure?.available_units).toBe(initialRoomAvailableUnits)
+    // Verify those nights were released back!
+    expect(await db.getAvailableUnits(roomTypeId, '2026-12-05', '2026-12-07')).toBe(initialRoomAvailableUnits)
+  })
+
+  // Razorpay retries webhooks on timeout, so every handler has to survive a replay.
+  describe('idempotency', () => {
+    const paidWebhook = (bookingCode: string) => ({
+      event: 'order.paid',
+      payload: { payment: { entity: { id: 'pay_sim_success_9988', notes: { bookingCode } } } },
+    })
+
+    test('a replayed order.paid does not re-confirm or re-notify', async () => {
+      const res = await request(app)
+        .post('/api/webhooks/razorpay')
+        .set('x-simulated-webhook', 'true')
+        .send(paidWebhook(confirmedBookingCode))
+
+      expect(res.status).toBe(200)
+      expect(res.body.message).toMatch(/duplicate/i)
+
+      const booking = await db.getBookingByCode(confirmedBookingCode)
+      expect(booking?.booking_status).toBe('CONFIRMED')
+    })
+
+    test('a replayed payment.failed does not release the same rooms twice', async () => {
+      const unitsBefore = await db.getAvailableUnits(roomTypeId, '2026-12-05', '2026-12-07')
+
+      const res = await request(app)
+        .post('/api/webhooks/razorpay')
+        .set('x-simulated-webhook', 'true')
+        .send({
+          event: 'payment.failed',
+          payload: { payment: { entity: { id: 'pay_sim_failed_1122', notes: { bookingCode: failedBookingCode } } } },
+        })
+
+      expect(res.status).toBe(200)
+      expect(res.body.message).toMatch(/duplicate/i)
+
+      const unitsAfter = await db.getAvailableUnits(roomTypeId, '2026-12-05', '2026-12-07')
+      expect(unitsAfter).toBe(unitsBefore)
+    })
+
+    test('a late capture on a released booking is refused, not oversold', async () => {
+      const res = await request(app)
+        .post('/api/webhooks/razorpay')
+        .set('x-simulated-webhook', 'true')
+        .send(paidWebhook(failedBookingCode))
+
+      // The rooms went back to inventory and may already be resold.
+      expect(res.status).toBe(409)
+      expect(res.body.success).toBe(false)
+
+      const booking = await db.getBookingByCode(failedBookingCode)
+      expect(booking?.booking_status).toBe('CANCELLED')
+      expect(booking?.payment_status).toBe('PAID') // recorded for refund
+    })
   })
 })

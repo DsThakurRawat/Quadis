@@ -29,10 +29,9 @@ describe('Phase 1: 15-Minute Soft Hold Cleanup Cron Verification', () => {
       guestPhone: '9000000002',
     })
 
-    // Verify room inventory decreased from 5 to 2 (since 2 + 1 = 3 units held)
-    const { roomTypes } = await db.getPropertyBySlug('hotel-quadis-sector-51-noida')
-    const deluxeRoom = roomTypes.find((r) => r.slug === 'deluxe-room')
-    expect(deluxeRoom?.available_units).toBe(2)
+    // 2 + 1 = 3 units held across those nights, so 2 remain sellable.
+    const roomId = hold1.booking!.room_type_id
+    expect(await db.getAvailableUnits(roomId, '2026-11-12', '2026-11-14')).toBe(2)
 
     // Simulate hold1 expiring by forcing its created_at to 20 minutes ago
     if (hold1.booking) {
@@ -52,9 +51,7 @@ describe('Phase 1: 15-Minute Soft Hold Cleanup Cron Verification', () => {
     const lookupHold2 = await db.getBookingByCode(hold2.booking!.booking_code)
     expect(lookupHold2?.booking_status).toBe('PENDING_PAYMENT')
 
-    // Verify room inventory restored 2 units (from hold1), moving from 2 up to 4 available units!
-    const { roomTypes: afterRoomTypes } = await db.getPropertyBySlug('hotel-quadis-sector-51-noida')
-    const afterDeluxeRoom = afterRoomTypes.find((r) => r.slug === 'deluxe-room')
-    expect(afterDeluxeRoom?.available_units).toBe(4)
+    // hold1's 2 units return to those nights: 2 -> 4 sellable.
+    expect(await db.getAvailableUnits(roomId, '2026-11-12', '2026-11-14')).toBe(4)
   })
 })

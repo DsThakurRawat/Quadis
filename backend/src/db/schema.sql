@@ -65,6 +65,29 @@ CREATE TABLE IF NOT EXISTS bookings (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- A payment may only ever settle one booking. Razorpay retries webhooks on
+-- timeout, so without this a replayed payment.captured can confirm twice.
+CREATE UNIQUE INDEX IF NOT EXISTS bookings_razorpay_payment_id_key
+  ON bookings (razorpay_payment_id) WHERE razorpay_payment_id IS NOT NULL;
+
+-- Availability is per night, not a single counter per room type.
+--
+-- One row per room type, per night, per booking. A stay from the 1st to the 3rd
+-- occupies the nights of the 1st and 2nd — the checkout date is not a night.
+-- Without this, a booking in December made rooms unbookable in March.
+CREATE TABLE IF NOT EXISTS room_night_holds (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_type_id VARCHAR(64) NOT NULL REFERENCES room_types(id) ON DELETE CASCADE,
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  stay_date DATE NOT NULL,
+  units INTEGER NOT NULL CHECK (units > 0)
+);
+
+CREATE INDEX IF NOT EXISTS room_night_holds_lookup
+  ON room_night_holds (room_type_id, stay_date);
+CREATE UNIQUE INDEX IF NOT EXISTS room_night_holds_unique
+  ON room_night_holds (booking_id, stay_date);
+
 CREATE INDEX IF NOT EXISTS idx_bookings_status_created ON bookings(booking_status, created_at);
 CREATE INDEX IF NOT EXISTS idx_bookings_code ON bookings(booking_code);
 
