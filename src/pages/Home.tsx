@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHotels } from '../data/hotels.ts'
-import { PROPERTY_COUNT, FOUNDED_YEAR, spellOut } from '../data/site.ts'
-import { heroShowcaseImages } from '../data/images.ts'
+import { FOUNDED_YEAR } from '../data/site.ts'
+import { heroShowcaseImages, aboutHomes, aboutAirlines } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
 import BookingBar from '../components/BookingBar.tsx'
 
@@ -14,8 +14,12 @@ import { IconWifi, IconTv, IconAc, IconShield, IconTowel, IconShower, IconToilet
 import DestinationsGrid from '../components/DestinationsGrid.tsx'
 import BusinessCtaBanner from '../components/BusinessCtaBanner.tsx'
 import OurOfferings from '../components/OurOfferings.tsx'
+import ExperiencesByQuadis from '../components/ExperiencesByQuadis.tsx'
+import UpcomingHotels from '../components/UpcomingHotels.tsx'
+import TierExpansion from '../components/TierExpansion.tsx'
 import DealsSection from '../components/DealsSection.tsx'
-import FeaturedInAndOffers from '../components/FeaturedInAndOffers.tsx'
+import FeaturedIn from '../components/FeaturedIn.tsx'
+import OffersForYou from '../components/OffersForYou.tsx'
 import HappyClientsSection from '../components/HappyClientsSection.tsx'
 
 
@@ -34,12 +38,14 @@ export default function Home() {
   return (
     <>
       {/* 1. Master Welcome Hero: Video + Headline + Floating Booking Bar */}
-      <section className="home-hero scrim" style={{ minHeight: '100vh', height: '100vh' }}>
+      {/* The inline 100vh override is deliberately gone: it defeated the
+          clamp() in chrome.css, pushed the booking bar clear of the video, and
+          made the headline overflow at 1280×720 so "seconds." was cut off. */}
+      <section className="home-hero scrim">
         <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
         <div className="container home-hero__content">
           <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE {FOUNDED_YEAR}</span>
           <h1 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h1>
-          <p className="lead home-hero__sub">{spellOut(PROPERTY_COUNT)} thoughtfully run hotels across Noida &amp; Delhi — refined rooms, warm service, and grand banquets, all a few taps from your stay.</p>
         </div>
       </section>
 
@@ -66,14 +72,14 @@ export default function Home() {
         </div>
       </section>
       {/* 5. Great Sleep & Refreshing Showers Guarantee (§Stay Promise) */}
-      <section className="section stay-promise-section bg-dark text-on-dark">
+      <section id="promise" className="section stay-promise-section bg-dark text-on-dark">
         <div className="container">
           <Reveal className="stay-promise center-col text-center">
             <span className="stay-promise__pill">Fabulous, or Free</span>
             <h2 className="h2 on-dark stay-promise__title">
-              Great <span className="script gold-text" style={{ fontSize: '1.2em' }}>sleep.</span> Refreshing <span className="script gold-text" style={{ fontSize: '1.2em' }}>showers.</span>
+              Great <span className="script brown-text" style={{ fontSize: '1.2em' }}>sleep.</span> Refreshing <span className="script brown-text" style={{ fontSize: '1.2em' }}>showers.</span>
             </h2>
-            <p className="lead stay-promise__sub">Hassle free stay, else we pay. <a href="#promise">Know more.</a></p>
+            <p className="lead stay-promise__sub">Hassle free stay, else we pay. <Link to="/contact">Know more.</Link></p>
             
             <div className="stay-promise__icons">
               <div className="stay-promise__icon-item">
@@ -116,14 +122,23 @@ export default function Home() {
       {/* 6. Our Offerings Section */}
       <OurOfferings />
 
+      {/* 7. Experiences by Quadis + Upcoming Hotels — both missing from the
+          live site (change order item 7). Note these overlap OurOfferings
+          above; flagged to the client for a keep-one decision. */}
+      <ExperiencesByQuadis />
+      <UpcomingHotels />
+
+      {/* 7b. Three-tier expansion roadmap (change order item 14). */}
+      <TierExpansion />
+
       {/* 8. Destinations For You Section */}
       <DestinationsGrid />
 
       {/* 9. Deal Of The Day / Curated Offers */}
       <DealsSection />
 
-      {/* 10. Featured In & Offers For You Section */}
-      <FeaturedInAndOffers />
+      {/* 10. Featured In */}
+      <FeaturedIn />
 
       {/* 11. Business & Franchisee CTA Banner */}
 
@@ -137,7 +152,7 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
               <article className="future-card" style={{ background: 'var(--bg-warm)', color: 'var(--text-primary)', borderRadius: '8px', overflow: 'hidden' }}>
                 <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
-                  <img src="/images/home/12.jpg" alt="Quadis Homes" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={aboutHomes} alt="Quadis Homes" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ padding: '32px' }}>
                   <span className="overline mb-2" style={{ display: 'block', color: 'var(--gold-deep)' }}>FUTURE VISION</span>
@@ -145,21 +160,24 @@ export default function Home() {
                   <p className="mt-2" style={{ color: 'var(--text-muted)' }}>Premium residential spaces designed with Quadis hospitality.</p>
                   <div className="mt-8" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span className="meta" style={{ background: 'var(--bg-cream)', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>In development</span>
-                    <Link to="/contact" className="btn btn--ghost btn--sm" style={{ padding: 0 }}>Contact</Link>
+                    <Link to="/contact" className="btn btn--primary btn--sm">CONTACT US</Link>
                   </div>
                 </div>
               </article>
               <article className="future-card" style={{ background: 'var(--bg-warm)', color: 'var(--text-primary)', borderRadius: '8px', overflow: 'hidden' }}>
                 <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
-                  <img src="/images/home/13.jpg" alt="Quadis Aviation" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={aboutAirlines} alt="Quadis Airlines" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ padding: '32px' }}>
                   <span className="overline mb-2" style={{ display: 'block', color: 'var(--gold-deep)' }}>FUTURE VISION</span>
-                  <h3 className="h3" style={{ fontFamily: 'var(--font-display)', fontSize: '30px' }}>Quadis Aviation</h3>
+                  {/* Canonical name is "Quadis Airlines" — it is what the
+                      client's own render shows on the fuselage, and what the
+                      Ecosystem paragraph below and /about-us already use. */}
+                  <h3 className="h3" style={{ fontFamily: 'var(--font-display)', fontSize: '30px' }}>Quadis Airlines</h3>
                   <p className="mt-2" style={{ color: 'var(--text-muted)' }}>Elevating your journey before you even arrive.</p>
                   <div className="mt-8" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span className="meta" style={{ background: 'var(--bg-cream)', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>In development</span>
-                    <Link to="/contact" className="btn btn--ghost btn--sm" style={{ padding: 0 }}>Contact</Link>
+                    <Link to="/contact" className="btn btn--primary btn--sm">CONTACT US</Link>
                   </div>
                 </div>
               </article>
@@ -168,8 +186,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 12. Our Happy Clients & Trusted by 500,000+ Verified Guests */}
+      {/* 12. Our Happy Clients & Guest Experience */}
       <HappyClientsSection />
+
+      {/* 13. Offers for You — client asked for this to sit directly after the
+          Guest Experience banner (change order item 12). */}
+      <OffersForYou />
 
 
 

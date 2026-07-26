@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { loginImages } from '../data/images.ts'
-import { Field, PasswordField, Button } from '../components/ui.tsx'
+import { Field, PasswordField, Button, Logo } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
 import { useForm, SuccessPanel, FormError, required } from '../components/forms.tsx'
 import { login } from '../data/auth.ts'
@@ -27,10 +27,7 @@ export default function Login() {
       <HeroMedia src={bg} />
       <div className="auth__card">
         <div className="auth__header">
-          <span className="wordmark wordmark--auth">
-            <span className="wordmark__main">QUADIS<sup>™</sup></span>
-            <span className="wordmark__sub">HOTELS</span>
-          </span>
+          <Logo variant="auth" />
           <p className="auth__welcome">Welcome back! Please login to continue</p>
         </div>
         <div className="auth__body">
@@ -48,7 +45,9 @@ export default function Login() {
                 <label className="checkbox">
                   <input type="checkbox" checked={f.values.remember} onChange={f.set('remember')} /> <span>Remember me</span>
                 </label>
-                <Link to="/login" className="auth__link">Forgot password?</Link>
+                {/* No self-serve reset flow exists yet; route to the team rather than
+                    back to this same page. */}
+                <Link to="/contact" className="auth__link">Forgot password?</Link>
               </div>
               <FormError message={f.submitError} />
               <Button as="button" type="submit" variant="primary" className="auth__submit" disabled={f.pending}>

@@ -1,8 +1,35 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { BookingRecord, MealPlan } from '../types'
 import { inr } from '../data/hotels'
 import { getApiUrl } from '../config/api'
 import { getToken } from '../data/auth'
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void; on: (e: string, cb: (r: any) => void) => void }
+  }
+}
+
+const RAZORPAY_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js'
+
+/** Loads the Razorpay checkout script once and resolves when it is usable. */
+function loadRazorpay(): Promise<boolean> {
+  if (window.Razorpay) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${RAZORPAY_SCRIPT}"]`)
+    if (existing) {
+      existing.addEventListener('load', () => resolve(!!window.Razorpay))
+      existing.addEventListener('error', () => resolve(false))
+      return
+    }
+    const script = document.createElement('script')
+    script.src = RAZORPAY_SCRIPT
+    script.async = true
+    script.onload = () => resolve(!!window.Razorpay)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
+}
 
 
 interface CheckoutModalProps {
@@ -38,7 +65,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const [step, setStep] = useState<'DETAILS' | 'PAYMENT' | 'CONFIRMED'>('DETAILS')
   const [loading, setLoading] = useState(false)
+  const [verifying, setVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Stops the confirmation poll from calling setState after the guest closes
+  // the modal mid-verification.
+  const cancelledRef = useRef(false)
+  useEffect(() => () => { cancelledRef.current = true }, [])
 
   // Guest details state
   const [guestName, setGuestName] = useState('')
@@ -106,37 +139,126 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }
 
-  const handleSimulatePayment = async (status: 'order.paid' | 'payment.failed') => {
+  /**
+   * The server is the only authority on whether a booking is paid. Razorpay
+   * confirms out-of-band via the webhook, so after checkout closes we poll the
+   * booking until the server reports CONFIRMED rather than assuming success.
+   */
+  const awaitServerConfirmation = async (bookingCode: string): Promise<BookingRecord | null> => {
+    const deadline = Date.now() + 90_000
+    while (Date.now() < deadline) {
+      if (cancelledRef.current) return null
+      try {
+        const res = await fetch(
+          getApiUrl(`bookings/${encodeURIComponent(bookingCode)}?phone=${encodeURIComponent(guestPhone.trim())}`)
+        )
+        const json = await res.json()
+        if (res.ok && json.success && json.data) {
+          const record = json.data as BookingRecord
+          if (record.booking_status === 'CONFIRMED' && record.payment_status === 'PAID') return record
+          if (record.booking_status === 'CANCELLED' || record.booking_status === 'EXPIRED') return record
+        }
+      } catch {
+        // Transient network error — keep polling until the deadline.
+      }
+      await new Promise((r) => setTimeout(r, 2500))
+    }
+    return null
+  }
+
+  const handlePayNow = async () => {
     if (!booking) return
     setLoading(true)
     setError(null)
 
     try {
-      // Simulate 2s payment processing delay
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const orderRes = await fetch(getApiUrl('payments/create-order'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingCode: booking.booking_code }),
+      })
+      const orderJson = await orderRes.json()
+      if (!orderRes.ok || !orderJson.success) {
+        throw new Error(orderJson.error || 'Could not start the payment')
+      }
 
-      if (status === 'order.paid') {
-        setBooking({
-          ...booking,
-          payment_status: 'PAID',
-          booking_status: 'CONFIRMED'
+      const { orderId, keyId, amount, currency, isSimulated } = orderJson.data
+
+      if (isSimulated || !keyId) {
+        // No live Razorpay credentials on this deploy. Do not fabricate a
+        // confirmation — the hold is real and expires in 15 minutes.
+        throw new Error(
+          'Online payment is not enabled on this environment. Your room is held for 15 minutes — ' +
+            `call us with booking code ${booking.booking_code} to confirm.`
+        )
+      }
+
+      const ready = await loadRazorpay()
+      if (!ready || !window.Razorpay) {
+        throw new Error('Could not reach the payment gateway. Please check your connection and retry.')
+      }
+
+      await new Promise<void>((resolve) => {
+        const rzp = new window.Razorpay!({
+          key: keyId,
+          order_id: orderId,
+          amount,
+          currency: currency || 'INR',
+          name: 'Quadis Hotels',
+          description: `${propertyName} — ${roomTypeName}`,
+          prefill: {
+            name: booking.guest_name,
+            contact: booking.guest_phone,
+            ...(booking.guest_email ? { email: booking.guest_email } : {}),
+          },
+          notes: { bookingCode: booking.booking_code },
+          // Read from the token rather than hardcoding — tokens.css is the only
+          // place a colour is allowed to be defined.
+          theme: {
+            color: getComputedStyle(document.documentElement).getPropertyValue('--gold-deep').trim() || undefined,
+          },
+          modal: { ondismiss: () => resolve() },
+          handler: () => resolve(),
         })
+        rzp.on('payment.failed', () => resolve())
+        rzp.open()
+      })
+
+      setVerifying(true)
+      const confirmed = await awaitServerConfirmation(booking.booking_code)
+      if (cancelledRef.current) return
+
+      if (confirmed?.booking_status === 'CONFIRMED') {
+        setBooking(confirmed)
         setStep('CONFIRMED')
-        if (onSuccess) onSuccess(booking.booking_code)
+        onSuccess?.(confirmed.booking_code)
+      } else if (confirmed?.booking_status === 'CANCELLED' || confirmed?.booking_status === 'EXPIRED') {
+        setError('The payment did not go through and the room hold has been released. Please try again.')
       } else {
-        setError('Payment transaction failed or declined. Room hold has been released back to inventory.')
+        setError(
+          'We have not received confirmation from the payment gateway yet. If money has left your account, ' +
+            `quote booking code ${booking.booking_code} and we will confirm it manually.`
+        )
       }
     } catch (err: any) {
-      setError(err.message || 'Payment simulation error')
+      setError(err.message || 'Error communicating with the payment gateway')
     } finally {
+      setVerifying(false)
       setLoading(false)
     }
   }
 
   const handleDownloadInvoice = () => {
     if (!booking) return
-    // Temporarily append an invoice element, trigger print, then remove it
-    window.print()
+    // The server renders the real GST PDF. window.print() produced a blank page
+    // because global.css hides #root, which contains the print markup.
+    window.open(
+      getApiUrl(
+        `bookings/${encodeURIComponent(booking.booking_code)}/invoice?phone=${encodeURIComponent(booking.guest_phone)}`
+      ),
+      '_blank',
+      'noopener'
+    )
   }
 
   return (
@@ -269,23 +391,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div style={styles.paymentActions}>
               <button
                 type="button"
-                onClick={() => handleSimulatePayment('order.paid')}
+                onClick={handlePayNow}
                 disabled={loading}
                 style={styles.payOnlineBtn}
               >
-                {loading ? 'Processing...' : `⚡ Confirm Online Payment (${inr(totalAmount)})`}
+                {verifying
+                  ? 'Confirming payment…'
+                  : loading
+                    ? 'Opening secure checkout…'
+                    : `Pay ${inr(totalAmount)} securely`}
               </button>
-
-              <div style={styles.demoDivider}><span>or test instant API simulation</span></div>
-
-              <button
-                type="button"
-                onClick={() => handleSimulatePayment('payment.failed')}
-                disabled={loading}
-                style={styles.failDemoBtn}
-              >
-                Simulate payment failure (releases hold)
-              </button>
+              <p style={styles.payNote}>
+                {verifying
+                  ? 'Do not close this window — we are waiting for the gateway to confirm.'
+                  : 'You will be redirected to Razorpay. Your booking is confirmed only once payment succeeds.'}
+              </p>
             </div>
           </div>
         )}
@@ -319,64 +439,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button onClick={onClose} style={styles.returnBtn}>
                 Done & Return
               </button>
-            </div>
-          </div>
-        )}
-        {/* INVOICE PRINT VIEW (Hidden on screen, visible on print) */}
-        {booking && step === 'CONFIRMED' && (
-          <div className="print-invoice-wrapper" style={{ display: 'none' }}>
-            <div className="print-invoice">
-              <div style={{ textAlign: 'center', marginBottom: 30, borderBottom: '2px solid #000', paddingBottom: 20 }}>
-                <h1 style={{ fontFamily: 'Georgia, serif', margin: 0, fontSize: 32 }}>QUADIS HOTELS</h1>
-                <p style={{ margin: '5px 0', color: '#555' }}>Original Tax Invoice / Receipt</p>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 40 }}>
-                <div>
-                  <strong>Billed To:</strong>
-                  <p style={{ margin: '5px 0' }}>{booking.guest_name}</p>
-                  <p style={{ margin: '5px 0' }}>Phone: {booking.guest_phone}</p>
-                  {booking.guest_email && <p style={{ margin: '5px 0' }}>Email: {booking.guest_email}</p>}
-                  {booking.company_name && <p style={{ margin: '5px 0', marginTop: 10 }}><strong>Company:</strong> {booking.company_name}</p>}
-                  {booking.gstin && <p style={{ margin: '5px 0' }}><strong>GSTIN:</strong> {booking.gstin}</p>}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <strong>Invoice Details:</strong>
-                  <p style={{ margin: '5px 0' }}>Booking Code: {booking.booking_code}</p>
-                  <p style={{ margin: '5px 0' }}>Date: {new Date().toLocaleDateString()}</p>
-                  <p style={{ margin: '5px 0' }}>Property: {propertyName}</p>
-                  <p style={{ margin: '5px 0', fontSize: 12, color: '#555' }}>{propertyAddress}</p>
-                </div>
-              </div>
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 40 }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #ccc' }}>
-                    <th style={{ textAlign: 'left', padding: 10 }}>Description</th>
-                    <th style={{ textAlign: 'right', padding: 10 }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: 10 }}>
-                      <strong>{roomTypeName}</strong><br/>
-                      {checkIn} to {checkOut} ({nights} nights, {roomsCount} rooms, {guestsCount} guests)
-                    </td>
-                    <td style={{ padding: 10, textAlign: 'right' }}>{inr(taxableBase)}</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: 10 }}>GST ({gstRatePercent}%)</td>
-                    <td style={{ padding: 10, textAlign: 'right' }}>{inr(gstAmount)}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: 10 }}><strong>Total Paid (INR)</strong></td>
-                    <td style={{ padding: 10, textAlign: 'right' }}><strong>{inr(totalAmount)}</strong></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div style={{ textAlign: 'center', marginTop: 50, color: '#666', fontSize: 14 }}>
-                <p>Thank you for choosing Quadis Hotels.</p>
-                <p>This is a computer-generated invoice and does not require a physical signature.</p>
-                <p>SAC Code: 996311</p>
-              </div>
             </div>
           </div>
         )}
@@ -585,21 +647,12 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.2)',
   },
-  demoDivider: {
+  payNote: {
     textAlign: 'center',
     color: 'var(--text-muted)',
     fontSize: 12,
-    margin: '8px 0',
-  },
-  failDemoBtn: {
-    padding: '12px',
-    backgroundColor: 'var(--error-bg)',
-    color: 'var(--error)',
-    border: '1px solid var(--error-bg)',
-    borderRadius: 8,
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: 'pointer',
+    margin: '4px 0 0 0',
+    lineHeight: 1.5,
   },
   successHeader: {
     textAlign: 'center',

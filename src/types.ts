@@ -21,8 +21,6 @@ export interface HotelRoom {
   mealOptions: RoomMealOption[]
 }
 
-export type QuadisTier = 'central' | 'select' | 'experience'
-
 /**
  * A real place, not a search string. When present, maps and directions point at
  * exact coordinates instead of whatever Google's geocoder guesses from the
@@ -70,8 +68,6 @@ export interface Hotel {
   price: number // INR per night
   weekendSurchargePercent?: number
   rating: number // 0–5
-  tier: QuadisTier
-  tierLabel: 'Quadis Central' | 'Quadis Select' | 'Quadis Experience'
   rooms?: HotelRoom[]
 }
 
@@ -144,20 +140,20 @@ export interface LoginPayload {
   remember: boolean
 }
 
+/* `username` and `referral` were collected, validated as required, and then
+   never sent — the register endpoint accepts neither. Removed rather than
+   left as fields that silently discard what the guest types. */
 export interface RegisterPayload {
   fullName: string
-  username: string
   email: string
   phone: string
   password: string
-  referral: string
   terms: boolean
 }
 
 /* ---------- UI helpers ---------- */
 
 export type CityFilter = 'All' | City
-export type TierFilter = 'All Tiers' | QuadisTier
 
 /** Generic map of field-name → error message for a form's values. */
 export type FormErrors<T> = Partial<Record<keyof T, string>>
@@ -178,7 +174,9 @@ export interface PropertyRecord {
   rating: number
   is_active: boolean
   weekend_surcharge_percent: number
-  tier: QuadisTier
+  /* The DB keeps these columns — the roadmap is real — but nothing in the UI
+     presents a tier as a current, filterable attribute. See TierExpansion. */
+  tier: 'central' | 'select' | 'experience'
   tier_label: 'Quadis Central' | 'Quadis Select' | 'Quadis Experience'
 }
 

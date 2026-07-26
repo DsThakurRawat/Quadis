@@ -73,6 +73,14 @@
 /* ============================ Hotels listing ============================ */
 .list-pills { margin-bottom: 16px; }
 .list-count { text-align: center; margin-bottom: 32px; }
+.list-empty {
+  margin-top: var(--s-6);
+  padding: var(--s-7) var(--s-5);
+  text-align: center;
+  border: 1px dashed var(--border-card-2);
+  border-radius: var(--radius-md);
+  display: flex; flex-direction: column; align-items: center; gap: var(--s-4);
+}
 
 /* ============================ Hotel detail ============================ */
 .detail-top { padding-top: 40px; }
@@ -240,7 +248,6 @@
 .auth__card { position: relative; z-index: 2; width: 100%; max-width: 460px; background: var(--bg-cream); border-radius: var(--radius); overflow: hidden; box-shadow: 0 30px 70px rgba(15,14,11,.5); }
 .auth__card--wide { max-width: 520px; }
 .auth__header { background: var(--bg-dark); padding: 28px 32px; text-align: center; }
-.wordmark--auth { display: inline-flex; flex-direction: column; align-items: center; }
 .auth__welcome { color: var(--text-on-dark-2); font-size: 14px; margin-top: 12px; }
 .auth__body { padding: 32px; display: flex; flex-direction: column; gap: 20px; }
 .auth__form { display: flex; flex-direction: column; gap: 18px; }
@@ -270,7 +277,89 @@
 .stay-promise__icon-item:hover .stay-promise__icon-circle { transform: scale(1.1); background: var(--gold); color: var(--bg-dark); }
 
 /* Our Offerings Grid */
-.offering-card { background: var(--surface); border: 1px solid var(--border-card); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; transition: transform .2s ease, box-shadow .2s ease; }
+/* The markup previously carried Tailwind-shaped class names (grid-cols-2,
+   gap-6, mt-8). There is no Tailwind in this project, so they resolved to
+   nothing and every card rendered full-width — a 16/9 image ~1328px across on
+   desktop. That is the "images are too large" note. */
+.offerings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-5);
+  margin-top: var(--s-6);
+}
+@media (min-width: 900px) {
+  .offerings-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Media beside copy on desktop, so the photo cannot dominate the row. */
+  .offering-card { flex-direction: row; align-items: stretch; }
+  .offering-card__media { flex: 0 0 42%; aspect-ratio: auto; }
+}
+.offering-card__eyebrow { display: block; margin-bottom: var(--s-1); color: var(--gold-deep); }
+.offering-card__actions { margin-top: var(--s-4); }
+
+/* ---- Experiences by Quadis (change order item 7) ---- */
+.experiences-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-5);
+  margin-top: var(--s-6);
+}
+@media (min-width: 900px) {
+  .experiences-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.experience-card {
+  background: var(--surface-dark);
+  border: 1px solid rgba(203,195,178,.10);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.experience-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
+.experience-card__media { aspect-ratio: 4 / 3; overflow: hidden; }
+.experience-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.experience-card:hover .experience-card__img { transform: scale(1.05); }
+.experience-card__body { padding: var(--s-5); display: flex; flex-direction: column; flex-grow: 1; gap: var(--s-2); }
+.experience-card__title { margin: 0; color: var(--text-on-dark); }
+.experience-card__desc { color: var(--text-on-dark-2); font-size: 14.5px; line-height: 1.6; flex-grow: 1; }
+.experience-card__actions { margin-top: var(--s-4); }
+
+/* ---- Three-tier expansion roadmap (change order item 14) ---- */
+.tier-expansion__lead {
+  text-align: center;
+  max-width: 62ch;
+  margin: var(--s-4) auto 0;
+  color: var(--text-muted-2);
+}
+.tier-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-5);
+  margin-top: var(--s-6);
+}
+@media (min-width: 900px) {
+  .tier-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.tier-card {
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.tier-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
+.tier-card__media { aspect-ratio: 4 / 3; overflow: hidden; }
+.tier-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.tier-card:hover .tier-card__img { transform: scale(1.05); }
+.tier-card__body { padding: var(--s-5); text-align: center; display: flex; flex-direction: column; gap: var(--s-2); }
+.tier-card__title { margin: 0; color: var(--text-primary); }
+.tier-card__desc { color: var(--text-muted-2); font-size: 14.5px; line-height: 1.6; }
+
+.offering-card { background: var(--surface); border: 1px solid var(--border-card); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); transition: transform .2s ease, box-shadow .2s ease; }
 .offering-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
 .offering-card__media { position: relative; aspect-ratio: 16/9; overflow: hidden; }
 .offering-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
@@ -346,18 +435,27 @@
 /* Featured Press */
 .featured-section { background-color: var(--bg-cream); padding: 80px 0; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); }
 .featured-press-container { margin-bottom: 64px; text-align: center; }
+/* auto-fit rather than a fixed 4/7: seven logos into four columns left a
+   ragged trailing row of three, and the count is no longer fixed now that
+   unverified entries are filtered out. */
 .press-logos-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: center; justify-content: center; margin-top: 32px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 24px; align-items: center; justify-content: center; margin-top: 32px;
 }
-@media (min-width: 640px) { .press-logos-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (min-width: 1024px) { .press-logos-grid { grid-template-columns: repeat(7, 1fr); } }
 
 .press-logo-card {
-  display: flex; align-items: center; justify-content: center; padding: 14px 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 14px 18px;
   background: rgba(255,255,255,0.8); border-radius: var(--radius-md); border: 1px solid rgba(0,0,0,0.06);
-  height: 72px; transition: all 0.3s ease; cursor: default;
+  min-height: 72px; box-shadow: var(--shadow-sm);
+  transition: background .2s ease, box-shadow .2s ease, transform .2s ease;
 }
-.press-logo-card:hover { background: #fff; box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+.press-logo-card:hover { background: var(--surface); box-shadow: var(--shadow-card); transform: translateY(-2px); }
+/* Greyscale at rest so six competing brand palettes stop fighting the
+   cream-and-gold; full colour on hover. */
+.press-logo-card .logo-mark { filter: grayscale(1); opacity: .7; transition: filter .2s ease, opacity .2s ease; }
+.press-logo-card:hover .logo-mark { filter: grayscale(0); opacity: 1; }
+.press-logo-card__date { font-size: 11px; color: var(--text-muted); letter-spacing: .04em; }
 
 /* Supplied logos vary in aspect ratio and canvas padding — contain them so each
    sits on the same optical baseline instead of stretching to the card. */
@@ -386,9 +484,33 @@
 
 /* Happy Clients */
 .happy-clients-container { margin-bottom: 56px; text-align: center; }
-.happy-clients-logos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; justify-content: center; align-items: center; margin-top: 32px; }
-@media (min-width: 640px) { .happy-clients-logos { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 900px) { .happy-clients-logos { grid-template-columns: repeat(5, 1fr); } }
+.happy-clients-intro { margin-bottom: 40px; }
+
+/* ---- Partner logo marquee (change order item 9) ----
+   Track holds the list twice and translates by exactly -50%, so the loop point
+   is invisible. Masked at both edges so logos fade rather than clip. */
+.logo-marquee {
+  overflow: hidden;
+  margin-top: 32px;
+  -webkit-mask-image: var(--mask-fade-x);
+  mask-image: var(--mask-fade-x);
+}
+.logo-marquee__track {
+  display: flex;
+  gap: var(--s-4);
+  width: max-content;
+  animation: logo-scroll 48s linear infinite;
+}
+.logo-marquee:hover .logo-marquee__track { animation-play-state: paused; }
+.logo-marquee .happy-client-logo-card { flex: 0 0 180px; }
+@keyframes logo-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-marquee { -webkit-mask-image: none; mask-image: none; }
+  .logo-marquee__track { animation: none; flex-wrap: wrap; width: 100%; justify-content: center; }
+}
 
 .happy-client-logo-card { display: flex; align-items: center; justify-content: center; padding: 14px 18px; background: #fff; border-radius: var(--radius-md); border: 1px solid rgba(0,0,0,0.08); box-shadow: var(--shadow-sm); height: 72px; transition: all 0.3s; }
 .happy-client-logo-card:hover { box-shadow: var(--shadow-md); }
@@ -410,7 +532,23 @@
 .guest-review-footer { border-top: 1px solid var(--border-light); padding-top: 16px; display: flex; align-items: center; justify-content: space-between; }
 .guest-review-name { font-weight: 700; font-size: 14px; color: var(--text-dark); }
 .guest-review-meta { color: var(--text-muted-2); font-size: 11px; margin-top: 2px; }
-.guest-review-rating { background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: var(--radius-sm); }
+.guest-review-rating { background: var(--warning-bg); color: var(--gold-deepest); font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: var(--radius-sm); }
+
+/* ---- Testimonial slider controls (change order item 13) ---- */
+.guest-reviews { position: relative; }
+.guest-reviews__nav { display: flex; justify-content: center; gap: var(--s-3); margin-top: var(--s-5); }
+.guest-reviews__arrow {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-pill);
+  background: rgba(244,239,228,.10);
+  border: 1px solid rgba(203,195,178,.22);
+  color: var(--text-on-dark);
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+.guest-reviews__arrow:hover { background: var(--gold); border-color: var(--gold); color: var(--bg-dark); }
+.guest-reviews__arrow:focus-visible { outline: none; box-shadow: var(--ring-gold); }
 
 /* Legacy Tailwind Classes mapped to Vanilla CSS for Logos */
 .text-amber-700 { color: var(--gold-deep); }

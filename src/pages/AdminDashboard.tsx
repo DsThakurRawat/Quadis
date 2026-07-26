@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '../components/ui'
 import { getApiUrl } from '../config/api'
+import { PROPERTY_COUNT } from '../data/site.ts'
 
 
 interface GlanceMetrics {
@@ -205,7 +206,7 @@ export default function AdminDashboard() {
           <form onSubmit={handleLogin} className="flex flex-col gap-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <input
               type="password"
-              placeholder="Enter Admin PIN (Default: 998877)"
+              placeholder="Enter Admin PIN"
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value)}
               style={{
@@ -290,7 +291,7 @@ export default function AdminDashboard() {
           <div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0' }}>⚡ Global Weekend & Seasonal Surcharge</h3>
             <p style={{ color: '#a8a29e', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
-              Instantly apply +15% pricing boost across all 10 properties during high demand periods or Friday/Saturday stays.
+              Instantly apply +15% pricing boost across all {PROPERTY_COUNT} properties during high demand periods or Friday/Saturday stays.
             </p>
           </div>
           <button

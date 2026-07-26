@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
 import { useHotels, BANQUETS } from '../data/hotels.ts'
 import { IconChevron } from './icons.tsx'
-import { Button } from './ui.tsx'
+import { Button, Logo } from './ui.tsx'
 import { useSession } from '../data/useSession.ts'
 
 interface MenuItem { label: string; to: string }
@@ -88,10 +88,7 @@ export default function Header() {
   return (
     <header className="nav">
       <div className="container nav__inner">
-        <Link to="/" className="wordmark" aria-label="Quadis Hotels — home">
-          <span className="wordmark__main">QUADIS<sup>™</sup></span>
-          <span className="wordmark__sub">HOTELS</span>
-        </Link>
+        <Logo variant="header" />
 
         <nav className="nav__center" aria-label="Primary">
           <ul className="nav__list">

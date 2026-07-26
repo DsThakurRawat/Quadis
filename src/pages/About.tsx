@@ -7,6 +7,7 @@ import {
   aboutAirlines,
   aboutHomes,
 } from '../data/images.ts'
+import { PROPERTY_COUNT, spellOut } from '../data/site.ts'
 import { HeroMedia, Photo } from '../components/media.tsx'
 import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
 
@@ -69,7 +70,7 @@ export default function About() {
             <Reveal className="vision-showcase__content">
               <h3 className="h3">More Than Room Count — A Standard of Excellence</h3>
               <p>
-                While Quadis operates ten sought-after properties across Noida and New Delhi, our true measure of leadership has never been sheer volume. We measure our distinction through benchmark-setting guest satisfaction, repeat visitor loyalty, and operational reliability.
+                While Quadis operates {spellOut(PROPERTY_COUNT).toLowerCase()} sought-after properties across Noida and New Delhi, our true measure of leadership has never been sheer volume. We measure our distinction through benchmark-setting guest satisfaction, repeat visitor loyalty, and operational reliability.
               </p>
               <p>
                 Whether accommodating international delegations, hosting grand weddings, or providing a quiet sanctuary for corporate executives, our commitment remains uncompromising: zero friction, absolute cleanliness, and attentive human care.

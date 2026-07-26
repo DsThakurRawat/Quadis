@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { z } from 'zod'
 import { db } from '../db'
+import { requireAdmin } from '../middleware/auth'
 import { razorpayService } from '../services/RazorpayService'
 
 export const paymentsRouter = Router()
@@ -98,14 +99,26 @@ paymentsRouter.post('/payment-link', async (req: Request, res: Response) => {
   }
 })
 
+/**
+ * The amount is quoted by staff (a banquet deposit has no fixed tariff), so it
+ * cannot be derived from the enquiry row. It is therefore bounded here and the
+ * route is admin-only — previously any anonymous caller could mint a
+ * Quadis-branded Razorpay link for an arbitrary sum against a real guest's
+ * name and phone.
+ */
+const MAX_ENQUIRY_LINK_AMOUNT = 500_000
+
 const enquiryLinkSchema = z.object({
   enquiryId: z.string().trim().min(1, 'Enquiry ID is required'),
-  amount: z.number().positive('Amount must be positive'),
+  amount: z
+    .number()
+    .positive('Amount must be positive')
+    .max(MAX_ENQUIRY_LINK_AMOUNT, `Amount must not exceed ₹${MAX_ENQUIRY_LINK_AMOUNT.toLocaleString('en-IN')}`),
   description: z.string().optional(),
 })
 
 // POST /api/payments/enquiry-payment-link — generate payment link for an enquiry (banquet deposit / walk-in hold)
-paymentsRouter.post('/enquiry-payment-link', async (req: Request, res: Response) => {
+paymentsRouter.post('/enquiry-payment-link', requireAdmin, async (req: Request, res: Response) => {
   try {
     const validation = enquiryLinkSchema.safeParse(req.body)
     if (!validation.success) {

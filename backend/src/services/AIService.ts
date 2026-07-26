@@ -88,7 +88,7 @@ TOOLS AT YOUR DISPOSAL:
 1. search_hotels — Search real-time availability by city, name, dates, guest count
 2. initiate_soft_hold — Reserve a room for 15 minutes (collect: property slug, room slug, dates, name, phone)
 3. create_banquet_enquiry — Submit banquet/wedding/corporate RFP to management
-4. check_booking_status — Look up reservation by booking code (e.g. QD-1234)
+4. check_booking_status — Look up reservation by booking code (e.g. QD-5JY4ZB7E)
 5. human_handoff — Alert hotel management on WhatsApp for live human assistance
 
 POLICIES (answer these without tools):
@@ -98,7 +98,7 @@ POLICIES (answer these without tools):
 • Cancellation: Contact hotel directly; 24-hour cancellation for no charge
 • Payment: Razorpay instant checkout (UPI, cards, net banking) or walk-in cash
 • Pets: Not allowed in standard rooms
-• Booking codes start with QD- followed by 4 digits
+• Booking codes start with QD- followed by 8 letters/digits
 
 LIVE HOTEL KNOWLEDGE (as of right now):
 ${hotelKnowledge}
@@ -108,7 +108,7 @@ INSTRUCTIONS:
 - Use search_hotels only when you need to filter by date-based availability or multi-criteria search.
 - If a guest wants to book/reserve, collect their name, phone, check-in/out dates, then use initiate_soft_hold.
 - If a guest asks about banquet, wedding, conference — use create_banquet_enquiry.
-- If a guest provides a booking code like QD-1234, use check_booking_status immediately.
+- If a guest provides a booking code like QD-5JY4ZB7E, use check_booking_status immediately.
 - If a guest is upset, confused, or explicitly wants a human — use human_handoff.
 - Always confirm booking codes in bold when mentioning them.`
   }
@@ -325,7 +325,7 @@ INSTRUCTIONS:
             type: 'object',
             required: ['bookingCode'],
             properties: {
-              bookingCode: { type: 'string', description: 'Booking code e.g. QD-1234' },
+              bookingCode: { type: 'string', description: 'Booking code e.g. QD-5JY4ZB7E' },
               guestPhone: { type: 'string', description: 'Optional phone number for verification' },
             },
           },
@@ -435,7 +435,8 @@ INSTRUCTIONS:
     }
 
     if (lower.includes('qd-') || (lower.includes('booking') && lower.includes('status'))) {
-      const match = userMessage.match(/qd-\d+/i)
+      // Codes are `QD-` + 8 Crockford base32 symbols, not digits.
+      const match = userMessage.match(/qd-[0-9a-hjkmnp-tv-z]{8}/i)
       if (match) {
         toolsInvoked.push('check_booking_status')
         const { result } = await this.executeTool('check_booking_status', { bookingCode: match[0].toUpperCase() })
@@ -492,6 +493,8 @@ INSTRUCTIONS:
     }
 
     // Default: answer from live hotel knowledge + search
+    // Derived, never hardcoded — the greeting used to claim 10 properties.
+    const propertyCount = (await db.getProperties()).length
     toolsInvoked.push('search_hotels')
     const city = lower.includes('delhi') ? 'New Delhi' : lower.includes('noida') ? 'Noida' : undefined
     const { result } = await this.executeTool('search_hotels', { city, search: userMessage })
@@ -510,7 +513,7 @@ INSTRUCTIONS:
 
       reply = `✨ Here are available properties matching your request:\n\n${topStr}\n\n💬 Would you like me to hold a room, get more details, or connect you with our reservations team?`
     } else {
-      reply = `👋 Welcome to *Quadis Hotels & Resorts*! We have **10 premium properties** across Noida and New Delhi starting from ₹1,399/night.\n\nI can help you with:\n1. 🏨 **Check availability** — "Rooms in Sector 51 Noida for 2 nights"\n2. 📋 **Room hold** — "Hold a Deluxe Room at Hotel Cladis"\n3. 🎉 **Banquet RFP** — "Banquet hall for 200 guests in December"\n4. 🔍 **Booking status** — "Status of QD-1234"\n5. 💬 **Speak to manager** — "Connect me with a human"\n\nWhat can I help you with today?`
+      reply = `👋 Welcome to *Quadis Hotels & Resorts*! We have **${propertyCount} premium properties** across Noida and New Delhi starting from ₹1,399/night.\n\nI can help you with:\n1. 🏨 **Check availability** — "Rooms in Sector 51 Noida for 2 nights"\n2. 📋 **Room hold** — "Hold a Deluxe Room at Hotel Cladis"\n3. 🎉 **Banquet RFP** — "Banquet hall for 200 guests in December"\n4. 🔍 **Booking status** — "Status of QD-5JY4ZB7E"\n5. 💬 **Speak to manager** — "Connect me with a human"\n\nWhat can I help you with today?`
     }
 
     return { reply, toolsInvoked, handoffTriggered }

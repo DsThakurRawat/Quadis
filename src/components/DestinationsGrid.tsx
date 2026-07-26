@@ -1,39 +1,65 @@
+import { useMemo } from 'react'
 import { SectionHeader } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
+import { useHotels, UPCOMING_HOTELS } from '../data/hotels.ts'
 
+/**
+ * Derived from real data rather than a hand-maintained list.
+ *
+ * The old hardcoded array contradicted UPCOMING_HOTELS — Gurgaon, Manesar,
+ * Faridabad and New Delhi were marked `active` here and COMING SOON there, and
+ * both rendered on /hotels. It also listed Bengaluru, where Quadis has no
+ * property, using a hotel interior as the city tile. Quadis operates in Noida
+ * and New Delhi only.
+ */
 interface Destination {
   name: string
   image: string
-  status?: 'active' | 'coming_soon'
+  comingSoon: boolean
 }
 
-const DESTINATIONS: Destination[] = [
-  { name: 'Delhi', image: '/images/upcoming/delhi.jpg', status: 'active' },
-  { name: 'Gurgaon', image: '/images/upcoming/gurgaon.jpg', status: 'active' },
-  { name: 'Rishikesh', image: '/images/upcoming/rishikesh.png', status: 'coming_soon' },
-  { name: 'Chandigarh', image: '/images/upcoming/chandigarh.jpg', status: 'coming_soon' },
-  { name: 'Noida', image: '/images/upcoming/noida.png', status: 'active' },
-  { name: 'Manesar', image: '/images/upcoming/manesar.png', status: 'active' },
-  { name: 'Faridabad', image: '/images/upcoming/faridabad.png', status: 'active' },
-  { name: 'Bengaluru', image: '/images/home/hero.jpg', status: 'coming_soon' },
-]
+/** City tiles, not property shots. Every file here is a cityscape. */
+const CITY_IMAGES: Record<string, string> = {
+  'Noida': '/images/upcoming/noida.png',
+  'New Delhi': '/images/upcoming/delhi.jpg',
+}
 
 export default function DestinationsGrid() {
+  const hotels = useHotels()
+
+  const destinations = useMemo<Destination[]>(() => {
+    const active = [...new Set(hotels.map((h) => h.city))].map((city) => ({
+      name: city,
+      image: CITY_IMAGES[city] ?? '/images/upcoming/delhi.jpg',
+      comingSoon: false,
+    }))
+
+    const activeNames = new Set<string>(active.map((d) => d.name))
+    const upcoming = UPCOMING_HOTELS
+      // A city cannot be both live and coming soon.
+      .filter((u) => !activeNames.has(u.name))
+      .map((u) => ({
+        name: u.name,
+        image: u.image ?? '/images/upcoming/delhi.jpg',
+        comingSoon: true,
+      }))
+
+    return [...active, ...upcoming]
+  }, [hotels])
+
   return (
     <section id="where-we-are" className="section bg-cream">
       <div className="container">
         <SectionHeader overline="WHERE WE ARE" title="Destinations For You" />
 
         <Reveal className="destinations-grid">
-          {DESTINATIONS.map((dest) => (
-            <div key={dest.name} className={`dest-stamp ${dest.status === 'coming_soon' ? 'dest-stamp--coming' : ''}`}>
+          {destinations.map((dest) => (
+            <div key={dest.name} className={`dest-stamp ${dest.comingSoon ? 'dest-stamp--coming' : ''}`}>
               <div className="dest-stamp__frame">
-                <div className="dest-stamp__inner" style={{ position: 'relative' }}>
-                  <img src={dest.image} alt={dest.name} loading="lazy" style={{ position: 'absolute', top: 0, left: 0, objectFit: 'cover', width: '100%', height: '100%' }} />
+                <div className="dest-stamp__inner">
+                  <img src={dest.image} alt={dest.name} loading="lazy" className="dest-stamp__img" />
                 </div>
-                {dest.status === 'coming_soon' && (
-                  <span className="dest-stamp__badge">COMING SOON</span>
-                )}
+                {dest.comingSoon && <span className="dest-stamp__badge">COMING SOON</span>}
               </div>
               <span className="dest-stamp__name">{dest.name}</span>
             </div>

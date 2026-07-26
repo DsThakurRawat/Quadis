@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { registerImages } from '../data/images.ts'
-import { Field, PasswordField, Button } from '../components/ui.tsx'
+import { Field, PasswordField, Button, Logo } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
 import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
 import { register } from '../data/auth.ts'
@@ -12,11 +12,10 @@ export default function Register() {
   const bg = registerImages[0]
 
   const f = useForm<RegisterPayload>(
-    { fullName: '', username: '', email: '', phone: '', password: '', referral: '', terms: false },
+    { fullName: '', email: '', phone: '', password: '', terms: false },
     (v) => {
       const e: Partial<Record<keyof RegisterPayload, string>> = {}
       if (!required(v.fullName)) e.fullName = 'Enter your full name'
-      if (!required(v.username)) e.username = 'Choose a username'
       if (!isEmail(v.email)) e.email = 'Enter a valid email'
       if (!isPhone(v.phone)) e.phone = 'Enter a valid 10-digit phone'
       if (!v.password || v.password.length < 8) e.password = 'Minimum 8 characters'
@@ -30,10 +29,7 @@ export default function Register() {
       <HeroMedia src={bg} />
       <div className="auth__card auth__card--wide">
         <div className="auth__header">
-          <span className="wordmark wordmark--auth">
-            <span className="wordmark__main">QUADIS<sup>™</sup></span>
-            <span className="wordmark__sub">HOTELS</span>
-          </span>
+          <Logo variant="auth" />
           <p className="auth__welcome">Create your account in seconds</p>
         </div>
         <div className="auth__body">
@@ -45,17 +41,13 @@ export default function Register() {
               await refreshSession()
               nav('/account')
             })} noValidate>
-              <div className="auth__two">
-                <Field label="Full name" value={f.values.fullName} onChange={f.set('fullName')} error={f.errors.fullName} autoComplete="name" />
-                <Field label="Username" value={f.values.username} onChange={f.set('username')} error={f.errors.username} autoComplete="username" />
-              </div>
+              <Field label="Full name" value={f.values.fullName} onChange={f.set('fullName')} error={f.errors.fullName} autoComplete="name" />
               <Field label="Email" type="email" value={f.values.email} onChange={f.set('email')} error={f.errors.email} autoComplete="email" />
               <Field label="Phone" type="tel" value={f.values.phone} onChange={f.set('phone')} error={f.errors.phone} placeholder="+91 " autoComplete="tel" />
               <PasswordField label="Password" value={f.values.password} onChange={f.set('password')} error={f.errors.password} autoComplete="new-password" />
-              <Field label="Referral ID (optional)" value={f.values.referral} onChange={f.set('referral')} />
               <label className={`checkbox checkbox--terms ${f.errors.terms ? 'is-error' : ''}`}>
                 <input type="checkbox" checked={f.values.terms} onChange={f.set('terms')} aria-invalid={!!f.errors.terms} />
-                <span>I agree to the <Link to="#">Terms</Link> &amp; <Link to="#">Privacy Policy</Link></span>
+                <span>I agree to the <Link to="/contact">Terms</Link> &amp; <Link to="/contact">Privacy Policy</Link></span>
               </label>
               {f.errors.terms && <span className="field__error" role="alert">{f.errors.terms}</span>}
               <FormError message={f.submitError} />

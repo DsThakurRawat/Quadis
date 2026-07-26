@@ -3,7 +3,8 @@ import type { MouseEvent, TouchEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { PhotoHero } from '../components/blocks.tsx'
 import { Button } from '../components/ui.tsx'
-import { inr } from '../data/hotels.ts'
+import { inr, STATIC_HOTELS } from '../data/hotels.ts'
+import { GALLERY_COUNT } from '../data/site.ts'
 import {
   SPATIAL_STOPS,
   TOUR_PROPERTIES,
@@ -129,8 +130,11 @@ export default function VirtualTour() {
     isDraggingSplitter.current = false
   }
 
-  // Compute customizer effective price
-  const basePrice = currentStop.basePriceNight ?? 3800
+  // Compute customizer effective price. The old ₹3,800 fallback matched no
+  // Quadis room — the real range is ₹1,399–₹1,999 — so quote the cheapest
+  // actual tariff when a stop has no price of its own.
+  const CHEAPEST_TARIFF = Math.min(...STATIC_HOTELS.map((h) => h.price))
+  const basePrice = currentStop.basePriceNight ?? CHEAPEST_TARIFF
   const viewDelta = selectedView === 'skyline' ? 400 : 0
   const amenityDelta = selectedAmenity === 'champagne' ? 2800 : 0
   const totalCustomPrice = basePrice + viewDelta + amenityDelta
@@ -407,7 +411,7 @@ export default function VirtualTour() {
                 </div>
                 <div className="tour-booking-bar__actions">
                   <Button to="/hotels" variant="primary">INSTANT PRE-BOOK WITH PREFERENCES</Button>
-                  <Link to="/gallery" className="tour-booking-bar__gallery-link">Or view all 128 photos in Gallery &rarr;</Link>
+                  <Link to="/gallery" className="tour-booking-bar__gallery-link">Or view all {GALLERY_COUNT} photos in Gallery &rarr;</Link>
                 </div>
               </div>
             </div>

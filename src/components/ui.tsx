@@ -31,6 +31,45 @@ export function Button({ as = 'button', to, href, variant = 'primary', className
   return <button className={cls} style={style} type={type ?? 'button'} disabled={disabled} onClick={onClick}>{children}</button>
 }
 
+/* ---------- Brand mark ----------
+   The official wordmark. All three call sites — header, footer and the auth
+   screens — sit on dark grounds, so the cream single-colour file is correct for
+   every one of them. Swapping artwork is a one-line change here.
+
+   The set also ships an -ink variant for cream/white grounds and a
+   -currentcolor variant for inlining; both live in public/logo/.
+
+   Per the asset README: minimum width for the horizontal mark is 96px, and
+   clear space on all four sides equals the cap height of the HOTELS row —
+   both enforced in the .wordmark rules in chrome.css. */
+type LogoVariant = 'header' | 'footer' | 'auth'
+
+const LOGO_SRC = '/logo/quadis-wordmark-cream.svg'
+
+export function Logo({ variant = 'header', className = '' }: { variant?: LogoVariant; className?: string }) {
+  const mark = (
+    <img
+      className="wordmark__img"
+      src={LOGO_SRC}
+      alt="Quadis Hotels"
+      width={223}
+      height={64}
+      /* Eager + high priority: this is the LCP element in the header. */
+      fetchPriority="high"
+    />
+  )
+  const cls = `wordmark ${variant === 'header' ? '' : `wordmark--${variant}`} ${className}`.trim()
+
+  // The auth screens already sit inside a heading block, so the mark is
+  // decorative there rather than a second link home.
+  if (variant === 'auth') return <span className={cls}>{mark}</span>
+  return (
+    <Link to="/" className={cls} aria-label="Quadis Hotels — home">
+      {mark}
+    </Link>
+  )
+}
+
 /* ---------- Section header (§4) ---------- */
 interface SectionHeaderProps {
   overline?: string
@@ -147,7 +186,9 @@ export function HotelCard({ hotel }: { hotel: Hotel }) {
     <article className="hcard">
       <Link to={`/hotels/${hotel.slug}`} className="hcard__media" aria-label={`${hotel.name}, ${hotel.city}`}>
         <span className="hcard__chip">{hotel.city}</span>
-        {hotel.tier && <span className={`hcard__tier hcard__tier--${hotel.tier}`}>{hotel.tierLabel}</span>}
+        {/* Was hotel.tierLabel, which is 'Quadis Central' on all nine properties
+            — every card read the same. Client asked for the property name. */}
+        <span className="hcard__tier">{hotel.name}</span>
         <Photo src={img} ratio="4 / 3" label={hotel.name} alt={`${hotel.name} — ${hotel.area}, ${hotel.city}`} />
       </Link>
       <div className="hcard__body">

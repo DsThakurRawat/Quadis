@@ -10,15 +10,21 @@
 .home-hero__content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; max-width: 900px; }
 .home-hero__title { max-width: 16ch; }
 .home-hero__title .script { font-size: inherit; }
-.home-hero__sub { color: var(--text-on-dark-2); max-width: 48ch; font-size: 17px; line-height: 1.7; }
 .home-hero__bar { position: relative; z-index: 3; margin-top: 32px; }
 
 .nav__inner { height: 76px; display: flex; align-items: center; gap: var(--s-6); }
 
-.wordmark { display: inline-flex; flex-direction: column; line-height: 1; }
-.wordmark__main { font-family: var(--font-display); font-size: 24px; letter-spacing: .04em; color: var(--text-on-dark); }
-.wordmark__main sup { font-size: 9px; vertical-align: super; }
-.wordmark__sub { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: .5em; color: var(--text-on-dark-2); margin-top: 3px; }
+/* Official wordmark. The asset README sets a hard 96px minimum width for the
+   horizontal mark — below that the letterspaced HOTELS row closes up — and
+   requires clear space equal to the HOTELS cap height on all four sides. */
+.wordmark { display: inline-flex; align-items: center; line-height: 1; padding: 6px; }
+.wordmark__img { display: block; width: auto; height: 40px; min-width: 96px; }
+.wordmark--footer { margin-bottom: 20px; }
+.wordmark--footer .wordmark__img { height: 44px; }
+.wordmark--auth .wordmark__img { height: 42px; }
+@media (max-width: 560px) {
+  .wordmark__img { height: 34px; }
+}
 
 .nav__center { flex: 1; display: flex; justify-content: center; }
 .nav__list { display: flex; align-items: center; gap: 4px; }
@@ -102,7 +108,6 @@
 /* ============================ Footer (§3) ============================ */
 .footer { padding-bottom: 40px; }
 .footer__inner { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.4fr; gap: 48px; padding-top: 96px; }
-.wordmark--footer { margin-bottom: 20px; }
 .footer__blurb { color: var(--text-on-dark-2); font-size: 14.5px; line-height: 1.7; max-width: 320px; }
 .footer__head { font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: .18em; color: var(--gold); text-transform: uppercase; margin-bottom: 18px; }
 .footer__links { display: flex; flex-direction: column; gap: 12px; }
@@ -129,11 +134,20 @@
 
 /* ============================ Booking bar (§4) ============================ */
 .bbar {
-  background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-bar);
+  background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg);
   display: grid; grid-template-columns: 1.4fr 1fr 1fr .8fr auto; gap: 16px; padding: 20px 24px;
   align-items: end;
+  transition: box-shadow .2s ease;
 }
-.bbar--overlap { margin-top: -52px; position: relative; z-index: 5; }
+/* "Glow" from the client's highlight note — on focus only, so the bar lifts
+   while it is being used rather than shouting at rest. */
+.bbar:focus-within { box-shadow: var(--shadow-lg), var(--glow-gold); }
+
+/* Deep enough that the bar genuinely overlaps the bottom of the video, as in
+   the previous layout. -52px left it sitting on the cream band below. */
+.bbar--overlap { margin-top: -112px; position: relative; z-index: 5; }
+@media (max-width: 900px) { .bbar--overlap { margin-top: -72px; } }
+@media (max-width: 640px) { .bbar--overlap { margin-top: -40px; } }
 .bbar__field { display: flex; flex-direction: column; gap: 7px; }
 .bbar__label { font-weight: 600; font-size: 12px; letter-spacing: .04em; color: var(--text-muted); }
 .bbar__input {
@@ -150,7 +164,8 @@
 .bbar__search:hover { background: var(--gold); color: var(--bg-dark); }
 @media (max-width: 900px){
   .bbar { grid-template-columns: 1fr 1fr; }
-  .bbar--overlap { margin-top: -32px; }
+  /* Overlap depth lives with the .bbar--overlap rules above — a second value
+     here silently won on width, which is why the bar never met the video. */
   .bbar__dest { grid-column: 1 / -1; }
   .bbar__search { grid-column: 1 / -1; width: 100%; height: 48px; }
 }

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { z } from 'zod'
 import { db } from '../db'
+import { requireAdmin } from '../middleware/auth'
 import { notificationService } from '../services/NotificationService'
 
 export const enquiriesRouter = Router()
@@ -76,8 +77,9 @@ enquiriesRouter.post('/', async (req: Request, res: Response) => {
   }
 })
 
-// GET /api/enquiries — retrieve enquiries (for admin/dashboard check)
-enquiriesRouter.get('/', async (req: Request, res: Response) => {
+// GET /api/enquiries — retrieve enquiries. Admin only: every row carries a
+// lead's name, phone, email and message.
+enquiriesRouter.get('/', requireAdmin, async (req: Request, res: Response) => {
   try {
     const status = req.query.status as string | undefined
     const enquiries = await db.getEnquiries(status)
@@ -91,8 +93,8 @@ enquiriesRouter.get('/', async (req: Request, res: Response) => {
   }
 })
 
-// GET /api/enquiries/:id — get a single enquiry by ID
-enquiriesRouter.get('/:id', async (req: Request, res: Response) => {
+// GET /api/enquiries/:id — get a single enquiry by ID. Admin only, same reason.
+enquiriesRouter.get('/:id', requireAdmin, async (req: Request, res: Response) => {
   try {
     const enquiry = await db.getEnquiryById(req.params.id)
     if (!enquiry) {
@@ -105,7 +107,7 @@ enquiriesRouter.get('/:id', async (req: Request, res: Response) => {
 })
 
 // PATCH /api/enquiries/:id/status — update enquiry status or attach payment link
-enquiriesRouter.patch('/:id/status', async (req: Request, res: Response) => {
+enquiriesRouter.patch('/:id/status', requireAdmin, async (req: Request, res: Response) => {
   try {
     const validation = updateStatusSchema.safeParse(req.body)
     if (!validation.success) {

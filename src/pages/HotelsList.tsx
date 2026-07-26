@@ -1,32 +1,29 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useHotels, TIER_FILTERS, CITY_FILTERS } from '../data/hotels.ts'
+import { useHotels, CITY_FILTERS } from '../data/hotels.ts'
 import { hotelsHero } from '../data/images.ts'
-import type { CityFilter, TierFilter } from '../types.ts'
+import type { CityFilter } from '../types.ts'
 import { HotelCard, FilterPills } from '../components/ui.tsx'
 import { HeroMedia } from '../components/media.tsx'
 import { CtaBand } from '../components/blocks.tsx'
 import UpcomingHotels from '../components/UpcomingHotels.tsx'
+import TierExpansion from '../components/TierExpansion.tsx'
 import NcrLocatorMap from '../components/NcrLocatorMap.tsx'
 
 const isCityFilter = (v: string | null): v is CityFilter => !!v && (CITY_FILTERS as readonly string[]).includes(v)
-const isTierFilter = (v: string | null): v is TierFilter => !!v && (TIER_FILTERS as readonly string[]).includes(v)
 
 export default function HotelsList() {
   const [params, setParams] = useSearchParams()
   const cityParam = params.get('city')
-  const tierParam = params.get('tier')
   const [cityFilter, setCityFilter] = useState<CityFilter>(isCityFilter(cityParam) ? cityParam : 'All')
-  const [tierFilter, setTierFilter] = useState<TierFilter>(isTierFilter(tierParam) ? tierParam : 'All Tiers')
-  
+
   const hotels = useHotels()
 
   // Honor query params on load / when it changes externally.
   useEffect(() => {
     if (isCityFilter(cityParam) && cityParam !== cityFilter) setCityFilter(cityParam)
-    if (isTierFilter(tierParam) && tierParam !== tierFilter) setTierFilter(tierParam)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cityParam, tierParam])
+  }, [cityParam])
 
   const onCityFilter = (v: CityFilter) => {
     setCityFilter(v)
@@ -35,20 +32,16 @@ export default function HotelsList() {
     setParams(next, { replace: true })
   }
 
-  const onTierFilter = (v: TierFilter) => {
-    setTierFilter(v)
-    const next = new URLSearchParams(params)
-    if (v === 'All Tiers') next.delete('tier'); else next.set('tier', v)
-    setParams(next, { replace: true })
-  }
-
-  const filtered = useMemo(() => {
-    return hotels.filter(h => {
-      const cityMatch = cityFilter === 'All' || h.city === cityFilter
-      const tierMatch = tierFilter === 'All Tiers' || h.tier === tierFilter
-      return cityMatch && tierMatch
-    })
-  }, [hotels, cityFilter, tierFilter])
+  /*
+   * The tier filter is gone. All nine properties are Quadis Central, so
+   * "Select" and "Experience" always returned zero results and rendered their
+   * raw enum values as pill labels. The three tiers are a roadmap, and are now
+   * presented as one below via <TierExpansion />.
+   */
+  const filtered = useMemo(
+    () => hotels.filter((h) => cityFilter === 'All' || h.city === cityFilter),
+    [hotels, cityFilter]
+  )
 
   return (
     <>
@@ -62,47 +55,31 @@ export default function HotelsList() {
 
       <section className="section bg-cream">
         <div className="container">
-          
-          <div className="tier-explainer-row mb-12" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-            <div>
-              <h3 className="h3" style={{ fontFamily: 'var(--font-display)', fontSize: '24px', marginBottom: '8px' }}>Quadis Central</h3>
-              <p className="meta">Current core inventory · Normal standard hotels</p>
-            </div>
-            <div>
-              <h3 className="h3" style={{ fontFamily: 'var(--font-display)', fontSize: '24px', marginBottom: '8px' }}>Quadis Select</h3>
-              <p className="meta">Upgraded / corporate-facing properties · Premium corporate stays or family stays with additional facilities</p>
-            </div>
-            <div>
-              <h3 className="h3" style={{ fontFamily: 'var(--font-display)', fontSize: '24px', marginBottom: '8px' }}>Quadis Experience</h3>
-              <p className="meta">Leisure &amp; resort inventory · Resorts or luxury experience hotels for leisure travellers</p>
-            </div>
-          </div>
-
-          <div className="list-pills" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="list-pills">
             <FilterPills options={CITY_FILTERS} value={cityFilter} onChange={onCityFilter} ariaLabel="Filter hotels by city" />
-            <FilterPills options={TIER_FILTERS} value={tierFilter} onChange={onTierFilter} ariaLabel="Filter hotels by tier" />
           </div>
 
-          <p className="list-count meta mt-8">
+          <p className="list-count meta">
             {filtered.length} propert{filtered.length === 1 ? 'y' : 'ies'}
             {cityFilter !== 'All' ? ` in ${cityFilter}` : ''}
-            {tierFilter !== 'All Tiers' ? ` (${tierFilter})` : ''}
           </p>
-          
+
           {filtered.length > 0 ? (
-            <div className="card-grid card-grid--anim mt-8" key={`${cityFilter}-${tierFilter}`}>
+            <div className="card-grid card-grid--anim" key={cityFilter}>
               {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
             </div>
           ) : (
-            <div className="mt-8 py-12 text-center" style={{ border: '1px dashed var(--border-card-2)' }}>
+            <div className="list-empty">
               <p className="lead">No properties found matching the selected filters.</p>
-              <button className="btn btn--ghost mt-4" onClick={() => { setCityFilter('All'); setTierFilter('All Tiers'); setParams({}); }}>Clear filters</button>
+              <button className="btn btn--ghost" onClick={() => { setCityFilter('All'); setParams({}) }}>Clear filters</button>
             </div>
           )}
         </div>
       </section>
 
       <NcrLocatorMap hotels={filtered} />
+
+      <TierExpansion />
 
       <UpcomingHotels />
 

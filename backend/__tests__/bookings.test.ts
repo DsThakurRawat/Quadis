@@ -43,7 +43,9 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
     const res = await request(app).post('/api/bookings/initiate').send(payload)
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
-    expect(res.body.data.booking_code).toMatch(/^QD-\d{4}$/)
+    // Codes are `QD-` + 8 Crockford base32 symbols (I/L/O/U excluded), not the
+    // old 4-digit suffix, which both collided and could be enumerated.
+    expect(res.body.data.booking_code).toMatch(/^QD-[0-9A-HJKMNP-TV-Z]{8}$/)
     expect(res.body.data.booking_status).toBe('PENDING_PAYMENT')
     expect(res.body.data.rooms_count).toBe(2)
 

@@ -1,8 +1,25 @@
 import { Pool } from 'pg'
+import { randomBytes } from 'crypto'
 import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan, UserRecord } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
 import { computeStayTotal, mealOffsetFor } from '../lib/pricing'
 import { nightsBetween, todayIso } from '../lib/nights'
+
+/**
+ * Crockford base32 minus the characters that get misread over the phone
+ * (I, L, O, U). `QD-` + 8 symbols is ~40 bits — enough that codes neither
+ * collide nor can be walked. The old scheme was `QD-` + 4 digits: 9,000 codes
+ * total, a ~50% collision chance by the 110th booking, and trivially
+ * enumerable by anyone wanting other guests' invoices.
+ */
+const CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+
+export function generateBookingCode(): string {
+  const bytes = randomBytes(8)
+  let out = ''
+  for (let i = 0; i < 8; i++) out += CODE_ALPHABET[bytes[i]! % CODE_ALPHABET.length]
+  return `QD-${out}`
+}
 
 // DatabaseEngine abstraction layer providing seamless support for real PostgreSQL via pg Pool
 // or structured in-memory ACID store when DATABASE_URL is not set (for zero-config local dev/tests).
@@ -268,8 +285,6 @@ export class DatabaseEngine {
           return { success: false, error: `Only ${Math.max(0, free)} units available for these dates` }
         }
 
-        const randomSuffix = Math.floor(1000 + Math.random() * 9000)
-        const bookingCode = `QD-${randomSuffix}`
         const totalAmount = computeStayTotal({
           basePrice: Number(room.base_price),
           roomOffset: Number(room.price_offset),
@@ -280,30 +295,47 @@ export class DatabaseEngine {
           roomsCount: payload.roomsCount,
         })
 
-        const insertRes = await client.query(
-          `INSERT INTO bookings (
-            booking_code, user_id, property_id, room_type_id, guest_name, guest_phone, guest_email, company_name, gstin,
-            check_in, check_out, rooms_count, guests_count, total_amount, booking_status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDING_PAYMENT', NOW()) RETURNING *`,
-          [
-            bookingCode,
-            payload.userId || null,
-            room.prop_id,
-            room.id,
-            payload.guestName,
-            payload.guestPhone,
-            payload.guestEmail || null,
-            payload.companyName || null,
-            payload.gstin || null,
-            payload.checkIn,
-            payload.checkOut,
-            payload.roomsCount,
-            payload.guestsCount,
-            totalAmount,
-          ]
-        )
+        // Retry on the unique-violation the code column raises, rather than
+        // assuming the generated code is free. A savepoint is required because
+        // a failed statement otherwise aborts the surrounding transaction.
+        let created: any = null
+        for (let attempt = 0; attempt < 5 && !created; attempt++) {
+          await client.query('SAVEPOINT booking_code_attempt')
+          try {
+            const insertRes = await client.query(
+              `INSERT INTO bookings (
+                booking_code, user_id, property_id, room_type_id, guest_name, guest_phone, guest_email, company_name, gstin,
+                check_in, check_out, rooms_count, guests_count, total_amount, booking_status, created_at
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDING_PAYMENT', NOW()) RETURNING *`,
+              [
+                generateBookingCode(),
+                payload.userId || null,
+                room.prop_id,
+                room.id,
+                payload.guestName,
+                payload.guestPhone,
+                payload.guestEmail || null,
+                payload.companyName || null,
+                payload.gstin || null,
+                payload.checkIn,
+                payload.checkOut,
+                payload.roomsCount,
+                payload.guestsCount,
+                totalAmount,
+              ]
+            )
+            created = insertRes.rows[0]
+            await client.query('RELEASE SAVEPOINT booking_code_attempt')
+          } catch (insertErr: any) {
+            await client.query('ROLLBACK TO SAVEPOINT booking_code_attempt')
+            if (insertErr?.code !== '23505') throw insertErr
+          }
+        }
+        if (!created) {
+          await client.query('ROLLBACK')
+          return { success: false, error: 'Could not allocate a booking code, please retry' }
+        }
         // Claim each night of the stay for this booking.
-        const created = insertRes.rows[0]
         await client.query(
           `INSERT INTO room_night_holds (room_type_id, booking_id, stay_date, units)
            SELECT $1, $2, d::date, $3 FROM unnest($4::date[]) AS d`,
@@ -342,8 +374,12 @@ export class DatabaseEngine {
       return { success: false, error: `Only ${Math.max(0, free)} units available for these dates` }
     }
 
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000)
-    const bookingCode = `QD-${randomSuffix}`
+    let bookingCode = generateBookingCode()
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const taken = Array.from(this.memoryBookings.values()).some((b) => b.booking_code === bookingCode)
+      if (!taken) break
+      bookingCode = generateBookingCode()
+    }
     const totalAmount = computeStayTotal({
       basePrice: prop.base_price,
       roomOffset: room.price_offset,
@@ -355,7 +391,7 @@ export class DatabaseEngine {
     })
 
     const bookingRecord: BookingRecord = {
-      id: `booking-${Date.now()}-${randomSuffix}`,
+      id: `booking-${Date.now()}-${randomBytes(4).toString('hex')}`,
       booking_code: bookingCode,
       user_id: payload.userId ?? null,
       property_id: prop.id,

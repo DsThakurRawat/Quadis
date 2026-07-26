@@ -11,9 +11,18 @@ webhooksRouter.post('/razorpay', async (req: Request, res: Response) => {
     const signature = req.headers['x-razorpay-signature'] as string | undefined
     const rawBody = (req as any).rawBody || (typeof req.body === 'string' ? req.body : JSON.stringify(req.body))
 
-    // Verify signature unless in simulation mode
-    const isSimulatedHeader = signature === 'simulated' || req.headers['x-simulated-webhook'] === 'true'
-    if (!isSimulatedHeader && signature) {
+    // The simulation bypass exists for local development and the test suite. In
+    // production it would let anyone confirm any booking with a plain POST, so
+    // it is gated on the environment rather than on a client-supplied header.
+    const simulationAllowed = process.env.NODE_ENV !== 'production'
+    const isSimulatedHeader =
+      simulationAllowed && (signature === 'simulated' || req.headers['x-simulated-webhook'] === 'true')
+
+    if (!isSimulatedHeader) {
+      // Fail closed: a missing signature is not a reason to skip verification.
+      if (!signature) {
+        return res.status(401).json({ success: false, error: 'Missing Razorpay webhook signature' })
+      }
       const isValid = razorpayService.verifyWebhookSignature(rawBody, signature)
       if (!isValid) {
         return res.status(401).json({ success: false, error: 'Invalid Razorpay webhook signature' })
@@ -141,9 +150,13 @@ webhooksRouter.post('/whatsapp-staff', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Message text is required' })
     }
 
-    // Check staff phone authorization (optional bypass for testing)
-    const ownerPhone = process.env.OWNER_WHATSAPP_PHONE || '919217373532'
-    const isAuthorized = !from || from.includes(ownerPhone) || process.env.NODE_ENV === 'test'
+    // Check staff phone authorization. Omitting `from` used to authorise the
+    // request — an unauthenticated caller could toggle inventory for every
+    // property by simply leaving the field out.
+    const ownerPhone = (process.env.OWNER_WHATSAPP_PHONE || '919217373532').replace(/\D/g, '')
+    const fromDigits = typeof from === 'string' ? from.replace(/\D/g, '') : ''
+    const isAuthorized =
+      process.env.NODE_ENV === 'test' || (fromDigits.length > 0 && fromDigits.includes(ownerPhone))
 
     if (!isAuthorized) {
       return res.status(403).json({ success: false, error: 'Unauthorized WhatsApp staff phone number' })

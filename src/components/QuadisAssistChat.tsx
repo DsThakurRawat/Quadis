@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { getApiUrl } from '../config/api'
 import { IconWhatsapp, IconSparkles, IconBot, IconSend, IconX } from './icons'
+import { PROPERTY_COUNT } from '../data/site.ts'
 
 interface ChatMessage {
   id: string
@@ -25,7 +26,7 @@ export default function QuadisAssistChat() {
     {
       id: 'welcome',
       role: 'assistant',
-      content: `👋 *Welcome to Quadis Assist!* I am your personal AI Concierge for our 10 luxury properties across Noida and New Delhi.\n\nHow may I elevate your stay today?`,
+      content: `👋 *Welcome to Quadis Assist!* I am your personal AI Concierge for our ${PROPERTY_COUNT} luxury properties across Noida and New Delhi.\n\nHow may I elevate your stay today?`,
     },
   ])
   const [input, setInput] = useState('')

@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { PROPERTY_COUNT } from '../data/site.ts'
 import { SectionHeader } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-import { PRESS_LOGOS } from '../data/logos.ts'
 
 interface OfferCard {
   bank: string
@@ -31,11 +31,12 @@ const OFFERS: OfferCard[] = [
     code: 'QUADISUPI',
     discount: 'FLAT 10% CASHBACK',
     details: 'Instant 10% discount when booking online directly and completing checkout via UPI (GPay, PhonePe, Paytm).',
-    validity: 'Valid across all 10 properties',
+    // Derived: this line read "all 10 properties" and there are nine.
+    validity: `Valid across all ${PROPERTY_COUNT} properties`,
   },
 ]
 
-export default function FeaturedInAndOffers() {
+export default function OffersForYou() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   const handleCopy = (code: string) => {
@@ -47,19 +48,6 @@ export default function FeaturedInAndOffers() {
   return (
     <section className="featured-section">
       <div className="container">
-        {/* Featured In */}
-        <div className="featured-press-container">
-          <SectionHeader overline="PRESS & ACCLAIM" title="Featured In" />
-          <Reveal className="press-logos-grid">
-            {PRESS_LOGOS.map((logo) => (
-              <div key={logo.name} className="press-logo-card">
-                <img className="logo-mark" src={logo.src} alt={logo.name} loading="lazy" />
-              </div>
-            ))}
-          </Reveal>
-        </div>
-
-        {/* Offers for You */}
         <div className="offers-container">
           <SectionHeader overline="SPECIAL SAVINGS" title="Offers for You" />
           <Reveal className="offers-grid">
@@ -67,25 +55,15 @@ export default function FeaturedInAndOffers() {
               <div key={offer.code} className="offer-card">
                 <div>
                   <div className="offer-header">
-                    <span className="offer-bank-tag">
-                      {offer.bank}
-                    </span>
-                    <span className="offer-discount-tag">
-                      {offer.discount}
-                    </span>
+                    <span className="offer-bank-tag">{offer.bank}</span>
+                    <span className="offer-discount-tag">{offer.discount}</span>
                   </div>
                   <p className="offer-details">{offer.details}</p>
                   <p className="offer-validity">{offer.validity}</p>
                 </div>
                 <div className="offer-footer">
-                  <span className="offer-code-text">
-                    {offer.code}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(offer.code)}
-                    className="offer-copy-button"
-                  >
+                  <span className="offer-code-text">{offer.code}</span>
+                  <button type="button" onClick={() => handleCopy(offer.code)} className="offer-copy-button">
                     {copiedCode === offer.code ? '✓ COPIED' : 'COPY CODE'}
                   </button>
                 </div>

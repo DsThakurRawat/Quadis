@@ -57,7 +57,7 @@ describe('Master End-to-End Acceptance Suite: All 5 Phases of Quadis Hotels Plat
 
       expect(res.status).toBe(201)
       expect(res.body.success).toBe(true)
-      expect(res.body.data.booking_code).toMatch(/^QD-\d+$/)
+      expect(res.body.data.booking_code).toMatch(/^QD-[0-9A-HJKMNP-TV-Z]{8}$/)
       expect(res.body.data.booking_status).toBe('PENDING_PAYMENT')
 
       createdBookingCode = res.body.data.booking_code
@@ -110,7 +110,7 @@ describe('Master End-to-End Acceptance Suite: All 5 Phases of Quadis Hotels Plat
     })
 
     it('2.3 GET /api/bookings/:code/invoice returns valid SAC 996311 PDF document buffer', async () => {
-      const res = await request(app).get(`/api/bookings/${createdBookingCode}/invoice`)
+      const res = await request(app).get(`/api/bookings/${createdBookingCode}/invoice?phone=9811223344`)
       expect(res.status).toBe(200)
       expect(res.header['content-type']).toBe('application/pdf')
       expect(res.body instanceof Buffer).toBe(true)

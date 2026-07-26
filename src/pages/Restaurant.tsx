@@ -14,8 +14,9 @@ export default function Restaurant() {
       title: 'In-house Restaurant',
       blurb: 'Refined all-day dining inside our properties — generous flavours, considered menus and warm, unhurried service.',
       img: rImgs[0],
-      to: '/restaurant',
-      cta: 'VIEW MENU',
+      // Was 'VIEW MENU' pointing at this same page — there is no menu to show.
+      to: '/contact',
+      cta: 'ENQUIRE ABOUT DINING',
     },
     {
       title: 'Outdoor Catering Service',

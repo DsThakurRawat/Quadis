@@ -1,6 +1,16 @@
 import { FOUNDED_YEAR } from '../data/site.ts'
 import { Link } from 'react-router-dom'
-import { IconFacebook, IconX, IconInstagram, IconLinkedin, IconPhone, IconMail, IconPin } from './icons.tsx'
+import { IconFacebook, IconXSocial, IconInstagram, IconLinkedin, IconYoutube, IconPhone, IconMail, IconPin } from './icons.tsx'
+import { Logo } from './ui.tsx'
+
+/** The group's real channels, supplied by the client (change order item 15). */
+const SOCIAL_LINKS = [
+  { label: 'Facebook', href: 'https://www.facebook.com/quadisgroupofhotelss', Icon: IconFacebook },
+  { label: 'X', href: 'https://x.com/quadis_hotels', Icon: IconXSocial },
+  { label: 'Instagram', href: 'https://www.instagram.com/quadis_groupofhotels/', Icon: IconInstagram },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/quadis-group-of-hotels', Icon: IconLinkedin },
+  { label: 'YouTube', href: 'https://www.youtube.com/@QuadisGroupofHotels', Icon: IconYoutube },
+]
 
 interface FooterLink { label: string; to: string }
 const HOTELS_LINKS: FooterLink[] = [
@@ -19,10 +29,7 @@ export default function Footer() {
     <footer className="footer bg-darkest">
       <div className="container footer__inner">
         <div className="footer__col footer__brand">
-          <Link to="/" className="wordmark wordmark--footer">
-            <span className="wordmark__main">QUADIS<sup>™</sup></span>
-            <span className="wordmark__sub">HOTELS</span>
-          </Link>
+          <Logo variant="footer" />
           <p className="footer__blurb">
             Quadis Services Private Limited is one of the leading hospitality brands in Delhi NCR,
             offering premium hotel stays, elegant banquet halls, and quality restaurant services.
@@ -55,10 +62,11 @@ export default function Footer() {
 
       <div className="container footer__bottom">
         <div className="footer__social" aria-label="Social links">
-          <a href="https://facebook.com" aria-label="Facebook" target="_blank" rel="noopener noreferrer"><IconFacebook /></a>
-          <a href="https://x.com" aria-label="X" target="_blank" rel="noopener noreferrer"><IconX /></a>
-          <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noopener noreferrer"><IconInstagram /></a>
-          <a href="https://linkedin.com" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer"><IconLinkedin /></a>
+          {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+            <a key={label} href={href} aria-label={label} target="_blank" rel="noopener noreferrer">
+              <Icon />
+            </a>
+          ))}
         </div>
         <p className="footer__copy">© {FOUNDED_YEAR}–{new Date().getFullYear()} Quadis Services Private Limited. All Rights Reserved.</p>
       </div>

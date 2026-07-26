@@ -112,6 +112,12 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; }
   color: var(--text-primary);
 }
 .bg-dark .script, .bg-darkest .script { color: var(--text-on-dark); }
+/* The brand brown. --gold-deep measures 4.58:1 on --bg-dark, so it passes AA
+   for normal text; --gold-deepest is only 3.59:1 and reads muddy there. The
+   dark-band rules repeat the value so they beat `.bg-dark .script` on
+   specificity. */
+.brown-text { color: var(--gold-deep); }
+.bg-dark .brown-text, .bg-darkest .brown-text { color: var(--gold-deep); }
 .overline {
   font-family: var(--font-body);
   font-weight: 600;

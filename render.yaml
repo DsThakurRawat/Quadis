@@ -12,20 +12,35 @@ services:
         value: production
       - key: PORT
         value: 3001
+      # Secrets are declared, never valued, in this file — it is in version
+      # control. `sync: false` makes Render prompt for each one at deploy time
+      # and keeps it in the dashboard.
+      #
+      # DATABASE_URL must be a real PostgreSQL connection string. The previous
+      # `in-memory` value meant every booking, enquiry and account was lost on
+      # each restart or redeploy.
       - key: DATABASE_URL
-        value: in-memory # Set to real cloud PostgreSQL or Supabase connection string
+        sync: false
       - key: RAZORPAY_KEY_ID
-        value: rzp_test_simulated_key
+        sync: false
       - key: RAZORPAY_KEY_SECRET
-        value: simulated_secret_key
+        sync: false
       - key: RAZORPAY_WEBHOOK_SECRET
-        value: simulated_webhook_secret
+        sync: false
       - key: OWNER_WHATSAPP_PHONE
-        value: "+919217373532"
+        sync: false
       - key: GROQ_API_KEY
-        value: dummy_groq_key # Set to real Groq Llama-3.3 key for production LLM
+        sync: false
+      # Staff PIN exchanged for the admin bearer token at /api/admin/auth.
       - key: ADMIN_PIN
-        value: "998877"
+        sync: false
+      # Guards every admin route (see backend/src/middleware/auth.ts). Unset =
+      # admin routes return 503 rather than serving guest data.
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Signs guest sessions.
+      - key: SESSION_SECRET
+        generateValue: true
 
   # 2. Quadis Hotels Frontend Static SPA (Vite + React + Vanilla CSS)
   - type: web

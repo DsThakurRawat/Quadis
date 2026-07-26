@@ -13,6 +13,10 @@
 .btn--ghost:hover { border-color: var(--gold); color: var(--gold); }
 .btn--gold { background: var(--gold); color: var(--bg-dark); }
 .btn--gold:hover { background: var(--gold-deep); }
+/* Referenced by Home's Future Vision cards and Account.tsx but never defined —
+   those call sites were falling back to full .btn padding and then killing it
+   with an inline padding: 0. Kept at 44px tall for touch targets. */
+.btn--sm { padding: 11px 20px; font-size: 12px; letter-spacing: .08em; min-height: 44px; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 
 /* ===================== Section header (§4) ===================== */
@@ -74,6 +78,7 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
 .hcard {
   display: flex; flex-direction: column; background: #fff;
   border: 1px solid var(--border-card); border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--shadow-sm);
   transition: transform .2s ease, box-shadow .2s ease;
 }
 .hcard:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
@@ -84,16 +89,16 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   background: rgba(27,26,23,.86); color: var(--text-on-dark);
   font-size: 12px; letter-spacing: .04em; padding: 5px 12px; border-radius: var(--radius-pill);
 }
+/* Carries the property name now, not the tier, so it must wrap rather than
+   truncate — "Hotel Downtown Sector 15 Noida" is 30 characters. */
 .hcard__tier {
   position: absolute; top: 12px; right: 12px; z-index: 1;
+  max-width: 58%; text-align: right;
   background: rgba(20,19,16,.72); backdrop-filter: blur(6px);
   color: var(--text-on-dark); font-family: var(--font-sans); font-weight: 600;
-  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
-  padding: 5px 12px; border-radius: var(--radius-pill);
+  font-size: 11px; letter-spacing: .12em; line-height: 1.35; text-transform: uppercase;
+  padding: 5px 12px; border-radius: var(--radius-md);
 }
-.hcard__tier--central { box-shadow: inset 3px 0 0 0 var(--text-muted-2); }
-.hcard__tier--select { box-shadow: inset 3px 0 0 0 var(--gold); }
-.hcard__tier--experience { box-shadow: inset 3px 0 0 0 var(--gold-deep); }
 .hcard__body { display: flex; flex-direction: column; gap: 10px; padding: 24px; }
 .hcard__name { margin: 0; }
 .hcard__addr { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
@@ -135,6 +140,12 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(15,14,11,.5) 0%, rgba(15,14,11,.55) 40%, rgba(15,14,11,.7) 100%); z-index: 1;
 }
+/* The home hero plays video. The shared scrim above is tuned for still photos
+   and washed the footage to near-black — the client's "remove the transparency
+   of the video" note. Photo heroes on /about, /hotels and /banquets keep the
+   heavier scrim, which they need for text contrast. */
+.home-hero.scrim::before { background: var(--scrim-hero); }
+
 .hero-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
 /* Photo-slot placeholder: solid warm block (readme-3 §1/§3). The parent's
    .scrim darkens it and hero text carries a soft shadow for legibility until a
@@ -1097,13 +1108,14 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   border: none;
   border-radius: var(--radius-md, 8px);
   overflow: hidden;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s ease, box-shadow 0.2s ease;
   position: relative;
   aspect-ratio: 3 / 4;
 }
 .upcoming-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(33, 31, 27, 0.12);
+  box-shadow: var(--shadow-card);
 }
 .upcoming-card__media {
   position: absolute;
@@ -1177,31 +1189,37 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   gap: 8px;
   cursor: pointer;
 }
+/* Was a 4px dotted green frame with a green glow on hover — off-palette, and
+   green appears nowhere in tokens.css. Now the same hairline-plus-shadow
+   language as the hotel cards, with the photo floating on a white mat. */
 .dest-stamp__frame {
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
-  background: white;
-  border: 4px dotted #4caf50;
+  background: var(--surface);
+  border: 1px solid var(--border-card-2);
   border-radius: var(--radius-sm);
-  padding: 6px;
-  transition: all 0.2s ease;
+  padding: 4px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
 }
 .dest-stamp:hover .dest-stamp__frame {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+  border-color: var(--gold-deep);
+  box-shadow: var(--shadow-card);
 }
 .dest-stamp__inner {
+  position: relative;
   width: 100%;
   height: 100%;
-  border: 1px solid #4caf50;
   background: var(--bg-warm);
   border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
+}
+.dest-stamp__img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
 }
 .dest-stamp__pin {
   color: var(--gold-deep);
@@ -1218,6 +1236,8 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
 .dest-stamp__badge {
   position: absolute;
   bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--bg-dark);
   color: var(--gold);
   font-size: 0.58rem;
@@ -1246,67 +1266,74 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
     gap: 20px;
   }
 }
+/* The client rejected the blue-on-pale-blue treatment ("replace this design
+   with old design"): cream section, white cards, gold-tinted circular icons,
+   near-black buttons. Blue was hardcoded here and does not exist in
+   tokens.css — every value below is a token. */
 .biz-card-modern {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 32px;
-  background: #f4f6f8;
+  padding: var(--s-6);
+  background: var(--surface);
+  border: 1px solid var(--border-card);
   border-radius: var(--radius-md);
-  transition: transform 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .biz-card-modern:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
 }
 .biz-card-modern__header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
 }
 .biz-card-modern__icon-wrap {
-  width: 24px;
-  height: 24px;
-  background: #e3f2fd;
-  color: #1a73e8;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  background: var(--warning-bg);
+  color: var(--gold-deep);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
+  display: grid;
+  place-items: center;
 }
 .biz-card-modern__icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 .biz-card-modern__title {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 1.15rem;
-  color: #202124;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--text-primary);
   margin: 0;
 }
 .biz-card-modern__text {
   font-family: var(--font-body);
-  font-size: 0.95rem;
-  color: #5f6368;
-  line-height: 1.5;
-  margin-bottom: 24px;
+  font-size: 14.5px;
+  color: var(--text-muted-2);
+  line-height: 1.6;
+  margin-bottom: var(--s-4);
 }
 .biz-card-modern__btn {
-  background: #1a73e8;
-  color: white;
-  border-radius: var(--radius-sm);
-  padding: 10px 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  background: var(--text-primary);
+  color: var(--text-on-dark);
   border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
   cursor: pointer;
   text-decoration: none;
 }
 .biz-card-modern__btn:hover {
-  background: #1557b0;
-  color: white;
+  background: var(--bg-dark);
+  color: var(--text-on-dark);
 }
 
 

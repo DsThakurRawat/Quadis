@@ -81,12 +81,38 @@ bookingsRouter.get('/:code', async (req: Request, res: Response) => {
 })
 
 // GET /api/bookings/:code/invoice - download SAC 996311 GST Tax Invoice PDF
+//
+// Booking codes are short and guessable, and the invoice carries the guest's
+// name, address, phone and GSTIN. The caller must prove they own the booking:
+// either the phone on the record, or a session whose user placed it. An admin
+// token also passes, for support.
 bookingsRouter.get('/:code/invoice', async (req: Request, res: Response) => {
   try {
     const { code } = req.params
     const booking = await db.getBookingByCode(code)
     if (!booking) {
       return res.status(404).json({ success: false, error: 'Booking not found' })
+    }
+
+    const header = req.headers.authorization
+    const bearer = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : undefined
+    const session = bearer ? verifySession(bearer) : null
+
+    const phone = (req.query.phone as string | undefined)?.replace(/\D/g, '')
+    const bookingPhone = String((booking as any).guest_phone ?? '').replace(/\D/g, '')
+    const bookingUserId = (booking as any).user_id
+
+    const adminPassword = process.env.ADMIN_PASSWORD
+    const isAdmin = !!adminPassword && !!bearer && bearer === adminPassword
+
+    const ownsByPhone = !!phone && phone.length >= 10 && phone === bookingPhone
+    const ownsBySession = !!session?.sub && !!bookingUserId && session.sub === bookingUserId
+
+    if (!ownsByPhone && !ownsBySession && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: 'Provide the phone number on the booking, or sign in, to download this invoice',
+      })
     }
 
     const prop = await db.getPropertyById(booking.property_id)

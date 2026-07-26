@@ -51,7 +51,10 @@ export default function HotelDetail() {
   const nearby = useMemo(() => {
     if (!hotel) return []
     const same = hotels.filter((h) => h.slug !== slug && h.city === hotel.city)
-    const pool = same.length >= 3 ? same : hotels.filter((h) => h.slug !== slug)
+    // >= 1, not >= 3. New Delhi has three properties, so any Delhi hotel had
+    // only two siblings, fell through, and listed Noida hotels 25 km away
+    // under "Nearby stays".
+    const pool = same.length >= 1 ? same : hotels.filter((h) => h.slug !== slug)
     return pool.slice(0, 3)
   }, [hotel, slug, hotels])
 
@@ -96,7 +99,11 @@ export default function HotelDetail() {
 
           <div className="detail-head">
             <div>
-              <span className="overline mb-2" style={{ display: 'block', color: 'var(--text-muted)' }}>{hotel.tierLabel}</span>
+              {/* Was hotel.tierLabel — "Quadis Central" on every property, and
+                  the tier is a roadmap rather than a current attribute. */}
+              <span className="overline mb-2" style={{ display: 'block', color: 'var(--text-muted)' }}>
+                {hotel.area}, {hotel.city}
+              </span>
               <h1 className="h2 detail-head__name">{hotel.name}</h1>
               <p className="detail-head__addr">
                 <IconPin /> <span>{hotel.address}</span>
@@ -267,7 +274,7 @@ export default function HotelDetail() {
                 <Button as="button" type="submit" variant="primary" className="book-card__cta">BOOK NOW</Button>
                 {confirmed && (
                   <p className="book-card__ok" role="status">
-                    Request received — our team will confirm availability shortly.
+                    Dates held. Complete payment in the checkout window to confirm your booking.
                   </p>
                 )}
               </form>

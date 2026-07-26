@@ -32,6 +32,10 @@
 
   /* Derived / utility (still spec colors) */
   --scrim: linear-gradient(rgba(20,19,16,.35), rgba(20,19,16,.65));
+  /* The home hero plays video, not a still. The global scrim washed it to near
+     black; this keeps the footage full-colour while the text-shadow on
+     .home-hero__content carries legibility. */
+  --scrim-hero: linear-gradient(rgba(20,19,16,.10), rgba(20,19,16,.40));
   --whatsapp: #25d366;
 
   /* Semantic states. Success uses the approved olive alternate rather than a
@@ -71,6 +75,13 @@
   --shadow-card:  var(--shadow-md);
   --shadow-bar:   var(--shadow-lg);
   --ring-gold:    0 0 0 3px rgba(200,162,74,.25);
+  /* The client's "Glow" swatch — a gold halo for focus/hover only. Used
+     sparingly; on everything it reads as a template. "Drop" maps to the
+     --shadow-* scale above. */
+  --glow-gold:    0 0 0 1px rgba(200,162,74,.35), 0 8px 28px rgba(200,162,74,.18);
+  /* Alpha stencil for edge-fading a horizontally scrolling strip. Not a
+     palette colour — the black is opacity, not paint. */
+  --mask-fade-x: linear-gradient(90deg, transparent, rgba(0,0,0,1) 8%, rgba(0,0,0,1) 92%, transparent);
 
   /* Surfaces — the white a card sits on, and its dark-band counterpart. */
   --surface:       #ffffff;

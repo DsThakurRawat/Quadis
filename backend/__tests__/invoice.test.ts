@@ -29,7 +29,7 @@ describe('Phase 2: SAC 996311 PDF GST Tax Invoice Suite', () => {
   })
 
   test('GET /api/bookings/:code/invoice returns valid SAC 996311 PDF document buffer', async () => {
-    const res = await request(app).get(`/api/bookings/${bookingCode}/invoice`)
+    const res = await request(app).get(`/api/bookings/${bookingCode}/invoice?phone=9876543210`)
 
     expect(res.status).toBe(200)
     expect(res.header['content-type']).toContain('application/pdf')
@@ -41,8 +41,16 @@ describe('Phase 2: SAC 996311 PDF GST Tax Invoice Suite', () => {
   })
 
   test('GET /api/bookings/:code/invoice returns 404 for invalid booking code', async () => {
-    const res = await request(app).get('/api/bookings/QD-NOTFOUND/invoice')
+    const res = await request(app).get('/api/bookings/QD-NOTFOUND/invoice?phone=9876543210')
     expect(res.status).toBe(404)
     expect(res.body.success).toBe(false)
+  })
+
+  test('GET /api/bookings/:code/invoice refuses a caller who cannot prove they own the booking', async () => {
+    const anonymous = await request(app).get(`/api/bookings/${bookingCode}/invoice`)
+    expect(anonymous.status).toBe(403)
+
+    const wrongPhone = await request(app).get(`/api/bookings/${bookingCode}/invoice?phone=9000000000`)
+    expect(wrongPhone.status).toBe(403)
   })
 })
