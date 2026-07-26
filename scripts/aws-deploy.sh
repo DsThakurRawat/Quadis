@@ -45,4 +45,11 @@ echo "Building Frontend bundle..."
 npm run build
 aws s3 sync dist/ "s3://$BUCKET_NAME" --delete
 
+# index.html must never be cached. Vite fingerprints every asset, so the bundles
+# are safe to cache forever — but if the browser holds a stale index.html it
+# keeps requesting the OLD bundle names and the deploy looks like it did nothing.
+aws s3 cp dist/index.html "s3://$BUCKET_NAME/index.html" \
+  --cache-control "no-cache, no-store, must-revalidate" \
+  --content-type "text/html"
+
 echo "✅ Frontend deployed to S3 ($BUCKET_NAME). Configure CloudFront or Static Website Hosting next."
