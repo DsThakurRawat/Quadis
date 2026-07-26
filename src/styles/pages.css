@@ -284,17 +284,24 @@
 .offerings-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--s-5);
-  margin-top: var(--s-6);
+  gap: var(--s-4);
+  margin-top: var(--s-5);
 }
-@media (min-width: 900px) {
+/* Tablet: two up, media beside copy — the horizontal card is the compact
+   shape at this width. */
+@media (min-width: 700px) and (max-width: 1099px) {
   .offerings-grid { grid-template-columns: repeat(2, 1fr); }
-  /* Media beside copy on desktop, so the photo cannot dominate the row. */
   .offering-card { flex-direction: row; align-items: stretch; }
-  .offering-card__media { flex: 0 0 42%; aspect-ratio: auto; }
+  .offering-card__media { flex: 0 0 40%; aspect-ratio: auto; }
+}
+/* Desktop: all four in a single row. Two rows of wide cards ran ~780px with
+   the header — a whole viewport for one section. Four narrow cards keep each
+   photo small and bring the band down to roughly a third of that. */
+@media (min-width: 1100px) {
+  .offerings-grid { grid-template-columns: repeat(4, 1fr); }
 }
 .offering-card__eyebrow { display: block; margin-bottom: var(--s-1); color: var(--gold-deep); }
-.offering-card__actions { margin-top: var(--s-4); }
+.offering-card__actions { margin-top: auto; padding-top: var(--s-4); }
 
 /* ---- Experiences by Quadis (change order item 7) ---- */
 .experiences-grid {
@@ -365,9 +372,15 @@
 .offering-card__img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
 .offering-card:hover .offering-card__img { transform: scale(1.05); }
 .offering-card__badge { position: absolute; top: 14px; right: 14px; background: rgba(15,14,11,.88); color: var(--gold); font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 5px 12px; border-radius: var(--radius-sm); text-transform: uppercase; }
-.offering-card__body { padding: 24px; display: flex; flex-direction: column; flex-grow: 1; gap: 8px; }
-.offering-card__title { margin: 0; font-size: 22px; color: var(--text-primary); }
-.offering-card__desc { color: var(--text-muted-2); font-size: 14.5px; line-height: 1.6; flex-grow: 1; }
+.offering-card__body { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; gap: 6px; }
+.offering-card__title { margin: 0; font-size: 19px; line-height: 1.25; color: var(--text-primary); }
+/* Clamped so one long blurb can't set the height of every card in the row.
+   The full text stays in the DOM for search and screen readers. */
+.offering-card__desc {
+  color: var(--text-muted-2); font-size: 14px; line-height: 1.55;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
+  overflow: hidden;
+}
 
 /* Deals Section Cards */
 .deal-card { background: var(--surface); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 28px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: transform .2s ease, box-shadow .2s ease; }

@@ -36,9 +36,9 @@ fi
 echo "✅ All IAM permissions verified! Proceeding with infrastructure creation..."
 
 # 1. Create S3 Bucket for Frontend
-BUCKET_NAME="quadis-hotels-frontend-$(date +%s)"
-echo "Creating S3 Bucket: $BUCKET_NAME in us-east-1..."
-aws s3 mb "s3://$BUCKET_NAME" --region us-east-1
+BUCKET_NAME="quadis-hotels-frontend-1784969986"
+echo "Creating/Using S3 Bucket: $BUCKET_NAME in us-east-1..."
+aws s3 mb "s3://$BUCKET_NAME" --region us-east-1 || true
 
 # 2. Build and sync Frontend
 echo "Building Frontend bundle..."
