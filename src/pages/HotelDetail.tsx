@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import type { ComponentType, SVGProps } from 'react'
 import type { MealPlan } from '../types.ts'
 import { useHotels, priceNight, inr, getHotelRooms } from '../data/hotels.ts'
-import { computeStayTotal, countWeekendNights } from '../lib/pricing.ts'
+import { computeStayBreakdown, countWeekendNights, extraAdultsFor, policyFor } from '../lib/pricing.ts'
+import { readStayParams, todayIso, nextDay } from '../data/stay.ts'
 import { hotelImages, roomImages } from '../data/images.ts'
 import { HotelCard, Button } from '../components/ui.tsx'
 import { CtaBand } from '../components/blocks.tsx'
@@ -33,15 +34,28 @@ function nights(a: string, b: string): number {
 
 export default function HotelDetail() {
   const { slug } = useParams()
+  const [params] = useSearchParams()
   const hotels = useHotels()
   const hotel = hotels.find((h) => h.slug === slug)
   const images = slug ? hotelImages(slug) : []
   const hotelRooms = useMemo(() => (hotel ? getHotelRooms(hotel) : []), [hotel])
 
-  const [checkin, setCheckin] = useState('')
-  const [checkout, setCheckout] = useState('')
+  /*
+   * Seed the booking panel from the search the guest already did. Read once as
+   * the initial state rather than synced on every render, so typing a new date
+   * here is not immediately overwritten by the stale value still in the URL.
+   */
+  const initialStay = useMemo(() => readStayParams(params), [params])
+
+  const [checkin, setCheckin] = useState(initialStay.checkin)
+  const [checkout, setCheckout] = useState(initialStay.checkout)
   const [rooms, setRooms] = useState(1)
-  const [guests, setGuests] = useState(2)
+  const [adults, setAdults] = useState(initialStay.adults)
+  const [childAges, setChildAges] = useState<number[]>(() =>
+    // Default every carried-over child to an age that stays free, so the quote
+    // can never jump upward on arrival. The guest sets the real ages below.
+    Array.from({ length: initialStay.children }, () => 6)
+  )
   const [confirmed, setConfirmed] = useState(false)
   const [selectedRoomId, setSelectedRoomId] = useState('')
   const [selectedMealPlan, setSelectedMealPlan] = useState<MealPlan>('Room Only')
@@ -68,8 +82,22 @@ export default function HotelDetail() {
 
   const surchargePercent = hotel.weekendSurchargePercent ?? 0
   const n = nights(checkin, checkout)
-  const total = checkin && checkout
-    ? computeStayTotal({
+
+  const guests = adults + childAges.length
+
+  // The hotel's own occupancy policy, as set in the admin panel and delivered
+  // with the property record. Mirrors the server rule exactly: two adults per
+  // room included, children under the property's threshold free, rest extra beds.
+  const policy = policyFor(hotel)
+  const extraAdults = extraAdultsFor({
+    adults,
+    childAges,
+    roomsCount: rooms,
+    childFreeUnderAge: policy.childFreeUnderAge,
+  })
+
+  const breakdown = n > 0
+    ? computeStayBreakdown({
         basePrice: hotel.price,
         roomOffset,
         mealOffset,
@@ -77,11 +105,20 @@ export default function HotelDetail() {
         checkIn: checkin,
         checkOut: checkout,
         roomsCount: rooms,
+        extraAdults,
+        extraAdultPercent: policy.extraAdultPercent,
       })
-    : 0
+    : null
+  const total = breakdown?.total ?? 0
+
   const hasWeekendNight = surchargePercent > 0 && checkin && checkout
     ? countWeekendNights(checkin, checkout) > 0
     : false
+
+  const setChildCount = (count: number) =>
+    setChildAges((prev) =>
+      Array.from({ length: count }, (_, i) => prev[i] ?? 6)
+    )
 
   const mapQuery = encodeURIComponent(`${hotel.name}, ${hotel.address}`)
 
@@ -237,16 +274,19 @@ export default function HotelDetail() {
                 <div className="book-card__row">
                   <label className="field">
                     <span className="field__label">Check-in</span>
-                    <input type="date" className="field__input" value={checkin}
-                      onChange={(e) => { setCheckin(e.target.value); if (checkout && e.target.value > checkout) setCheckout(e.target.value) }} required />
+                    <input type="date" className="field__input" value={checkin} min={todayIso()}
+                      onChange={(e) => { setCheckin(e.target.value); if (checkout && e.target.value && e.target.value >= checkout) setCheckout('') }} required />
                   </label>
                   <label className="field">
                     <span className="field__label">Check-out</span>
-                    <input type="date" className="field__input" value={checkout} min={checkin || undefined}
+                    {/* Day after check-in: a same-day range is zero nights and the
+                        server rejects it, so it must not be selectable. */}
+                    <input type="date" className="field__input" value={checkout}
+                      min={checkin ? nextDay(checkin) : todayIso()}
                       onChange={(e) => setCheckout(e.target.value)} required />
                   </label>
                 </div>
-                <div className="book-card__row">
+                <div className="book-card__row book-card__row--three">
                   <label className="field">
                     <span className="field__label">Rooms</span>
                     <select className="field__input" value={rooms} onChange={(e) => setRooms(+e.target.value)}>
@@ -254,15 +294,81 @@ export default function HotelDetail() {
                     </select>
                   </label>
                   <label className="field">
-                    <span className="field__label">Guests</span>
-                    <select className="field__input" value={guests} onChange={(e) => setGuests(+e.target.value)}>
+                    <span className="field__label">Adults</span>
+                    <select className="field__input" value={adults} onChange={(e) => setAdults(+e.target.value)}>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((g) => (<option key={g} value={g}>{g}</option>))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span className="field__label">Children</span>
+                    <select className="field__input" value={childAges.length} onChange={(e) => setChildCount(+e.target.value)}>
+                      {Array.from({ length: 9 }, (_, i) => i).map((c) => (<option key={c} value={c}>{c}</option>))}
                     </select>
                   </label>
                 </div>
 
+                {/* An age per child, because the price depends on it: under
+                    the property's threshold shares existing bedding at no charge. */}
+                {childAges.length > 0 && (
+                  <div className="book-card__children">
+                    <span className="field__label">Age of each child</span>
+                    <div className="book-card__ages">
+                      {childAges.map((age, i) => (
+                        <label className="field field--age" key={i}>
+                          <span className="field__label field__label--sr">Child {i + 1} age</span>
+                          <select
+                            className="field__input"
+                            value={age}
+                            aria-label={`Age of child ${i + 1}`}
+                            onChange={(e) => setChildAges((prev) => prev.map((a, j) => (j === i ? +e.target.value : a)))}
+                          >
+                            {Array.from({ length: 18 }, (_, a) => a).map((a) => (
+                              <option key={a} value={a}>{a}</option>
+                            ))}
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="book-card__note book-card__note--soft">
+                      {policy.childFreeUnderAge >= 18
+                        ? 'Children stay free on existing bedding — no extra charge.'
+                        : `Children under ${policy.childFreeUnderAge} stay free on existing bedding.`}
+                    </p>
+                  </div>
+                )}
+
+                {breakdown && extraAdults > 0 && (
+                  <div className="book-card__line">
+                    <span>{inr(effectiveNightPrice)} × {n} night{n > 1 ? 's' : ''} × {rooms} room{rooms > 1 ? 's' : ''}</span>
+                    <span>{inr(breakdown.roomTotal)}</span>
+                  </div>
+                )}
+                {breakdown && extraAdults > 0 && (
+                  <div className="book-card__line">
+                    <span>
+                      {/* Name the percentage, not just the rupees: it is the rule
+                          the hotel quotes, and it explains why the figure changes
+                          on a weekend-surcharged night. A hotel can set 0%, in
+                          which case "× 0%  — ₹0" reads like a bug. */}
+                      Extra adult{extraAdults > 1 ? 's' : ''}
+                      {breakdown.extraAdultPercent > 0
+                        ? ` (${extraAdults} × ${breakdown.extraAdultPercent}% of room rate)`
+                        : ` (${extraAdults})`}
+                    </span>
+                    <span>
+                      {breakdown.extraAdultTotal > 0 ? inr(breakdown.extraAdultTotal) : 'No charge'}
+                    </span>
+                  </div>
+                )}
+
                 <div className="book-card__total">
-                  <span>{n > 0 ? `${inr(effectiveNightPrice)} × ${n} night${n > 1 ? 's' : ''} × ${rooms} room${rooms > 1 ? 's' : ''}` : 'Select your dates'}</span>
+                  <span>
+                    {n > 0
+                      ? extraAdults > 0
+                        ? 'Total'
+                        : `${inr(effectiveNightPrice)} × ${n} night${n > 1 ? 's' : ''} × ${rooms} room${rooms > 1 ? 's' : ''}`
+                      : 'Select your dates'}
+                  </span>
                   <strong>{n > 0 ? inr(total) : '—'}</strong>
                 </div>
                 {hasWeekendNight && (
@@ -270,8 +376,23 @@ export default function HotelDetail() {
                     Includes a {surchargePercent}% weekend surcharge on Friday and Saturday nights.
                   </p>
                 )}
+                {extraAdults > 0 && (
+                  <p className="book-card__note">
+                    Rates include {rooms * 2} adult{rooms * 2 > 1 ? 's' : ''}
+                    {rooms > 1 ? ` (2 per room)` : ''}; {extraAdults} extra adult
+                    {extraAdults > 1 ? 's' : ''}{' '}
+                    {policy.extraAdultPercent > 0
+                      ? `at +${policy.extraAdultPercent}% of the room rate per night.`
+                      : 'at no extra charge.'}
+                  </p>
+                )}
 
-                <Button as="button" type="submit" variant="primary" className="book-card__cta">BOOK NOW</Button>
+                {/* Disabled until the dates make a real stay. This used to open
+                    checkout on a zero-night range showing "1 Night" and ₹0, and
+                    the guest only found out when the server refused the hold. */}
+                <Button as="button" type="submit" variant="primary" className="book-card__cta" disabled={n === 0}>
+                  {n === 0 ? 'SELECT YOUR DATES' : 'BOOK NOW'}
+                </Button>
                 {confirmed && (
                   <p className="book-card__ok" role="status">
                     Dates held. Complete payment in the checkout window to confirm your booking.
@@ -306,6 +427,8 @@ export default function HotelDetail() {
           checkOut={checkout}
           roomsCount={rooms}
           guestsCount={guests}
+          adultsCount={adults}
+          childAges={childAges}
           mealPlan={activeMeal.plan}
           totalAmount={total}
           onClose={() => setShowCheckoutModal(false)}

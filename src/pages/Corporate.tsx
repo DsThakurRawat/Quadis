@@ -1,4 +1,4 @@
-import { corporateImages } from '../data/images.ts'
+import { corporateImages, galleryFacade } from '../data/images.ts'
 import { CITIES } from '../data/hotels.ts'
 import type { CorporateRFPPayload } from '../types.ts'
 import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
@@ -6,6 +6,7 @@ import { Photo } from '../components/media.tsx'
 import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
 import { submitEnquiry } from '../data/enquiries.ts'
+import { useContent } from '../data/content.ts'
 
 
 interface Benefit { title: string; body: string }
@@ -15,9 +16,22 @@ const BENEFITS: Benefit[] = [
   { title: 'Single Invoice', body: 'Consolidated, GST-compliant billing — one statement across stays and cities.' },
 ]
 
+/**
+ * There is no public/images/corporate/ folder, so `corporateImages` falls all
+ * the way back to the home set — whose second entry is a photograph of a
+ * restaurant dining room. It was rendering here under the label "Quadis Lobby",
+ * which is the image the client asked us to replace.
+ *
+ * Address the lobby shot by filename instead of by index, so adding a file to
+ * the folder can never silently repoint it at a dining room again.
+ */
+const lobbyPhoto = (): string | undefined =>
+  galleryFacade.find((url) => url.toLowerCase().includes('lobby'))
+
 export default function Corporate() {
+  const { t } = useContent()
   const heroImg = corporateImages[0]
-  const sideImg = corporateImages[1] ?? corporateImages[0]
+  const sideImg = lobbyPhoto() ?? corporateImages[1] ?? corporateImages[0]
 
   const f = useForm<CorporateRFPPayload>(
     { company: '', person: '', email: '', phone: '', city: '', rooms: '', message: '' },
@@ -40,11 +54,8 @@ export default function Corporate() {
         <div className="container corp-split">
           <div className="corp-copy">
             <span className="overline">Your Reliable Partner for Corporate Accommodation</span>
-            <h2 className="h2">Dependable stays for your teams</h2>
-            <p className="prose__p">
-              Quadis partners with businesses across Delhi NCR to make corporate travel effortless. Our properties
-              sit in prime business districts, with fast Wi-Fi, GST invoicing and flexible terms designed around how teams actually travel.
-            </p>
+            <h2 className="h2">{t('corporate.intro.title')}</h2>
+            <p className="prose__p">{t('corporate.intro.body')}</p>
             <p className="prose__p">
               Whether it is a single visiting executive or a rolling monthly requirement, you get one point of
               contact, consistent quality and transparent billing.

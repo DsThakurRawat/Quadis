@@ -180,11 +180,17 @@ export function FilterPills<T extends string>({ options, value, onChange, ariaLa
 }
 
 /* ---------- Hotel card (§4) ---------- */
-export function HotelCard({ hotel }: { hotel: Hotel }) {
+/**
+ * `stayQuery` is the guest's dates and party, already encoded (see data/stay.ts).
+ * It rides along on both links so clicking through to a property carries the
+ * search forward instead of dropping it.
+ */
+export function HotelCard({ hotel, stayQuery = '' }: { hotel: Hotel; stayQuery?: string }) {
   const img = hotelImages(hotel.slug)[0]
+  const href = stayQuery ? `/hotels/${hotel.slug}?${stayQuery}` : `/hotels/${hotel.slug}`
   return (
     <article className="hcard">
-      <Link to={`/hotels/${hotel.slug}`} className="hcard__media" aria-label={`${hotel.name}, ${hotel.city}`}>
+      <Link to={href} className="hcard__media" aria-label={`${hotel.name}, ${hotel.city}`}>
         <span className="hcard__chip">{hotel.city}</span>
         {/* Was hotel.tierLabel, which is 'Quadis Central' on all nine properties
             — every card read the same. Client asked for the property name. */}
@@ -198,7 +204,7 @@ export function HotelCard({ hotel }: { hotel: Hotel }) {
           <span className="hcard__price">{priceNight(hotel.price)}</span>
           <span className="hcard__rating"><IconStar />{' '}{hotel.rating.toFixed(1)}</span>
         </div>
-        <Button to={`/hotels/${hotel.slug}`} variant="ghost" className="hcard__cta">VIEW &amp; BOOK</Button>
+        <Button to={href} variant="ghost" className="hcard__cta">VIEW &amp; BOOK</Button>
       </div>
     </article>
   )

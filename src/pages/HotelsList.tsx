@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useHotels, CITY_FILTERS } from '../data/hotels.ts'
+import { readStayParams, buildStayParams } from '../data/stay.ts'
 import { hotelsHero } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
 import { HotelCard, FilterPills } from '../components/ui.tsx'
@@ -43,6 +44,18 @@ export default function HotelsList() {
     [hotels, cityFilter]
   )
 
+  /*
+   * The dates and party the guest chose on the booking bar. This page does not
+   * filter on them (availability is resolved on the property page), but it must
+   * hand them on — otherwise choosing dates on the home page and clicking a
+   * hotel drops them, and the guest is asked all over again.
+   */
+  const stayQuery = useMemo(() => {
+    const stay = readStayParams(params)
+    if (!stay.checkin) return ''
+    return buildStayParams(stay).toString()
+  }, [params])
+
   return (
     <>
       <section className="mini-hero scrim">
@@ -66,7 +79,7 @@ export default function HotelsList() {
 
           {filtered.length > 0 ? (
             <div className="card-grid card-grid--anim" key={cityFilter}>
-              {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} />))}
+              {filtered.map((h) => (<HotelCard key={h.slug} hotel={h} stayQuery={stayQuery} />))}
             </div>
           ) : (
             <div className="list-empty">

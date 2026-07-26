@@ -1,4 +1,4 @@
-import { getApiUrl } from '../config/api'
+import { getApiUrl, describeApiFailure } from '../config/api'
 import type { ContactType } from '../types.ts'
 
 /**
@@ -38,7 +38,7 @@ export async function submitEnquiry(input: EnquiryInput): Promise<void> {
       body: JSON.stringify(input),
     })
   } catch {
-    throw new Error("We couldn't reach our servers. Please check your connection and try again.")
+    throw new Error(describeApiFailure())
   }
 
   if (!res.ok) {
@@ -48,8 +48,9 @@ export async function submitEnquiry(input: EnquiryInput): Promise<void> {
       const fieldErrors = body?.details ? Object.values(body.details).flat().filter(Boolean) : []
       reason = (fieldErrors[0] as string) || body?.error || ''
     } catch {
-      // Non-JSON error body — fall through to the generic message.
+      // Non-JSON error body — a static host serving index.html for /api looks
+      // exactly like this. describeApiFailure names that case.
     }
-    throw new Error(reason || `We couldn't send your message (error ${res.status}). Please call us instead.`)
+    throw new Error(reason || describeApiFailure(res.status))
   }
 }

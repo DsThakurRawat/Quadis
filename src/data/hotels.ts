@@ -177,6 +177,10 @@ export function useHotels(): Hotel[] {
                     : base?.coords,
                 price: h.base_price,
                 weekendSurchargePercent: h.weekend_surcharge_percent,
+                // Postgres returns NUMERIC as a string, so coerce rather than
+                // letting "500" reach the arithmetic as a string.
+                extraAdultPercent: h.extra_adult_percent != null ? Number(h.extra_adult_percent) : undefined,
+                childFreeUnderAge: h.child_free_under_age != null ? Number(h.child_free_under_age) : undefined,
                 rating: h.rating,
               }
             }))

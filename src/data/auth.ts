@@ -1,4 +1,4 @@
-import { getApiUrl } from '../config/api'
+import { getApiUrl, describeApiFailure } from '../config/api'
 
 /**
  * Guest accounts. Until this existed, Login and Register validated their
@@ -48,13 +48,19 @@ async function post(path: string, body: unknown): Promise<{ token: string; user:
       body: JSON.stringify(body),
     })
   } catch {
-    throw new Error("We couldn't reach our servers. Please check your connection and try again.")
+    throw new Error(describeApiFailure())
   }
 
+  // A static host answering /api serves index.html, so this is HTML, not JSON.
+  // Say that plainly instead of surfacing a JSON parse error to the guest.
   const json = await res.json().catch(() => null)
+  if (json === null) {
+    throw new Error(describeApiFailure(res.status))
+  }
+
   if (!res.ok || !json?.success) {
     const fieldErrors = json?.details ? Object.values(json.details).flat().filter(Boolean) : []
-    throw new Error((fieldErrors[0] as string) || json?.error || `Request failed (${res.status})`)
+    throw new Error((fieldErrors[0] as string) || json?.error || describeApiFailure(res.status))
   }
 
   setToken(json.token)

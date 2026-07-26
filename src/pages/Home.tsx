@@ -26,9 +26,11 @@ import HappyClientsSection from '../components/HappyClientsSection.tsx'
 
 import { PARTNER_LOGOS } from '../data/logos.ts'
 import { CITY_FILTERS } from '../data/hotels.ts'
+import { useContent } from '../data/content.ts'
 export default function Home() {
   const [filter, setFilter] = useState<CityFilter>('All')
   const hotels = useHotels()
+  const { overrides, t } = useContent()
 
   const filtered = useMemo(
     () => (filter === 'All' ? hotels : hotels.filter((h) => h.city === filter)),
@@ -44,8 +46,22 @@ export default function Home() {
       <section className="home-hero scrim">
         <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
         <div className="container home-hero__content">
-          <span className="overline on-dark">DELHI NCR · A GROUP OF HOTELS · SINCE {FOUNDED_YEAR}</span>
-          <h1 className="h1 on-dark home-hero__title">Comfort you can<br />book in <span className="script on-dark">seconds.</span></h1>
+          <span className="overline on-dark">
+            {overrides['home.hero.overline']?.trim()
+              ? t('home.hero.overline')
+              : `DELHI NCR · A GROUP OF HOTELS · SINCE ${FOUNDED_YEAR}`}
+          </span>
+          {/* The shipped headline carries a line break and a script-face accent
+              on the last word, which plain admin text cannot express. So the
+              designed version stays the default and an override replaces it
+              wholesale — an editor gets their words, not a mangled hybrid. */}
+          <h1 className="h1 on-dark home-hero__title">
+            {overrides['home.hero.title']?.trim() ? (
+              t('home.hero.title')
+            ) : (
+              <>Comfort you can<br />book in <span className="script on-dark">seconds.</span></>
+            )}
+          </h1>
         </div>
       </section>
 

@@ -42,6 +42,9 @@ interface CheckoutModalProps {
   checkOut: string
   roomsCount: number
   guestsCount: number
+  /** Party split. The server re-derives the extra-bed charge from these. */
+  adultsCount: number
+  childAges: number[]
   mealPlan?: MealPlan
   totalAmount: number
   onClose: () => void
@@ -58,6 +61,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   checkOut,
   roomsCount,
   guestsCount,
+  adultsCount,
+  childAges,
   mealPlan,
   totalAmount,
   onClose,
@@ -116,6 +121,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           checkOut,
           roomsCount,
           guestsCount,
+          adultsCount,
+          childAges,
           guestName: guestName.trim(),
           guestPhone: guestPhone.trim(),
           guestEmail: guestEmail.trim() || undefined,
@@ -279,6 +286,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div style={styles.datesBox}>
             <span style={styles.datesLabel}>Check-In / Out ({nights} Night{nights > 1 ? 's' : ''})</span>
             <strong style={styles.datesText}>{checkIn} → {checkOut}</strong>
+            {/* Spell out the party, so a guest paying an extra-bed charge can
+                see the headcount the charge came from before they pay it. */}
+            <span style={styles.datesLabel}>
+              {roomsCount} room{roomsCount > 1 ? 's' : ''} · {adultsCount} adult{adultsCount > 1 ? 's' : ''}
+              {childAges.length > 0 && ` · ${childAges.length} child${childAges.length > 1 ? 'ren' : ''}`}
+            </span>
           </div>
           <div style={styles.totalBox}>
             <span style={styles.totalLabel}>Total Payable (Incl. {gstRatePercent}% GST)</span>

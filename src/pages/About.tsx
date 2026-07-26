@@ -105,7 +105,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* Chapter 4: Future Roadmap (Quadis Airlines & Quadis Homes) */}
+      {/* Chapter 4: Future Roadmap (Quadis Homes & Quadis Airlines) */}
       <section className="section bg-cream future-roadmap">
         <div className="container">
           <SectionHeader overline="LOOKING AHEAD" title="Future Horizons of Luxury" />
@@ -115,29 +115,32 @@ export default function About() {
             </p>
           </Reveal>
 
+          {/* Homes leads, then Airlines — the order the client asked for, and the
+              same order the Future Vision cards already use on the home page.
+              No ™: neither is a registered mark. */}
           <div className="card-grid grid-2">
-            <Reveal className="future-card">
-              <div className="future-card__media">
-                <Photo src={airlinesImg} ratio="16 / 9" label="Quadis Airlines Preview" />
-                <span className="future-badge">UPCOMING INITIATIVE</span>
-              </div>
-              <div className="future-card__body">
-                <h3 className="h3">Quadis Airlines<sup>™</sup></h3>
-                <p>
-                  Redefining regional transit with private aviation and executive air charter services. Designed for seamless door-to-door coordination where your luxury stay begins before you even touch down.
-                </p>
-              </div>
-            </Reveal>
-
             <Reveal className="future-card">
               <div className="future-card__media">
                 <Photo src={homesImg} ratio="16 / 9" label="Quadis Homes Preview" />
                 <span className="future-badge">UPCOMING INITIATIVE</span>
               </div>
               <div className="future-card__body">
-                <h3 className="h3">Quadis Homes<sup>™</sup></h3>
+                <h3 className="h3">Quadis Homes</h3>
                 <p>
                   Branded luxury residential living offering hotel-grade concierge, private culinary staff, and pristine housekeeping within exclusive private residences and long-stay suites.
+                </p>
+              </div>
+            </Reveal>
+
+            <Reveal className="future-card">
+              <div className="future-card__media">
+                <Photo src={airlinesImg} ratio="16 / 9" label="Quadis Airlines Preview" />
+                <span className="future-badge">UPCOMING INITIATIVE</span>
+              </div>
+              <div className="future-card__body">
+                <h3 className="h3">Quadis Airlines</h3>
+                <p>
+                  Redefining regional transit with private aviation and executive air charter services. Designed for seamless door-to-door coordination where your luxury stay begins before you even touch down.
                 </p>
               </div>
             </Reveal>

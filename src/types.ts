@@ -65,8 +65,16 @@ export interface Hotel {
   address: string
   coords?: HotelCoords
   transit?: HotelTransit
-  price: number // INR per night
+  price: number // INR per night, for two adults sharing
   weekendSurchargePercent?: number
+  /**
+   * Occupancy policy, set per property from the admin panel and delivered by
+   * GET /api/properties. Absent until the API responds (or for a record that
+   * predates the fields), in which case lib/pricing falls back to the group
+   * defaults rather than quoting the extra bed as free.
+   */
+  extraAdultPercent?: number
+  childFreeUnderAge?: number
   rating: number // 0–5
   rooms?: HotelRoom[]
 }

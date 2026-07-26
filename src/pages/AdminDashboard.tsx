@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '../components/ui'
 import { getApiUrl } from '../config/api'
 import { PROPERTY_COUNT } from '../data/site.ts'
+import AdminEditor from '../components/AdminEditor.tsx'
+import type { EditablePropertyItem } from '../components/AdminEditor.tsx'
 
 
 interface GlanceMetrics {
@@ -11,27 +13,9 @@ interface GlanceMetrics {
   todayRevenue: number
 }
 
-interface RoomType {
-  id: string
-  name: string
-  slug: string
-  is_available: boolean
-  total_units: number
-  available_units: number
-  price_offset: number
-}
-
-interface PropertyItem {
-  property: {
-    id: string
-    name: string
-    slug: string
-    city: string
-    base_price: number
-    weekend_surcharge_percent?: number
-  }
-  rooms: RoomType[]
-}
+// The dashboard payload carries the full records, so the editor's shapes are
+// the source of truth for both rather than a second, narrower copy here.
+type PropertyItem = EditablePropertyItem
 
 export default function AdminDashboard() {
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem('quadis_admin_token'))
@@ -286,7 +270,10 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 2. Global Controls (Weekend Surcharge Toggle) */}
+        {/* 2. Editing — hotels, rooms and rates, website text */}
+        <AdminEditor properties={properties} authedFetch={authedFetch} onSaved={fetchDashboard} />
+
+        {/* 3. Global Controls (Weekend Surcharge Toggle) */}
         <div style={{ background: '#1c1917', border: '1px solid #292524', padding: '1.25rem', borderRadius: '10px', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0' }}>⚡ Global Weekend & Seasonal Surcharge</h3>
