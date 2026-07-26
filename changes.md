@@ -1,3 +1,20 @@
+> **STATUS: COMPLETE — kept for reference, do not re-run.**
+>
+> Verified against tree `e815846` on 26 Jul 2026: Parts A, B, C and D of this spec
+> are implemented. Confirmed shipped include `HOTEL_DISPLAY_ORDER`,
+> `TierExpansion`, `ExperiencesByQuadis`, the `FeaturedIn`/`OffersForYou` split,
+> the `<Logo>` component and SVG marks, webhook signature verification, base32
+> booking codes, `whatsapp-staff` authorisation, the admin-gated and capped
+> enquiry payment link, invoice ownership checks, the real Razorpay wiring in
+> `CheckoutModal`, the `useHotels` retry, `nearby >= 1`, and derived counts.
+>
+> Still blocked on the client, as this document already notes: real testimonials
+> (A13) and press-coverage URLs (A17).
+>
+> **The current work is Change Order #3 — see `docs/change-order-3.md`.** It is a
+> different list (mobile, payment gateway, occupancy, adults/children, admin
+> editability, registration) and this file does not cover it.
+
 # Quadis — Change Order #2 (Claude Code execution spec)
 
 Source: client PDF "Website Changes" (8 pages, 15 numbered items) + WhatsApp notes,
