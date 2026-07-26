@@ -215,3 +215,25 @@ export const loginImages: string[] = authSet.length ? authSet : homeImages
 export const registerImages: string[] = authSet.length ? authSet : homeImages
 export const corporateImages: string[] = at('corporate').length ? at('corporate') : homeImages
 export const contactImages: string[] = at('contact').length ? at('contact') : homeImages
+
+/*
+ * Named picks for the home page.
+ *
+ * Three sections now run back to back — Our Offerings, Experiences by Quadis
+ * and the tier roadmap — and several of them want "a banquet photo" or "a
+ * dining photo". public/images/banquets/ and public/images/restaurant/ hold
+ * exactly ONE file each, so a second section asking for [1] gets undefined and
+ * silently falls back to the same hero. These reach into restaurant/dining/,
+ * which has 15, and select by filename rather than by index so re-sorting the
+ * bucket cannot quietly repoint them.
+ */
+const firstMatching = (pool: string[], needle: string): string | undefined =>
+  pool.find((url) => url.toLowerCase().includes(needle))
+
+/** A banquet hall, distinct from banquets/hero.png. */
+export const banquetHallImage: string =
+  firstMatching(galleryDining, 'banquet') ?? banquetHero[0] ?? homeImages[0] ?? ''
+
+/** A dining room, distinct from restaurant/hero.png. */
+export const diningHallImage: string =
+  firstMatching(galleryDining, 'dining-hall') ?? galleryDining[0] ?? homeImages[0] ?? ''

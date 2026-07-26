@@ -1,6 +1,6 @@
 import { SectionHeader } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-import { galleryFacade, corporateImages, galleryRoyal } from '../data/images.ts'
+import { galleryFacade, galleryDeluxe, galleryRoyal } from '../data/images.ts'
 
 /**
  * The three brand tiers, presented as a stated future roadmap rather than as a
@@ -20,12 +20,12 @@ const TIERS: Tier[] = [
   {
     name: 'Quadis Central',
     description: 'Normal standard hotels.',
-    image: galleryFacade[0] || '/images/home/hero.jpg',
+    image: galleryFacade[1] || galleryFacade[0] || '/images/home/hero.jpg',
   },
   {
     name: 'Quadis Select',
     description: 'Premium corporate stays or family stays with additional facilities.',
-    image: corporateImages[0] || '/images/home/hero.jpg',
+    image: galleryDeluxe[0] || '/images/home/hero.jpg',
   },
   {
     name: 'Quadis Experience',

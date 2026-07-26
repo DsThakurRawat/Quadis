@@ -1,7 +1,7 @@
 import { PROPERTY_COUNT, spellOut } from '../data/site.ts'
 import { SectionHeader, Button } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-import { galleryFacade, banquetHero, restaurantImages } from '../data/images.ts'
+import { galleryFacade, banquetHallImage, diningHallImage } from '../data/images.ts'
 
 /**
  * The three-card band the client asked for in item 7 of the change order.
@@ -29,13 +29,13 @@ const EXPERIENCES: Experience[] = [
   {
     title: 'Banquets by Quadis',
     description: 'Elegant halls for weddings, receptions and corporate gatherings, with seamless catering and coordination.',
-    image: banquetHero[0] || '/images/home/hero.jpg',
+    image: banquetHallImage,
     link: '/banquets',
   },
   {
     title: 'Restaurant by Quadis',
     description: 'In-house dining and outdoor catering — refined menus, generous flavours, and effortless hospitality.',
-    image: restaurantImages()[0] || '/images/home/hero.jpg',
+    image: diningHallImage,
     link: '/restaurant',
   },
 ]
