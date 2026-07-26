@@ -44,6 +44,5 @@ aws s3 mb "s3://$BUCKET_NAME" --region us-east-1 || true
 echo "Building Frontend bundle..."
 npm run build
 aws s3 sync dist/ "s3://$BUCKET_NAME" --delete
-aws s3 cp dist/index.html "s3://$BUCKET_NAME/index.html" --cache-control "no-cache, no-store, must-revalidate" --content-type "text/html"
 
 echo "✅ Frontend deployed to S3 ($BUCKET_NAME). Configure CloudFront or Static Website Hosting next."

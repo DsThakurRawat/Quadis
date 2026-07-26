@@ -13,6 +13,7 @@ import { IconWifi, IconTv, IconAc, IconShield, IconTowel, IconShower, IconToilet
 
 import DestinationsGrid from '../components/DestinationsGrid.tsx'
 import BusinessCtaBanner from '../components/BusinessCtaBanner.tsx'
+import OurOfferings from '../components/OurOfferings.tsx'
 import ExperiencesByQuadis from '../components/ExperiencesByQuadis.tsx'
 import UpcomingHotels from '../components/UpcomingHotels.tsx'
 import TierExpansion from '../components/TierExpansion.tsx'
@@ -118,7 +119,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. (Removed Our Offerings Section as it overlaps with Experiences by Quadis) */}
+      {/* 6. Our Offerings Section */}
+      <OurOfferings />
 
       {/* 7. Experiences by Quadis + Upcoming Hotels — both missing from the
           live site (change order item 7). Note these overlap OurOfferings
