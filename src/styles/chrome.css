@@ -135,7 +135,11 @@
 /* ============================ Booking bar (§4) ============================ */
 .bbar {
   background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg);
-  display: grid; grid-template-columns: 1.4fr 1fr 1fr .8fr auto; gap: 16px; padding: 20px 24px;
+  /* Six cells: destination, check-in, check-out, adults, children, search.
+     Splitting the old single "Guests" stepper into Adults and Children added a
+     sixth — with five columns the search button wrapped to a row of its own. */
+  display: grid; grid-template-columns: 1.5fr 1.1fr 1.1fr .7fr .7fr auto;
+  gap: 14px; padding: 20px 24px;
   align-items: end;
   transition: box-shadow .2s ease;
 }
@@ -162,12 +166,46 @@
 .stepper__val { font-weight: 600; font-size: 15px; min-width: 24px; text-align: center; }
 .bbar__search { height: 52px; padding: 0 28px; border: 0; border-radius: var(--radius-sm); background: var(--bg-dark); color: var(--text-on-dark); cursor: pointer; display: grid; place-items: center; font-family: var(--font-body); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; transition: background .16s ease, color .16s ease; }
 .bbar__search:hover { background: var(--gold); color: var(--bg-dark); }
+.bbar__hint { font-weight: 400; color: var(--text-muted-2); letter-spacing: 0; }
+
+/* Tablet: six cells in a row squeezes the date inputs below their own text.
+   Three columns, with destination and the search button spanning the width. */
+@media (max-width: 1180px) and (min-width: 901px){
+  .bbar { grid-template-columns: repeat(3, 1fr); }
+  .bbar__dest { grid-column: 1 / -1; }
+  .bbar__search { grid-column: 1 / -1; width: 100%; }
+}
+
 @media (max-width: 900px){
-  .bbar { grid-template-columns: 1fr 1fr; }
+  .bbar { grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
   /* Overlap depth lives with the .bbar--overlap rules above — a second value
      here silently won on width, which is why the bar never met the video. */
-  .bbar__dest { grid-column: 1 / -1; }
-  .bbar__search { grid-column: 1 / -1; width: 100%; height: 48px; }
+
+  /*
+     Dates first on mobile.
+
+     Source order is desktop order — Destination, then the dates — which on a
+     narrow screen put a full-width select above the two fields the guest
+     actually came to fill in, pushing Check-in and Check-out down the page.
+     That is the client's complaint. Reordering here rather than in the JSX
+     keeps the desktop row and the DOM/tab order sensible.
+
+     The generic .bbar__field rule must come first: the date and destination
+     fields carry both classes at equal specificity, so source order decides. */
+  .bbar__field { order: 4; }
+  .bbar__date--in  { order: 1; }
+  .bbar__date--out { order: 2; }
+  .bbar__dest      { order: 3; grid-column: 1 / -1; }
+  .bbar__search    { order: 5; grid-column: 1 / -1; width: 100%; height: 48px; }
+}
+
+@media (max-width: 640px){
+  /* iOS zooms any input under 16px on focus, which leaves the page scrolled
+     sideways and the bar half off-screen. */
+  .bbar__input { font-size: 16px; padding: 12px; }
+  .bbar__search { height: 52px; }
+  /* 44px minimum touch target — 34px was below the accessible floor. */
+  .stepper button { width: 44px; height: 44px; }
 }
 
 /* ============================ Testimonials (§4) ============================ */

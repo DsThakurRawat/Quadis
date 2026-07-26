@@ -677,7 +677,10 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   bottom: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
-  width: 280px;
+  /* Fixed 280px centred on the pin runs off the side of a phone when the pin
+     sits near an edge, and body{overflow-x:hidden} clips it rather than
+     scrolling — so the caption was simply unreadable. Cap it to the viewport. */
+  width: min(280px, calc(100vw - 32px));
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(0,0,0,0.1);
