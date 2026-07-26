@@ -20,7 +20,7 @@ const TIERS: Tier[] = [
   {
     name: 'Quadis Central',
     description: 'Normal standard hotels.',
-    image: galleryFacade[0] || '/images/home/hero.jpg',
+    image: galleryFacade[1] || '/images/home/hero.jpg',
   },
   {
     name: 'Quadis Select',
