@@ -3,14 +3,27 @@ dotenv.config()
 
 import { createApp } from './app'
 import { startHoldCleanupWorker } from './workers/holdCleanup'
+import { runMigrations } from './db/migrate'
 
 const PORT = process.env.PORT || 3001
-const app = createApp()
 
-// Start background cron worker
-startHoldCleanupWorker()
+async function start() {
+  // Bring the schema up to date before serving. A server that answers requests
+  // against a half-migrated database is worse than one that refuses to boot.
+  try {
+    await runMigrations()
+  } catch (err) {
+    console.error('❌ Database migration failed — refusing to start:', err)
+    process.exit(1)
+  }
 
-app.listen(PORT, () => {
-  console.log(`🚀 Quadis Hotels API Server running strictly on TypeScript at http://localhost:${PORT}`)
-  console.log(`📡 Health Check endpoint: http://localhost:${PORT}/api/health`)
-})
+  const app = createApp()
+  startHoldCleanupWorker()
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Quadis Hotels API Server running strictly on TypeScript at http://localhost:${PORT}`)
+    console.log(`📡 Health Check endpoint: http://localhost:${PORT}/api/health`)
+  })
+}
+
+start()

@@ -13,6 +13,13 @@ const initiateBookingSchema = z.object({
   checkOut: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, 'Check-out must be YYYY-MM-DD format'),
   roomsCount: z.number().int().min(1, 'At least 1 room required').max(20, 'Maximum 20 rooms per booking'),
   guestsCount: z.number().int().min(1, 'At least 1 guest required').max(80, 'Maximum 80 guests per booking'),
+  // Optional so the AI concierge and any older client keep working on
+  // guestsCount alone; when present, this is what prices the extra bed.
+  adultsCount: z.number().int().min(1, 'At least 1 adult required').max(80).optional(),
+  childAges: z
+    .array(z.number().int().min(0, 'Age cannot be negative').max(17, 'Guests 18 and over are adults'))
+    .max(20, 'Maximum 20 children per booking')
+    .optional(),
   guestName: z.string().trim().min(2, 'Guest name must be at least 2 characters'),
   guestPhone: z.string().trim().min(10, 'Valid 10-digit mobile number required'),
   guestEmail: z.string().trim().email('Invalid email address').optional(),
@@ -29,6 +36,17 @@ const initiateBookingSchema = z.object({
     return new Date(data.checkIn).getTime() >= today.getTime()
   },
   { message: 'Check-in date cannot be in the past', path: ['checkIn'] }
+).refine(
+  // If the client sends a split, it has to agree with the headcount it also
+  // sent — otherwise "3 guests" could be priced as 2 adults and quietly skip
+  // the extra-bed charge.
+  (data) => {
+    if (data.adultsCount === undefined && data.childAges === undefined) return true
+    const adults = data.adultsCount ?? 0
+    const children = data.childAges?.length ?? 0
+    return adults + children === data.guestsCount
+  },
+  { message: 'Adults plus children must equal the total number of guests', path: ['guestsCount'] }
 )
 
 // POST /api/bookings/initiate - create 15-minute soft hold

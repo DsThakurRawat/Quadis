@@ -1,6 +1,7 @@
 import Groq from 'groq-sdk'
 import { db } from '../db'
 import { notificationService } from './NotificationService'
+import { policyFor } from '../lib/pricing'
 
 export interface ChatTurnResult {
   reply: string
@@ -66,11 +67,16 @@ export class AIService {
           })
           .join('\n')
 
+        const policy = policyFor(p)
+
         return `PROPERTY: ${p.name}
   Slug: ${p.slug}
   City: ${p.city}
   Address: ${p.address}
-  Base Price: ₹${p.base_price.toLocaleString('en-IN')}/night
+  Base Price: ₹${p.base_price.toLocaleString('en-IN')}/night (covers 2 adults per room)
+  Triple occupancy: +${policy.extraAdultPercent}% of the room rate per additional ADULT
+    (e.g. a ₹${p.base_price.toLocaleString('en-IN')} room for 3 adults is ₹${Math.round(p.base_price * (1 + policy.extraAdultPercent / 100)).toLocaleString('en-IN')}/night)
+  Children: a child costs nothing extra (under ${policy.childFreeUnderAge})
   Rating: ${p.rating}/5
   Phone/WhatsApp: ${p.whatsapp}
   Email: ${p.email}
@@ -94,6 +100,11 @@ TOOLS AT YOUR DISPOSAL:
 POLICIES (answer these without tools):
 • Check-in: 2:00 PM | Check-out: 11:00 AM
 • Early check-in / late check-out: subject to availability, contact property
+• Occupancy: every rate shown covers 2 adults per room. A third ADULT adds a
+  percentage of that night's room rate — the exact percentage is listed against each
+  property below, because it is set per hotel. A CHILD adds nothing at all.
+  So "2 adults + 1 child" costs the same as "2 adults", but "3 adults" costs more.
+  NEVER quote a 3-adult room at the 2-adult rate. NEVER add a charge for a child.
 • GST: 12% for rooms under ₹7,500/night; 18% for ₹7,500+/night (SAC 996311)
 • Cancellation: Contact hotel directly; 24-hour cancellation for no charge
 • Payment: Razorpay instant checkout (UPI, cards, net banking) or walk-in cash
@@ -151,6 +162,12 @@ INSTRUCTIONS:
         checkOut: args.checkOut,
         roomsCount: Number(args.roomsCount || 1),
         guestsCount: Number(args.guestsCount || 2),
+        // Pass the split when the model collected it. The server re-derives the
+        // extra-bed charge either way; if only guestsCount arrives, it treats
+        // the whole party as adults, which errs toward charging rather than
+        // undercharging.
+        adultsCount: args.adultsCount !== undefined ? Number(args.adultsCount) : undefined,
+        childAges: Array.isArray(args.childAges) ? args.childAges.map(Number) : undefined,
         guestName: args.guestName,
         guestPhone: args.guestPhone,
         guestEmail: args.guestEmail,
@@ -288,7 +305,13 @@ INSTRUCTIONS:
               checkIn: { type: 'string', description: 'Check-in date YYYY-MM-DD' },
               checkOut: { type: 'string', description: 'Check-out date YYYY-MM-DD' },
               roomsCount: { type: 'number', description: 'Number of rooms to hold' },
-              guestsCount: { type: 'number', description: 'Total number of guests' },
+              guestsCount: { type: 'number', description: 'Total number of guests (adults + children)' },
+              adultsCount: { type: 'number', description: 'Number of adults (18+). Adults beyond 2 per room incur an extra bed charge.' },
+              childAges: {
+                type: 'array',
+                items: { type: 'number' },
+                description: 'Age of each child under 18, one entry per child. Ages under 12 stay free.',
+              },
               guestName: { type: 'string', description: 'Full name of guest' },
               guestPhone: { type: 'string', description: '10-digit mobile number' },
               guestEmail: { type: 'string', description: 'Email address (optional)' },

@@ -1,5 +1,28 @@
 import { BookingRecord, EnquiryRecord } from '../types'
 
+/**
+ * "2 Adults, 1 Child (+1 extra bed)" — what the front desk needs to set the
+ * room up, and what makes an extra-bed charge on the total legible.
+ *
+ * Falls back to the plain headcount for rows written before the adult/child
+ * split existed.
+ */
+function describeParty(booking: BookingRecord): string {
+  const adults = Number(booking.adults_count) || 0
+  if (!adults) {
+    const total = Number(booking.guests_count) || 0
+    return `${total} Guest${total > 1 ? 's' : ''}`
+  }
+
+  const children = Number(booking.children_count) || 0
+  const extra = Number(booking.extra_adults) || 0
+
+  const parts = [`${adults} Adult${adults > 1 ? 's' : ''}`]
+  if (children > 0) parts.push(`${children} Child${children > 1 ? 'ren' : ''}`)
+  const label = parts.join(', ')
+  return extra > 0 ? `${label} (+${extra} extra bed${extra > 1 ? 's' : ''})` : label
+}
+
 export interface NotificationResult {
   success: boolean
   isSimulated: boolean
@@ -33,7 +56,9 @@ export class NotificationService {
       `Hello *${booking.guest_name}*, we are delighted to confirm your reservation at *${propertyName}*!\n\n` +
       `📋 *Booking Summary:*\n` +
       `• Booking Code: *${booking.booking_code}*\n` +
-      `• Room Category: *${roomName}* (${booking.rooms_count} Room${booking.rooms_count > 1 ? 's' : ''}, ${booking.guests_count} Guest${booking.guests_count > 1 ? 's' : ''})\n` +
+      // Spell out the party: the desk needs to know how many beds to make up,
+      // and an extra-bed charge on the total has to be explainable.
+      `• Room Category: *${roomName}* (${booking.rooms_count} Room${booking.rooms_count > 1 ? 's' : ''}, ${describeParty(booking)})\n` +
       `• Check-In: *${booking.check_in}* (from 2:00 PM)\n` +
       `• Check-Out: *${booking.check_out}* (until 11:00 AM)\n` +
       `• Total Paid: *₹${formattedAmount}*\n` +

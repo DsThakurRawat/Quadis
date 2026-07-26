@@ -11,6 +11,7 @@ import { enquiriesRouter } from './routes/enquiries'
 import { adminRouter, adminAuthRouter } from './routes/admin'
 import { aiRouter } from './routes/ai'
 import { authRouter } from './routes/auth'
+import { contentRouter } from './routes/content'
 import { requireAdmin } from './middleware/auth'
 
 // Re-exported for existing importers; the implementation lives in middleware/auth
@@ -83,6 +84,7 @@ export function createApp(): Express {
 
   // Mount API route handlers
   app.use('/api/properties', propertiesRouter)
+  app.use('/api/content', contentRouter)
   app.use('/api/bookings', bookingsRouter)
   app.use('/api/payments', paymentsRouter)
   app.use('/api/webhooks', webhooksRouter)

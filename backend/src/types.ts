@@ -104,6 +104,10 @@ export interface PropertyRecord {
   rating: number
   is_active: boolean
   weekend_surcharge_percent: number
+  /** Percentage of the nightly room rate added per extra adult. Admin-set. */
+  extra_adult_percent: number
+  /** Below this age a guest is a child and is never charged. Admin-set. */
+  child_free_under_age: number
   /** Null until a real coordinate is confirmed; the UI falls back to address search. */
   lat?: number | null
   lng?: number | null
@@ -162,7 +166,22 @@ export interface BookingRecord {
   check_in: string
   check_out: string
   rooms_count: number
+  /** Total headcount (adults + children). Kept for display and older rows. */
   guests_count: number
+  adults_count: number
+  children_count: number
+  /** One age per child. Below the property's child_free_under_age stays free. */
+  child_ages: number[]
+  /** Adults beyond two per room, each charged the extra-bed rate per night. */
+  extra_adults: number
+  /**
+   * The uplift as it stood when this booking was made — the percentage, and the
+   * rupees per extra adult per night it produced. Frozen on the row so an admin
+   * repricing the property later cannot change what an already issued invoice
+   * appears to say.
+   */
+  extra_adult_percent: number
+  extra_adult_charge: number
   total_amount: number
   payment_mode: 'INSTANT_FULL_PAYMENT' | 'TOKEN_DEPOSIT' | 'ENQUIRY_PAYMENT_LINK'
   payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'

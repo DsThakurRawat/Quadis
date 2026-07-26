@@ -14,6 +14,15 @@ CREATE TABLE IF NOT EXISTS properties (
   rating NUMERIC(3, 2) DEFAULT 4.50,
   is_active BOOLEAN DEFAULT TRUE,
   weekend_surcharge_percent NUMERIC(5, 2) DEFAULT 0.00,
+  -- Occupancy policy, per property and set from the admin panel.
+  --
+  -- Rates are quoted for two adults per room. A third ADULT adds
+  -- extra_adult_percent of that night's room rate ("double occupancy room ka 40%
+  -- increase hoga triple mein"). A child adds nothing — child_free_under_age
+  -- defaults to 18 so that "if it's child then no" holds at any age, and can be
+  -- lowered by a hotel that wants to charge for older children.
+  extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 40.00,
+  child_free_under_age INTEGER NOT NULL DEFAULT 18,
   -- Null until a real coordinate is confirmed for the property. The UI falls
   -- back to an address search rather than showing an invented pin.
   lat NUMERIC(10, 7),
@@ -66,7 +75,16 @@ CREATE TABLE IF NOT EXISTS bookings (
   check_in DATE NOT NULL,
   check_out DATE NOT NULL,
   rooms_count INTEGER NOT NULL DEFAULT 1,
+  -- guests_count stays as the headcount total (adults + children) so older rows
+  -- and the owner WhatsApp alert keep working. The split below is what prices
+  -- the stay: adults beyond two per room pay the extra-bed charge.
   guests_count INTEGER NOT NULL DEFAULT 2,
+  adults_count INTEGER NOT NULL DEFAULT 2,
+  children_count INTEGER NOT NULL DEFAULT 0,
+  -- One age per child, so "under 12 stays free" can be recomputed on any row
+  -- rather than trusting a number the client sent.
+  child_ages JSONB NOT NULL DEFAULT '[]'::jsonb,
+  extra_adults INTEGER NOT NULL DEFAULT 0,
   total_amount NUMERIC(10, 2) NOT NULL,
   payment_mode VARCHAR(32) NOT NULL DEFAULT 'INSTANT_FULL_PAYMENT',
   payment_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
@@ -120,6 +138,23 @@ CREATE TABLE IF NOT EXISTS enquiries (
 
 CREATE INDEX IF NOT EXISTS idx_enquiries_status_created ON enquiries(status, created_at);
 
+-- Editable marketing copy.
+--
+-- Page text used to live only in the JSX, so changing a headline meant a code
+-- change and a redeploy. Components read a key from here and fall back to the
+-- string they shipped with, so an empty table renders exactly today's site and
+-- the admin can override any block without a deploy.
+CREATE TABLE IF NOT EXISTS site_content (
+  key VARCHAR(128) PRIMARY KEY,
+  value TEXT NOT NULL,
+  -- Free-text grouping for the admin UI ("home", "about", "footer"…).
+  section VARCHAR(64) NOT NULL DEFAULT 'general',
+  label VARCHAR(190) NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_site_content_section ON site_content(section);
+
 CREATE TABLE IF NOT EXISTS chat_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id VARCHAR(64) NOT NULL,
@@ -131,3 +166,31 @@ CREATE TABLE IF NOT EXISTS chat_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chat_logs_session ON chat_logs(session_id);
+
+-- ---------------------------------------------------------------------------
+-- Migrations for databases created before a column existed.
+--
+-- Every CREATE TABLE above is IF NOT EXISTS, which means an existing database
+-- silently keeps its old shape. These run on every boot and are no-ops once
+-- applied, so a redeploy onto a live database picks the new columns up.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS adults_count INTEGER NOT NULL DEFAULT 2;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS children_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS child_ages JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS extra_adults INTEGER NOT NULL DEFAULT 0;
+
+-- The uplift applied to each extra bed, frozen onto the booking at the time it
+-- was made: the percentage in force, and the rupees per extra adult per night it
+-- worked out to. Without these, an admin repricing the property later would
+-- change what an already-issued invoice appears to say.
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 0;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS extra_adult_charge NUMERIC(10, 2) NOT NULL DEFAULT 0;
+
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 40.00;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS child_free_under_age INTEGER NOT NULL DEFAULT 18;
+
+-- Databases created against the earlier flat-rupee model carry a redundant
+-- properties.extra_adult_charge column. Harmless if present; dropped so the
+-- schema has exactly one definition of the policy.
+ALTER TABLE properties DROP COLUMN IF EXISTS extra_adult_charge;

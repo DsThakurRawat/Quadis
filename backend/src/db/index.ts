@@ -2,7 +2,7 @@ import { Pool } from 'pg'
 import { randomBytes } from 'crypto'
 import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan, UserRecord } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
-import { computeStayTotal, mealOffsetFor } from '../lib/pricing'
+import { computeStayBreakdown, mealOffsetFor, extraAdultsFor, policyFor } from '../lib/pricing'
 import { nightsBetween, todayIso } from '../lib/nights'
 
 /**
@@ -25,7 +25,8 @@ export function generateBookingCode(): string {
 // or structured in-memory ACID store when DATABASE_URL is not set (for zero-config local dev/tests).
 
 export class DatabaseEngine {
-  private pool: Pool | null = null
+  /** Public so the migration runner and webhook lookups can reach it directly. */
+  public pool: Pool | null = null
   public useInMemory: boolean
 
   // In-Memory state store for testing without active PostgreSQL cloud instance
@@ -37,6 +38,8 @@ export class DatabaseEngine {
   public memoryUsers: Map<string, UserRecord> = new Map()
   /** Night-level holds: `${roomTypeId}|${YYYY-MM-DD}` → [{ bookingId, units }]. */
   public memoryNightHolds: Map<string, Array<{ bookingId: string; units: number }>> = new Map()
+  /** Admin-edited copy overrides, keyed the same way as the site_content table. */
+  public memorySiteContent: Map<string, string> = new Map()
 
   constructor() {
     const dbUrl = process.env.DATABASE_URL
@@ -57,6 +60,7 @@ export class DatabaseEngine {
     this.memoryChatLogs.clear()
     this.memoryNightHolds.clear()
     this.memoryUsers.clear()
+    this.memorySiteContent.clear()
 
     seedProperties.forEach((p) => {
       this.memoryProperties.set(p.id, { ...p })
@@ -243,10 +247,25 @@ export class DatabaseEngine {
     gstin?: string
     mealPlan?: MealPlan
     userId?: string
+    /** Defaults to the whole party being adults when the caller omits the split. */
+    adultsCount?: number
+    childAges?: number[]
   }): Promise<{ success: boolean; booking?: BookingRecord; error?: string }> {
     if (new Date(payload.checkOut).getTime() <= new Date(payload.checkIn).getTime()) {
       return { success: false, error: 'Check-out date must be strictly after check-in date' }
     }
+
+    // Occupancy is derived here, never trusted from the client — the extra-adult
+    // charge is money, so the count that prices the stay must be the one the
+    // server computed. Callers that predate the split (the AI concierge) send
+    // only guestsCount; treat that whole party as adults.
+    //
+    // The rate and the free-child age come from the property row, which the
+    // admin panel writes — so the charge always reflects what the hotel has set,
+    // and the resolved policy is read once per booking below.
+    const childAges = Array.isArray(payload.childAges) ? payload.childAges.map(Number).filter((n) => !Number.isNaN(n)) : []
+    const childrenCount = childAges.length
+    const adultsCount = Math.max(1, Number(payload.adultsCount) || payload.guestsCount - childrenCount || 1)
 
     if (!this.useInMemory && this.pool) {
       const client = await this.pool.connect()
@@ -254,7 +273,8 @@ export class DatabaseEngine {
         await client.query('BEGIN')
         // Lock room type row for update
         const roomRes = await client.query(
-          `SELECT rt.*, p.id as prop_id, p.base_price, p.weekend_surcharge_percent FROM room_types rt
+          `SELECT rt.*, p.id as prop_id, p.base_price, p.weekend_surcharge_percent,
+                  p.extra_adult_percent, p.child_free_under_age FROM room_types rt
            JOIN properties p ON p.id = rt.property_id
            WHERE p.slug = $1 AND rt.slug = $2 FOR UPDATE`,
           [payload.propertySlug, payload.roomTypeSlug]
@@ -285,7 +305,15 @@ export class DatabaseEngine {
           return { success: false, error: `Only ${Math.max(0, free)} units available for these dates` }
         }
 
-        const totalAmount = computeStayTotal({
+        const policy = policyFor(room)
+        const extraAdults = extraAdultsFor({
+          adults: adultsCount,
+          childAges,
+          roomsCount: payload.roomsCount,
+          childFreeUnderAge: policy.childFreeUnderAge,
+        })
+
+        const breakdown = computeStayBreakdown({
           basePrice: Number(room.base_price),
           roomOffset: Number(room.price_offset),
           mealOffset: mealOffsetFor(payload.mealPlan, room),
@@ -293,7 +321,10 @@ export class DatabaseEngine {
           checkIn: payload.checkIn,
           checkOut: payload.checkOut,
           roomsCount: payload.roomsCount,
+          extraAdults,
+          extraAdultPercent: policy.extraAdultPercent,
         })
+        const totalAmount = breakdown.total
 
         // Retry on the unique-violation the code column raises, rather than
         // assuming the generated code is free. A savepoint is required because
@@ -305,8 +336,9 @@ export class DatabaseEngine {
             const insertRes = await client.query(
               `INSERT INTO bookings (
                 booking_code, user_id, property_id, room_type_id, guest_name, guest_phone, guest_email, company_name, gstin,
-                check_in, check_out, rooms_count, guests_count, total_amount, booking_status, created_at
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDING_PAYMENT', NOW()) RETURNING *`,
+                check_in, check_out, rooms_count, guests_count, adults_count, children_count, child_ages, extra_adults,
+                extra_adult_percent, extra_adult_charge, total_amount, booking_status, created_at
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 'PENDING_PAYMENT', NOW()) RETURNING *`,
               [
                 generateBookingCode(),
                 payload.userId || null,
@@ -321,6 +353,12 @@ export class DatabaseEngine {
                 payload.checkOut,
                 payload.roomsCount,
                 payload.guestsCount,
+                adultsCount,
+                childrenCount,
+                JSON.stringify(childAges),
+                extraAdults,
+                breakdown.extraAdultPercent,
+                breakdown.extraAdultChargePerNight,
                 totalAmount,
               ]
             )
@@ -380,7 +418,15 @@ export class DatabaseEngine {
       if (!taken) break
       bookingCode = generateBookingCode()
     }
-    const totalAmount = computeStayTotal({
+    const policy = policyFor(prop)
+    const extraAdults = extraAdultsFor({
+      adults: adultsCount,
+      childAges,
+      roomsCount: payload.roomsCount,
+      childFreeUnderAge: policy.childFreeUnderAge,
+    })
+
+    const breakdown = computeStayBreakdown({
       basePrice: prop.base_price,
       roomOffset: room.price_offset,
       mealOffset: mealOffsetFor(payload.mealPlan, room),
@@ -388,7 +434,10 @@ export class DatabaseEngine {
       checkIn: payload.checkIn,
       checkOut: payload.checkOut,
       roomsCount: payload.roomsCount,
+      extraAdults,
+      extraAdultPercent: policy.extraAdultPercent,
     })
+    const totalAmount = breakdown.total
 
     const bookingRecord: BookingRecord = {
       id: `booking-${Date.now()}-${randomBytes(4).toString('hex')}`,
@@ -405,6 +454,12 @@ export class DatabaseEngine {
       check_out: payload.checkOut,
       rooms_count: payload.roomsCount,
       guests_count: payload.guestsCount,
+      adults_count: adultsCount,
+      children_count: childrenCount,
+      child_ages: childAges,
+      extra_adults: extraAdults,
+      extra_adult_percent: breakdown.extraAdultPercent,
+      extra_adult_charge: breakdown.extraAdultChargePerNight,
       total_amount: totalAmount,
       payment_mode: 'INSTANT_FULL_PAYMENT',
       payment_status: 'PENDING',
@@ -626,6 +681,152 @@ export class DatabaseEngine {
       .reduce((sum, b) => sum + Number(b.total_amount), 0)
 
     return { todayCheckIns, pendingHolds, pendingEnquiries, todayRevenue }
+  }
+
+  /* ------------------------------------------------------------------
+   * Admin editing
+   *
+   * Everything a hotel manager should be able to change without a developer:
+   * the property record, its room categories and their rates. Each method
+   * whitelists the columns it will write — a caller cannot rename a primary
+   * key or flip a foreign key by posting extra fields.
+   * ------------------------------------------------------------------ */
+
+  /** Columns an admin may change on a property. */
+  private static readonly PROPERTY_EDITABLE = [
+    'name',
+    'city',
+    'address',
+    'map_link',
+    'phone',
+    'whatsapp',
+    'email',
+    'base_price',
+    'rating',
+    'is_active',
+    'weekend_surcharge_percent',
+    'extra_adult_percent',
+    'child_free_under_age',
+    'lat',
+    'lng',
+    'place_id',
+    'tier',
+    'tier_label',
+  ] as const
+
+  /** Columns an admin may change on a room category. */
+  private static readonly ROOM_EDITABLE = [
+    'name',
+    'description',
+    'size_sqft',
+    'bed_type',
+    'max_guests',
+    'price_offset',
+    'breakfast_offset',
+    'all_meals_offset',
+    'total_units',
+    'is_available',
+  ] as const
+
+  private static pickEditable<T extends string>(
+    patch: Record<string, unknown>,
+    allowed: readonly T[]
+  ): Array<[T, unknown]> {
+    return allowed
+      .filter((col) => patch[col] !== undefined)
+      .map((col) => [col, patch[col]] as [T, unknown])
+  }
+
+  public async updateProperty(
+    idOrSlug: string,
+    patch: Record<string, unknown>
+  ): Promise<PropertyRecord | null> {
+    const fields = DatabaseEngine.pickEditable(patch, DatabaseEngine.PROPERTY_EDITABLE)
+    if (fields.length === 0) return this.getPropertyById(idOrSlug)
+
+    if (!this.useInMemory && this.pool) {
+      const sets = fields.map(([col], i) => `${col} = $${i + 2}`).join(', ')
+      const res = await this.pool.query(
+        `UPDATE properties SET ${sets} WHERE id = $1 OR slug = $1 RETURNING *`,
+        [idOrSlug, ...fields.map(([, v]) => v)]
+      )
+      return res.rows[0] || null
+    }
+
+    const prop = Array.from(this.memoryProperties.values()).find(
+      (p) => p.id === idOrSlug || p.slug === idOrSlug
+    )
+    if (!prop) return null
+    fields.forEach(([col, v]) => { (prop as any)[col] = v })
+    this.memoryProperties.set(prop.id, prop)
+    return prop
+  }
+
+  /**
+   * Edits one room category.
+   *
+   * Matches on id only. Room slugs are shared across properties — every hotel
+   * has a `deluxe-room` — so accepting a slug here would let an admin editing
+   * one property's rate silently change a different property's instead.
+   */
+  public async updateRoomType(
+    id: string,
+    patch: Record<string, unknown>
+  ): Promise<RoomTypeRecord | null> {
+    const fields = DatabaseEngine.pickEditable(patch, DatabaseEngine.ROOM_EDITABLE)
+    if (fields.length === 0) return this.getRoomTypeById(id)
+
+    if (!this.useInMemory && this.pool) {
+      const sets = fields.map(([col], i) => `${col} = $${i + 2}`).join(', ')
+      const res = await this.pool.query(
+        `UPDATE room_types SET ${sets} WHERE id = $1 RETURNING *`,
+        [id, ...fields.map(([, v]) => v)]
+      )
+      return res.rows[0] || null
+    }
+
+    const room = this.memoryRoomTypes.get(id)
+    if (!room) return null
+    fields.forEach(([col, v]) => { (room as any)[col] = v })
+    // total_units is the ceiling for availability; never leave a room claiming
+    // more free units than it physically has.
+    if (room.available_units > room.total_units) room.available_units = room.total_units
+    this.memoryRoomTypes.set(room.id, room)
+    return room
+  }
+
+  /* ---------- Editable site copy ---------- */
+
+  public async getSiteContent(): Promise<Record<string, string>> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('SELECT key, value FROM site_content')
+      return Object.fromEntries(res.rows.map((r: any) => [r.key, r.value]))
+    }
+    return Object.fromEntries(this.memorySiteContent)
+  }
+
+  public async setSiteContent(entries: Record<string, string>): Promise<Record<string, string>> {
+    const pairs = Object.entries(entries).filter(([k]) => k.trim().length > 0)
+
+    if (!this.useInMemory && this.pool) {
+      for (const [key, value] of pairs) {
+        await this.pool.query(
+          `INSERT INTO site_content (key, value, updated_at) VALUES ($1, $2, NOW())
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+          [key, value]
+        )
+      }
+      return this.getSiteContent()
+    }
+
+    // An empty string means "fall back to what the component shipped with",
+    // so clearing a field in the admin UI restores the default rather than
+    // blanking the section.
+    pairs.forEach(([key, value]) => {
+      if (value === '') this.memorySiteContent.delete(key)
+      else this.memorySiteContent.set(key, value)
+    })
+    return this.getSiteContent()
   }
 
   public async toggleRoomAvailability(
