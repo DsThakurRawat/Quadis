@@ -1,4 +1,4 @@
-import { corporateImages, galleryFacade } from '../data/images.ts'
+import { corporateImages, corporateStayImage, galleryFacade } from '../data/images.ts'
 import { CITIES } from '../data/hotels.ts'
 import type { CorporateRFPPayload } from '../types.ts'
 import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
@@ -7,6 +7,7 @@ import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
 import { submitEnquiry } from '../data/enquiries.ts'
 import { useContent } from '../data/content.ts'
+import Seo from '../components/Seo.tsx'
 
 
 interface Benefit { title: string; body: string }
@@ -17,21 +18,20 @@ const BENEFITS: Benefit[] = [
 ]
 
 /**
- * There is no public/images/corporate/ folder, so `corporateImages` falls all
- * the way back to the home set — whose second entry is a photograph of a
- * restaurant dining room. It was rendering here under the label "Quadis Lobby",
- * which is the image the client asked us to replace.
- *
- * Address the lobby shot by filename instead of by index, so adding a file to
- * the folder can never silently repoint it at a dining room again.
+ * The side image is addressed by filename rather than by index. It used to read
+ * `corporateImages[1]`, and with public/images/corporate/ empty at the time
+ * `corporateImages` fell back to the home set — whose second entry is a
+ * photograph of a restaurant dining room, rendering here under the label
+ * "Quadis Lobby". Adding a file to a folder should not be able to repoint it.
  */
 const lobbyPhoto = (): string | undefined =>
   galleryFacade.find((url) => url.toLowerCase().includes('lobby'))
 
 export default function Corporate() {
   const { t } = useContent()
-  const heroImg = corporateImages[0]
-  const sideImg = lobbyPhoto() ?? corporateImages[1] ?? corporateImages[0]
+  // The client's corporate photograph, supplied July 2026.
+  const heroImg = corporateStayImage
+  const sideImg = lobbyPhoto() ?? corporateImages[0]
 
   const f = useForm<CorporateRFPPayload>(
     { company: '', person: '', email: '', phone: '', city: '', rooms: '', message: '' },
@@ -48,6 +48,10 @@ export default function Corporate() {
 
   return (
     <>
+      <Seo
+        title="Corporate Hotel Booking in Delhi NCR"
+        description="Negotiated corporate rates, priority availability and consolidated GST-compliant billing across every Quadis property in Delhi NCR."
+      />
       <PhotoHero image={heroImg} overline="FOR BUSINESS TRAVEL" title="Corporate Hotel Booking" height="short" />
 
       <section className="section bg-cream">

@@ -29,16 +29,11 @@ export interface ContentField {
 }
 
 export const DEFAULT_CONTENT: Record<string, ContentField> = {
-  'home.hero.overline': {
-    section: 'Home — hero',
-    label: 'Overline (small text above the headline)',
-    value: 'DELHI NCR · A GROUP OF HOTELS · SINCE 2017',
-  },
-  'home.hero.title': {
-    section: 'Home — hero',
-    label: 'Headline',
-    value: 'Comfort you can book in seconds.',
-  },
+  // 'home.hero.overline' and 'home.hero.title' were removed in July 2026: the
+  // client took the copy off the hero video, leaving only the search bar. A key
+  // with nothing reading it renders an admin field that silently does nothing,
+  // so it comes out of the map rather than staying as dead weight. Any override
+  // already stored against these keys is simply ignored.
   'home.stayPromise.title': {
     section: 'Home — stay promise',
     label: 'Section heading',
