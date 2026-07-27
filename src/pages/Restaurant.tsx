@@ -2,6 +2,7 @@ import { restaurantImages, cateringImages } from '../data/images.ts'
 import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
 import { Button } from '../components/ui.tsx'
 import { Photo } from '../components/media.tsx'
+import Seo from '../components/Seo.tsx'
 
 interface Offering { title: string; blurb: string; img?: string | undefined; to: string; cta: string }
 
@@ -29,6 +30,10 @@ export default function Restaurant() {
 
   return (
     <>
+      <Seo
+        title="Restaurant & In-House Dining"
+        description="Multi-cuisine in-house kitchens serving breakfast spreads, room dining and customised event menus across Quadis Hotels."
+      />
       <PhotoHero image={rImgs[0]} overline="TASTE THE QUADIS WAY" title="Dining by Quadis" height="short" />
 
       <section className="section bg-cream">

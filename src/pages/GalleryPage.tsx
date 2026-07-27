@@ -11,6 +11,7 @@ import {
 import { FilterPills } from '../components/ui.tsx'
 import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
 import { IconArrowLeft, IconArrowRight, IconX } from '../components/icons.tsx'
+import Seo from '../components/Seo.tsx'
 
 type GalleryTab = 'All' | 'Deluxe Rooms' | 'Superior Rooms' | 'Royal Suites' | 'Facades & Lobbies' | 'Dining & Banquets'
 const TABS: readonly GalleryTab[] = [
@@ -48,6 +49,10 @@ export default function GalleryPage() {
 
   return (
     <>
+      <Seo
+        title="Photo Gallery"
+        description="Rooms, lobbies, banquet halls and dining spaces photographed across all nine Quadis properties in Delhi NCR."
+      />
       <PhotoHero image={heroImg} title="Photo Gallery" sub={`A visual journey across our ${PROPERTY_COUNT} considered properties, refined suites, and grand banquets.`} height="short" />
 
       <section className="section bg-cream gallery-page">
