@@ -76,20 +76,23 @@ Rate sheet wale rate laga diye hain, jaisa aapne kaha.
 MESSAGE 7 - ye pichli baar reh gaya tha
 =============================================================
 
-Website live karne ke liye ye 4 cheezein abhi bhi pending hain
+Aapke 3:04 pm ke message se 3 cheez clear ho gayi - mail Gmail pe hai, AWS ke
+liye sabse sasta option lagana hai, aur registered address mil gaya (bill pe
+lag gaya hai). Ab sirf 2 cheez pending hain
 
-1. theserverindia.com ka panel login. Purani site wahi chal rahi hai
+1. theserverindia.com ka panel login - aapne kaha purane designer se maanga
+   hai. Mil gaya kya? Jab tak wo nahi milta, website switch nahi kar sakte
 
-2. info@quadishotels.com kahan chalta hai - usi hosting pe, ya Gmail /
-   Google Workspace pe alag se?
-   Ye sabse zaroori hai. Domain switch karte waqt agar email ki setting theek
-   se copy nahi hui to aapka mail band ho jaayega. Ek baar confirm kar dijiye
+   Ek zaroori baat: aapka domain GoDaddy pe hai, par uske nameserver
+   theserverindia pe point kar rahe hain. Matlab email ki settings (MX record)
+   bhi wahi rakhi hui hain, GoDaddy pe nahi. Isliye us panel ka login chahiye -
+   usse hum sirf website ka record badlenge aur email ko chhuenge hi nahi.
+   Aapka mail Google pe hai, wo bilkul safe rahega
 
-3. AWS hosting - lagbhag 3 se 8 hazaar mahina, abhi jo saalana plan hai uski
-   jagah. Aapne confirm nahi kiya tha. Haan ya na bata dijiye
-
-4. Company ka registered address. GST number mil gaya, address nahi mila.
-   Guest ke bill pe address bhi print hota hai
+2. AWS - "sabse kam price" ka matlab main ye samajh raha hoon ki chhote se
+   chhota setup lagayein aur traffic badhne pe bada karein. Theek hai?
+   Uska matlab shuru mein mahine ka lagbhag 1,500-2,500 aayega, 3-8 hazaar
+   nahi. Confirm kar dijiye to main wahi laga dunga
 
 
 =============================================================

@@ -9,16 +9,17 @@ import { BookingRecord, PropertyRecord, RoomTypeRecord } from '../types'
  * under an invented GSTIN is a filing problem for the client, not a cosmetic
  * one, so they are now the real values the client supplied.
  *
- * Note the state code moved 09 (Uttar Pradesh) → 07 (Delhi); the registered
- * entity is in Delhi even though most properties are in Noida.
- *
- * REGISTERED_ADDRESS is still the Noida property address. The client gave the
- * registered name and GSTIN but not the registered address — chased in
- * docs/whatsapp-message-2.txt, message 7.
+ * The registered address came from the client on 27 Jul 2026 and is in East
+ * Delhi, which is why the GSTIN state code is 07 (Delhi) rather than 09 (Uttar
+ * Pradesh) even though six of the nine properties are in Noida. The invoice
+ * must carry the registered address of the entity raising it, not the address
+ * of the hotel the guest stayed at — that appears separately as the place of
+ * supply.
  */
 const LEGAL_ENTITY = 'Quadis Services Private Limited'
 const GSTIN = '07AAACQ4872H1ZA'
-const REGISTERED_ADDRESS = 'H-22, Sector 51, Noida, Uttar Pradesh — 201301'
+const REGISTERED_ADDRESS =
+  'G/F, 9/2672, Plot No 22-H, Gali Number 17, Kailash Nagar,\nEast Delhi, Delhi — 110031'
 
 export class InvoiceService {
   public async generateGstInvoicePdf(
