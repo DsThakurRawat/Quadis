@@ -1,6 +1,16 @@
 import request from 'supertest'
 import { createApp } from '../src/app'
 import { db } from '../src/db'
+import { seedRoomTypes } from '../src/data/seed'
+
+/**
+ * Read inventory off the seed rather than hardcoding it. These assertions are
+ * about holds decrementing availability, not about how many keys a property
+ * has — hardcoding the count meant every correction to the client's rate sheet
+ * broke tests that had nothing to do with rates.
+ */
+const keysOf = (slug: string): number =>
+  seedRoomTypes.find((r) => r.id === `room-prop-2-${slug}`)!.total_units
 
 const app = createApp()
 
@@ -24,7 +34,9 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
     expect(res.body.success).toBe(true)
     expect(res.body.data.name).toBe('Hotel Quadis Sector 51')
     expect(Array.isArray(res.body.data.rooms)).toBe(true)
-    expect(res.body.data.rooms.length).toBe(3) // Deluxe, Superior, Royal
+    // Deluxe and Super. Per the client's rate sheet only Downtown EOK and Amar
+    // Inn carry a third (Royal) category.
+    expect(res.body.data.rooms.length).toBe(2)
   })
 
   test('POST /api/bookings/initiate creates a 15-minute soft hold and decrements available units', async () => {
@@ -49,26 +61,27 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
     expect(res.body.data.booking_status).toBe('PENDING_PAYMENT')
     expect(res.body.data.rooms_count).toBe(2)
 
-    // Inventory is per night: these dates drop 5 -> 3 ...
+    // Inventory is per night: booking 2 rooms drops these dates by 2 ...
+    const deluxeKeys = keysOf('deluxe-room')
     const roomId = res.body.data.room_type_id
-    expect(await db.getAvailableUnits(roomId, '2026-11-12', '2026-11-14')).toBe(3)
+    expect(await db.getAvailableUnits(roomId, '2026-11-12', '2026-11-14')).toBe(deluxeKeys - 2)
 
     // ... while unrelated dates are untouched. A single counter used to let one
     // booking block every other date in the calendar.
-    expect(await db.getAvailableUnits(roomId, '2027-03-10', '2027-03-12')).toBe(5)
+    expect(await db.getAvailableUnits(roomId, '2027-03-10', '2027-03-12')).toBe(deluxeKeys)
   })
 
   test('a full room type on one set of dates is still sellable on other dates', async () => {
     const base = {
       propertySlug: 'hotel-quadis-sector-51-noida',
-      roomTypeSlug: 'super-deluxe-balcony', // total_units = 3
+      roomTypeSlug: 'super-deluxe', // 3 keys at this property
       guestsCount: 2,
       guestName: 'Date Isolation',
       guestPhone: '9876543210',
       roomsCount: 2,
     }
 
-    // Sell out the suite for 20–22 Nov.
+    // Take 2 of the 3 for 20–22 Nov, leaving too few for another pair.
     const soldOut = await request(app)
       .post('/api/bookings/initiate')
       .send({ ...base, checkIn: '2026-11-20', checkOut: '2026-11-22' })
@@ -97,10 +110,10 @@ describe('Phase 1: Core API & Reservation Soft Hold Tests', () => {
   test('POST /api/bookings/initiate prevents double booking when room units are sold out', async () => {
     const payload = {
       propertySlug: 'hotel-quadis-sector-51-noida',
-      roomTypeSlug: 'super-deluxe-balcony',
+      roomTypeSlug: 'super-deluxe',
       checkIn: '2026-11-12',
       checkOut: '2026-11-14',
-      roomsCount: 4, // Super Deluxe with Balcony has 3 units, so asking for 4 must fail
+      roomsCount: 4, // Super Deluxe has 3 keys here, so asking for 4 must fail
       guestsCount: 4,
       guestName: 'Ananya Sharma',
       guestPhone: '9123456780',

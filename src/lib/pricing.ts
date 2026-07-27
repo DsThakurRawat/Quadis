@@ -12,9 +12,11 @@
  * Every rate on this site is quoted for two adults sharing a room. A third
  * adult is an extra bed, not a free upgrade.
  *
- * The rule, per the client: a third ADULT adds 40% of that night's room rate;
- * a CHILD adds nothing. Percentage rather than flat, so it tracks the room rate
- * and the weekend surcharge automatically.
+ * The rule, per the client (27 Jul 2026): a third person adds 30% of that
+ * night's room rate; a CHILD adds nothing. Percentage rather than flat, so it
+ * tracks the room rate and the weekend surcharge automatically. See the fuller
+ * note in backend/src/lib/pricing.ts — the client has stated this three ways
+ * and the child half is still unconfirmed.
  *
  * The live figures are per property and set by the hotel from the admin panel;
  * they arrive on the hotel record as `extraAdultPercent` and `childFreeUnderAge`.
@@ -22,7 +24,7 @@
  * property whose record predates those fields — so the quote degrades to the
  * group default rather than to zero.
  */
-export const DEFAULT_EXTRA_ADULT_PERCENT = 40
+export const DEFAULT_EXTRA_ADULT_PERCENT = 30
 
 /** Adults included in the advertised nightly rate, per room. */
 export const STANDARD_OCCUPANCY_PER_ROOM = 2
@@ -140,7 +142,7 @@ export function computeStayBreakdown(input: StayPricingInput): StayPricingBreakd
 
   /**
    * The uplift for one extra adult on a night at `rate`, in whole rupees.
-   * Rounded per night, exactly as the backend does — 40% of ₹1,599 is ₹639.60
+   * Rounded per night, exactly as the backend does — 30% of ₹1,799 is ₹539.70
    * and a hotel quotes ₹640. Must stay identical to backend/src/lib/pricing.ts
    * or the quoted and charged totals drift apart by paise.
    */

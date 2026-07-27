@@ -1,6 +1,7 @@
 import request from 'supertest'
 import { createApp } from '../src/app'
 import { db } from '../src/db'
+import { seedProperties } from '../src/data/seed'
 
 const app = createApp()
 
@@ -108,7 +109,12 @@ describe('PATCH /api/admin/room-types/:idOrSlug', () => {
       guestPhone: '9876543210',
     })
 
-    expect(Number(booking.body.data.total_amount)).toBe(1599 + 500)
+    // Read the base rate off the seed rather than hardcoding it — this test is
+    // about the offset flowing through, not about what the room costs.
+    const baseRate = Number(
+      seedProperties.find((p) => p.slug === 'hotel-quadis-sector-51-noida')!.base_price
+    )
+    expect(Number(booking.body.data.total_amount)).toBe(baseRate + 500)
   })
 
   it('rejects a negative rate', async () => {

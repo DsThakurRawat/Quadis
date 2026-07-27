@@ -7,6 +7,11 @@ CREATE TABLE IF NOT EXISTS properties (
   name VARCHAR(128) NOT NULL,
   city VARCHAR(32) NOT NULL,
   address TEXT NOT NULL,
+  -- Google Maps share link. Present in the seed data, on PropertyRecord and in
+  -- the admin-editable whitelist since day one, but the column was never
+  -- created — so against real Postgres (never against the in-memory store) a
+  -- property edit carrying map_link failed with "column does not exist".
+  map_link TEXT,
   phone VARCHAR(20) NOT NULL,
   whatsapp VARCHAR(20) NOT NULL,
   email VARCHAR(128) NOT NULL,
@@ -17,11 +22,12 @@ CREATE TABLE IF NOT EXISTS properties (
   -- Occupancy policy, per property and set from the admin panel.
   --
   -- Rates are quoted for two adults per room. A third ADULT adds
-  -- extra_adult_percent of that night's room rate ("double occupancy room ka 40%
-  -- increase hoga triple mein"). A child adds nothing — child_free_under_age
+  -- extra_adult_percent of that night's room rate. Client, 27 Jul 2026: "If a
+  -- third person is included in the same room, a 30% extra charge will apply
+  -- for the additional mattress." A child adds nothing — child_free_under_age
   -- defaults to 18 so that "if it's child then no" holds at any age, and can be
   -- lowered by a hotel that wants to charge for older children.
-  extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 40.00,
+  extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 30.00,
   child_free_under_age INTEGER NOT NULL DEFAULT 18,
   -- Null until a real coordinate is confirmed for the property. The UI falls
   -- back to an address search rather than showing an invented pin.
@@ -187,7 +193,9 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS extra_adults INTEGER NOT NULL DEFA
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 0;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS extra_adult_charge NUMERIC(10, 2) NOT NULL DEFAULT 0;
 
-ALTER TABLE properties ADD COLUMN IF NOT EXISTS extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 40.00;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS map_link TEXT;
+
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 30.00;
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS child_free_under_age INTEGER NOT NULL DEFAULT 18;
 
 -- Databases created against the earlier flat-rupee model carry a redundant

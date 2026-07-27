@@ -1,6 +1,25 @@
 import PDFDocument from 'pdfkit'
 import { BookingRecord, PropertyRecord, RoomTypeRecord } from '../types'
 
+/**
+ * The billing entity printed on every GST invoice.
+ *
+ * These were placeholders until 27 Jul 2026 — "Quadis Hospitality Pvt. Ltd."
+ * with GSTIN 09AAACQ1234F1Z9, neither of which exists. Issuing a tax invoice
+ * under an invented GSTIN is a filing problem for the client, not a cosmetic
+ * one, so they are now the real values the client supplied.
+ *
+ * Note the state code moved 09 (Uttar Pradesh) → 07 (Delhi); the registered
+ * entity is in Delhi even though most properties are in Noida.
+ *
+ * REGISTERED_ADDRESS is still the Noida property address. The client gave the
+ * registered name and GSTIN but not the registered address — chased in
+ * docs/whatsapp-message-2.txt, message 7.
+ */
+const LEGAL_ENTITY = 'Quadis Services Private Limited'
+const GSTIN = '07AAACQ4872H1ZA'
+const REGISTERED_ADDRESS = 'H-22, Sector 51, Noida, Uttar Pradesh — 201301'
+
 export class InvoiceService {
   public async generateGstInvoicePdf(
     booking: BookingRecord,
@@ -51,10 +70,9 @@ export class InvoiceService {
           .fontSize(10)
           .font('Helvetica')
           .fillColor('#4B5563')
-          .text('Quadis Hospitality Pvt. Ltd.')
-          .text('H-22, Sector 51, Near Cloud9 Hospital')
-          .text('Noida, Uttar Pradesh — 201301')
-          .text('GSTIN: 09AAACQ1234F1Z9 | SAC Code: 996311')
+          .text(LEGAL_ENTITY)
+          .text(REGISTERED_ADDRESS)
+          .text(`GSTIN: ${GSTIN} | SAC Code: 996311`)
           .moveDown(1.5)
 
         // Divider
@@ -168,14 +186,14 @@ export class InvoiceService {
           .font('Helvetica-Oblique')
           .fillColor('#6B7280')
           .text('Note: This is an electronically generated SAC 996311 GST Tax Invoice and receipt.', 50, doc.y)
-          .text('Thank you for staying at Quadis Hotels & Resorts. We wish you a wonderful journey!', 50, doc.y + 15)
+          .text('Thank you for staying at Quadis Hotels. We wish you a wonderful journey!', 50, doc.y + 15)
 
         // Signatory box
         doc
           .font('Helvetica-Bold')
           .fontSize(10)
           .fillColor('#111827')
-          .text('For Quadis Hospitality Pvt. Ltd.', 350, doc.y + 25, { align: 'right' })
+          .text(`For ${LEGAL_ENTITY}`, 350, doc.y + 25, { align: 'right' })
           .font('Helvetica')
           .fontSize(9)
           .text('Authorized Signatory', 350, doc.y + 18, { align: 'right' })
