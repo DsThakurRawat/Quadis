@@ -3,6 +3,15 @@
 For whoever commits this work. Written 26 Jul 2026 against branch `main`,
 last commit `e815846`. **Read §1 before running any `git add`.**
 
+> **Superseded on 27 Jul 2026.** The four commits this document describes have
+> landed. The loose files it names — `image copy 2.png`, `image.png`,
+> `Greeting (3).zip` and the rest — have since been filed into
+> `client-assets/briefs/` and `client-assets/zips/`, and `.gitignore` now covers
+> them by pattern rather than by hand. The paths below are historical.
+>
+> §1 still holds and matters more than ever: `client-assets/briefs/` now holds
+> the client's GoDaddy and Razorpay logins in plaintext.
+
 State when these were written: 31 tracked files modified, 12 untracked files
 added, nothing staged.
 
