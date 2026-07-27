@@ -9,6 +9,7 @@ import { SectionHeader } from '../components/blocks.tsx'
 import { submitEnquiry } from '../data/enquiries.ts'
 
 import NotFound from './NotFound.tsx'
+import Seo from '../components/Seo.tsx'
 
 const OCCASIONS = ['Weddings', 'Receptions', 'Corporate', 'Birthdays']
 
@@ -40,65 +41,72 @@ export default function BanquetDetail() {
   ]
 
   return (
-    <section className="section bg-cream">
-      <div className="container">
-        <h1 className="h2" style={{ marginBottom: 6 }}>{venue.name}</h1>
-        <p className="detail-head__addr" style={{ marginBottom: 28 }}>{venue.area}, {venue.city}</p>
+    <>
+      <Seo
+        title={`${venue.name} — ${venue.area}, ${venue.city}`}
+        description={`${venue.name} in ${venue.area}, ${venue.city}. ${venue.hallArea} hall seating up to ${venue.capacity} guests, with ${venue.catering.toLowerCase()} catering and ${venue.parking.toLowerCase()}.`}
+        image={images[0]}
+      />
+      <section className="section bg-cream">
+        <div className="container">
+          <h1 className="h2" style={{ marginBottom: 6 }}>{venue.name}</h1>
+          <p className="detail-head__addr" style={{ marginBottom: 28 }}>{venue.area}, {venue.city}</p>
 
-        <Gallery images={images} alt={venue.name} />
+          <Gallery images={images} alt={venue.name} />
 
-        <div className="specs-row">
-          {specs.map((s) => (
-            <div className="spec" key={s.k}>
-              <span className="spec__k overline">{s.k}</span>
-              <span className="spec__v">{s.v}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="detail-block">
-          <span className="overline">SUITED FOR</span>
-          <div className="chips">
-            {OCCASIONS.map((o) => (<span className="chip" key={o}>{o}</span>))}
-          </div>
-        </div>
-
-        <div className="enquiry">
-          <div className="enquiry__intro">
-            <SectionHeader overline="ENQUIRE" title="Plan your occasion" align="left" flank={false} />
-            <p className="prose__p">Tell us a little about your event and our team will be in touch with availability and a considered proposal.</p>
-          </div>
-
-          {f.done ? (
-            <SuccessPanel title="Enquiry received" onReset={f.reset}>
-              Thank you — our banquet team will contact you shortly about {venue.name}.
-            </SuccessPanel>
-          ) : (
-            <form className="form-grid" onSubmit={f.submit(async (v) => {
-              await submitEnquiry({
-                enquiryType: 'BANQUET',
-                guestName: v.name,
-                guestPhone: v.phone,
-                guestEmail: v.email,
-                eventDate: v.date || undefined,
-                guestCount: v.guests ? Number(v.guests) : undefined,
-                message: `Venue: ${venue.name}\n${v.message}`.trim(),
-              })
-            })} noValidate>
-              <Field label="Name" value={f.values.name} onChange={f.set('name')} error={f.errors.name} />
-              <Field label="Phone" type="tel" value={f.values.phone} onChange={f.set('phone')} error={f.errors.phone} />
-              <Field label="Email" type="email" value={f.values.email} onChange={f.set('email')} error={f.errors.email} />
-              <Field label="Event date" type="date" value={f.values.date} onChange={f.set('date')} error={f.errors.date} />
-              <Field label="Guests" type="number" min="1" value={f.values.guests} onChange={f.set('guests')} error={f.errors.guests} />
-              <Field label="Message" as="textarea" className="form-grid__full" value={f.values.message} onChange={f.set('message')} placeholder="Occasion, preferred timing, catering notes…" />
-              <div className="form-grid__full">
-                <FormError message={f.submitError} />
-                <Button as="button" type="submit" variant="primary" disabled={f.pending}>{f.pending ? 'Sending…' : 'SEND ENQUIRY'}</Button>
+          <div className="specs-row">
+            {specs.map((s) => (
+              <div className="spec" key={s.k}>
+                <span className="spec__k overline">{s.k}</span>
+                <span className="spec__v">{s.v}</span>
               </div>
-            </form>
-          )}
+            ))}
+          </div>
+
+          <div className="detail-block">
+            <span className="overline">SUITED FOR</span>
+            <div className="chips">
+              {OCCASIONS.map((o) => (<span className="chip" key={o}>{o}</span>))}
+            </div>
+          </div>
+
+          <div className="enquiry">
+            <div className="enquiry__intro">
+              <SectionHeader overline="ENQUIRE" title="Plan your occasion" align="left" flank={false} />
+              <p className="prose__p">Tell us a little about your event and our team will be in touch with availability and a considered proposal.</p>
+            </div>
+
+            {f.done ? (
+              <SuccessPanel title="Enquiry received" onReset={f.reset}>
+                Thank you — our banquet team will contact you shortly about {venue.name}.
+              </SuccessPanel>
+            ) : (
+              <form className="form-grid" onSubmit={f.submit(async (v) => {
+                await submitEnquiry({
+                  enquiryType: 'BANQUET',
+                  guestName: v.name,
+                  guestPhone: v.phone,
+                  guestEmail: v.email,
+                  eventDate: v.date || undefined,
+                  guestCount: v.guests ? Number(v.guests) : undefined,
+                  message: `Venue: ${venue.name}\n${v.message}`.trim(),
+                })
+              })} noValidate>
+                <Field label="Name" value={f.values.name} onChange={f.set('name')} error={f.errors.name} />
+                <Field label="Phone" type="tel" value={f.values.phone} onChange={f.set('phone')} error={f.errors.phone} />
+                <Field label="Email" type="email" value={f.values.email} onChange={f.set('email')} error={f.errors.email} />
+                <Field label="Event date" type="date" value={f.values.date} onChange={f.set('date')} error={f.errors.date} />
+                <Field label="Guests" type="number" min="1" value={f.values.guests} onChange={f.set('guests')} error={f.errors.guests} />
+                <Field label="Message" as="textarea" className="form-grid__full" value={f.values.message} onChange={f.set('message')} placeholder="Occasion, preferred timing, catering notes…" />
+                <div className="form-grid__full">
+                  <FormError message={f.submitError} />
+                  <Button as="button" type="submit" variant="primary" disabled={f.pending}>{f.pending ? 'Sending…' : 'SEND ENQUIRY'}</Button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   )
 }

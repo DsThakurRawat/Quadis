@@ -6,6 +6,8 @@
   "description": "Quadis Hotels \u2014 premium-but-approachable frontend (Delhi NCR)",
   "scripts": {
     "dev": "vite",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "prebuild": "npm run sitemap",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",

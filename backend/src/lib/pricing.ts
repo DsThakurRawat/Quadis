@@ -18,21 +18,36 @@ export interface RoomMealOffsets {
  * Every rate on this site is quoted for two adults sharing a room. A third
  * adult is an extra bed, not a free upgrade.
  *
- * The rule, in the client's own words (WhatsApp, 26 Jul 2026):
- *   "Double occupancy room ka 40% increase hoga triple mein"
- *   "And agar teesra person adult hain only then"
- *   "If it's child then no"
+ * The rule, in the client's own words. They have now stated it three times, so
+ * the history matters:
  *
- * So: a third ADULT adds 40% of that night's room rate. A child adds nothing.
- * It is a percentage rather than a flat sum, so it tracks the room rate and the
- * weekend surcharge automatically — a triple on a surcharged Friday costs 40%
- * more than that Friday's double, not 40% more than a weekday double.
+ *   26 Jul 2026, WhatsApp:
+ *     "Double occupancy room ka 40% increase hoga triple mein"
+ *     "And agar teesra person adult hain only then" / "If it's child then no"
+ *   27 Jul 2026, rate sheet: "EXTRA ADULT 500, CHILD 250"
+ *   27 Jul 2026, answering "is the 40% the same at all hotels":
+ *     "If a third person is included in the same room, a 30% extra charge will
+ *      apply for the additional mattress."
+ *
+ * The last one wins: it is the most recent, and it is a direct answer to a
+ * direct question about this number, which the rate sheet's cell was not. It
+ * also confirms the model is a PERCENTAGE, not the sheet's flat rupee figure.
+ *
+ * A percentage tracks the room rate and the weekend surcharge automatically —
+ * a triple on a surcharged Friday costs 30% more than that Friday's double,
+ * not 30% more than a weekday double.
+ *
+ * STILL UNCONFIRMED: they wrote third "person", not third "adult", and gave the
+ * reason as a mattress — which a child also needs. That contradicts "if it's
+ * child then no". Children remain free (see DEFAULT_CHILD_FREE_UNDER_AGE) until
+ * the client confirms, because charging for a child nobody agreed to charge for
+ * is worse than under-billing. See docs/whatsapp-message-2.txt, message 6.
  *
  * The live figures are per property, set from the admin panel and stored on
  * `properties` (`extra_adult_percent`, `child_free_under_age`). These constants
  * are only the fallbacks for a record that predates those columns.
  */
-export const DEFAULT_EXTRA_ADULT_PERCENT = 40
+export const DEFAULT_EXTRA_ADULT_PERCENT = 30
 
 /** Adults included in the advertised nightly rate, per room. */
 export const STANDARD_OCCUPANCY_PER_ROOM = 2
@@ -43,6 +58,9 @@ export const STANDARD_OCCUPANCY_PER_ROOM = 2
  * 18, because the client's rule is "if it's child then no" — children do not
  * trigger the increase at any age. Admin-settable per property, so a hotel that
  * wants to charge for, say, 12-and-over can lower it.
+ *
+ * See the note above: their 27 Jul wording ("third person", charged for a
+ * mattress) may supersede this, but it is not confirmed yet.
  */
 export const DEFAULT_CHILD_FREE_UNDER_AGE = 18
 
@@ -158,7 +176,7 @@ export interface StayPricingBreakdown {
  *
  * The uplift is a percentage of *that night's* room rate, accumulated inside the
  * same loop. That matters when a stay straddles a weekend: a Friday triple is
- * 40% above the surcharged Friday double, not 40% above a weekday rate.
+ * 30% above the surcharged Friday double, not 30% above a weekday rate.
  *
  * It is charged per extra adult and NOT multiplied by room count — one extra
  * person occupies one extra bed, however many rooms the booking spans.
@@ -181,7 +199,7 @@ export function computeStayBreakdown(input: StayPricingInput): StayPricingBreakd
   /**
    * The uplift for one extra adult on a night at `rate`, in whole rupees.
    *
-   * Rounded per night rather than at the end: 40% of ₹1,599 is ₹639.60, and a
+   * Rounded per night rather than at the end: 30% of ₹1,799 is ₹539.70, and a
    * hotel quotes ₹640. Leaving it unrounded surfaced totals like "₹2,238.6" in
    * the guest's summary, which reads as a bug rather than a price.
    */

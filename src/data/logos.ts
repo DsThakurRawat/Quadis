@@ -16,25 +16,13 @@ export interface Logo {
   date?: string
 }
 
-/**
- * A "Featured In" heading over seven third-party mastheads is a claim of
- * coverage. None of these entries has a `href`, so none currently renders —
- * see `verifiedPressLogos` below. Add the article URL and date as each is
- * confirmed; a masthead used without coverage behind it is a trademark
- * problem, not a design one.
+/*
+ * The "Featured In" press band was removed at the client's request (27 Jul
+ * 2026), answering whether they had article links for the mastheads: "Remove
+ * the section". The seven logo files under public/logos/press/ went with it —
+ * a masthead shipped without coverage behind it is a trademark problem, and
+ * there was no coverage to point at.
  */
-export const PRESS_LOGOS: Logo[] = [
-  { name: 'Condé Nast Traveller', src: '/logos/press/conde-nast-traveller.png' },
-  { name: 'Convoy', src: '/logos/press/convoy.png' },
-  { name: 'Outlook Traveller', src: '/logos/press/outlook-traveller.jpg' },
-  { name: 'Lifestyle Asia', src: '/logos/press/lifestyle-asia.png' },
-  { name: 'Pinkvilla', src: '/logos/press/pinkvilla.png' },
-  { name: 'The Economic Times', src: '/logos/press/the-economic-times.png' },
-  { name: 'Mint', src: '/logos/press/mint.png' },
-]
-
-/** Only coverage we can link to. The section hides itself when this is empty. */
-export const verifiedPressLogos = (): Logo[] => PRESS_LOGOS.filter((l) => !!l.href)
 
 export const PARTNER_LOGOS: Logo[] = [
   { name: 'Aditya Birla', src: '/logos/partners/aditya-birla.png' },

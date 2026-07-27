@@ -1,7 +1,7 @@
 import { PROPERTY_COUNT, spellOut } from '../data/site.ts'
 import { SectionHeader, Button } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-import { galleryFacade, banquetHallImage, diningHallImage } from '../data/images.ts'
+import { experienceHotelsImage, experienceBanquetImage, experienceRestaurantImage } from '../data/images.ts'
 
 /**
  * The three-card band the client asked for in item 7 of the change order.
@@ -23,19 +23,19 @@ const EXPERIENCES: Experience[] = [
     // Derived, not written out: the reference said "Ten considered properties"
     // and there are nine.
     description: `${spellOut(PROPERTY_COUNT)} considered properties across Noida and New Delhi — calm rooms, prime locations, and warm, attentive service.`,
-    image: galleryFacade[0] || '/images/home/hero.jpg',
+    image: experienceHotelsImage,
     link: '/hotels',
   },
   {
     title: 'Banquets by Quadis',
     description: 'Elegant halls for weddings, receptions and corporate gatherings, with seamless catering and coordination.',
-    image: banquetHallImage,
+    image: experienceBanquetImage,
     link: '/banquets',
   },
   {
     title: 'Restaurant by Quadis',
     description: 'In-house dining and outdoor catering — refined menus, generous flavours, and effortless hospitality.',
-    image: diningHallImage,
+    image: experienceRestaurantImage,
     link: '/restaurant',
   },
 ]

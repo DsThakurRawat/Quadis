@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHotels } from '../data/hotels.ts'
-import { FOUNDED_YEAR } from '../data/site.ts'
 import { heroShowcaseImages, aboutHomes, aboutAirlines } from '../data/images.ts'
 import type { CityFilter } from '../types.ts'
 import BookingBar from '../components/BookingBar.tsx'
@@ -18,7 +17,6 @@ import ExperiencesByQuadis from '../components/ExperiencesByQuadis.tsx'
 import UpcomingHotels from '../components/UpcomingHotels.tsx'
 import TierExpansion from '../components/TierExpansion.tsx'
 import DealsSection from '../components/DealsSection.tsx'
-import FeaturedIn from '../components/FeaturedIn.tsx'
 import OffersForYou from '../components/OffersForYou.tsx'
 import HappyClientsSection from '../components/HappyClientsSection.tsx'
 
@@ -26,11 +24,10 @@ import HappyClientsSection from '../components/HappyClientsSection.tsx'
 
 import { PARTNER_LOGOS } from '../data/logos.ts'
 import { CITY_FILTERS } from '../data/hotels.ts'
-import { useContent } from '../data/content.ts'
+import Seo from '../components/Seo.tsx'
 export default function Home() {
   const [filter, setFilter] = useState<CityFilter>('All')
   const hotels = useHotels()
-  const { overrides, t } = useContent()
 
   const filtered = useMemo(
     () => (filter === 'All' ? hotels : hotels.filter((h) => h.city === filter)),
@@ -39,36 +36,21 @@ export default function Home() {
 
   return (
     <>
-      {/* 1. Master Welcome Hero: Video + Headline + Floating Booking Bar */}
-      {/* The inline 100vh override is deliberately gone: it defeated the
-          clamp() in chrome.css, pushed the booking bar clear of the video, and
-          made the headline overflow at 1280×720 so "seconds." was cut off. */}
-      <section className="home-hero scrim">
+      <Seo
+        title="Hotels in Noida & New Delhi"
+        description="Nine Quadis hotels across Noida and New Delhi — calm rooms, prime locations and warm service. Book direct for the best rate."
+      />
+      {/* 1. Master Welcome Hero: video + search bar, nothing else.
+          The client asked (July 2026) for the overline and headline to come off
+          the video and for the search bar to sit inside the frame rather than
+          straddling its bottom edge. So the bar moved into the section and
+          `overlap` is off — the old -112px pull would now drag it back out. */}
+      <section className="home-hero scrim home-hero--bar-only">
         <HeroVideoShowcase posterUrl={heroShowcaseImages[0]} />
-        <div className="container home-hero__content">
-          <span className="overline on-dark">
-            {overrides['home.hero.overline']?.trim()
-              ? t('home.hero.overline')
-              : `DELHI NCR · A GROUP OF HOTELS · SINCE ${FOUNDED_YEAR}`}
-          </span>
-          {/* The shipped headline carries a line break and a script-face accent
-              on the last word, which plain admin text cannot express. So the
-              designed version stays the default and an override replaces it
-              wholesale — an editor gets their words, not a mangled hybrid. */}
-          <h1 className="h1 on-dark home-hero__title">
-            {overrides['home.hero.title']?.trim() ? (
-              t('home.hero.title')
-            ) : (
-              <>Comfort you can<br />book in <span className="script on-dark">seconds.</span></>
-            )}
-          </h1>
+        <div className="container home-hero__bar">
+          <BookingBar overlap={false} />
         </div>
       </section>
-
-      {/* Booking Bar floating across bottom edge of Master Hero */}
-      <div className="container" style={{ position: 'relative', zIndex: 10 }}>
-        <BookingBar overlap={true} />
-      </div>
 
       {/* 3. Stats Strip ("and 2nd one below photos") directly beneath Photo Showcase */}
       <StatsStrip />
@@ -152,9 +134,6 @@ export default function Home() {
 
       {/* 9. Deal Of The Day / Curated Offers */}
       <DealsSection />
-
-      {/* 10. Featured In */}
-      <FeaturedIn />
 
       {/* 11. Business & Franchisee CTA Banner */}
 

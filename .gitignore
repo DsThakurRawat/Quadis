@@ -42,9 +42,14 @@ Thumbs.db
 scrape_quadis.py
 .aider*
 
-# Raw client deliverables: source zips, unpacked folders, design references and
-# working screenshots. Everything the site actually ships is committed under
-# public/ — these are the originals we cut those from, kept locally only.
+# Raw client deliverables: source zips, unpacked folders, design references,
+# working screenshots and the briefs the client sent. Everything the site
+# actually ships is committed under public/ — these are the originals we cut
+# those from, kept locally only.
+#
+# This line is also what keeps the client's credentials out of the repo:
+# client-assets/briefs/ holds their GoDaddy and Razorpay logins in plaintext.
+# Do not narrow this pattern without moving that file somewhere safe first.
 client-assets/
 
 # Local-only documentation. docs/Quadis-Audit-1.md IS tracked; these are not.
@@ -54,5 +59,13 @@ docs/quadis-readme-*
 docs/pr_*_body.md
 /Quadis.mp4
 
-# One-off scratch scripts from earlier refactors
+# One-off scratch scripts, kept for reference after their commits landed
 scripts/rewrite*.js
+scripts/archive/
+
+# Catch-alls for anything new dropped in the project root. Client material
+# belongs in client-assets/briefs/ — these are the safety net for the window
+# between a file being saved here and being filed.
+/image*.png
+/*.zip
+/*.jpeg

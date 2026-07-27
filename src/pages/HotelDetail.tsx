@@ -15,6 +15,7 @@ import { Photo } from '../components/media.tsx'
 import { IconPin, IconStar, IconWifi, IconAc, IconBreakfast, IconParking, IconDesk, IconRoom } from '../components/icons.tsx'
 import NotFound from './NotFound.tsx'
 import { CheckoutModal } from '../components/CheckoutModal.tsx'
+import Seo from '../components/Seo.tsx'
 
 interface Amenity { icon: ComponentType<SVGProps<SVGSVGElement>>; label: string }
 const AMENITIES: Amenity[] = [
@@ -129,6 +130,17 @@ export default function HotelDetail() {
 
   return (
     <>
+      {/* The nine hotel pages are the ones guests actually search for — "hotel
+          in sector 51 noida" and the like — so the title leads with the area
+          and city rather than the brand. `canonicalPath` drops the ?checkIn=
+          search params, which would otherwise split one page into hundreds of
+          near-duplicate URLs in the index. */}
+      <Seo
+        title={`${hotel.name} — ${hotel.area}, ${hotel.city}`}
+        description={`Stay at ${hotel.name} in ${hotel.area}, ${hotel.city}. Rooms from ${inr(hotel.price)} a night, ${hotel.rating}/5 guest rating. Book direct with Quadis Hotels.`}
+        image={images[0]}
+        canonicalPath={`/hotels/${hotel.slug}`}
+      />
       <section className="section bg-cream detail-top">
         <div className="container">
           <Link to="/hotels" className="back-link">← All hotels</Link>

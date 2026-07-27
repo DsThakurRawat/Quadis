@@ -9,16 +9,24 @@ import {
   computeStayBreakdown,
   policyFor,
 } from '../src/lib/pricing'
+import { seedProperties } from '../src/data/seed'
 
 // The client's rule: a third ADULT adds a percentage of the room rate; a CHILD
 // adds nothing. The suite reads the default rather than hardcoding 40, so
 // changing the default cannot silently pass.
 const PCT = DEFAULT_EXTRA_ADULT_PERCENT
-const ROOM_RATE = 1599
+/**
+ * Read off the seed rather than hardcoded. It used to be a literal 1599, which
+ * meant every rate change on the client's sheet broke four tests that were not
+ * actually about rates. `deluxe-room` carries a zero price offset, so the
+ * property's base price IS the nightly rate under test.
+ */
+const ROOM_RATE = Number(
+  seedProperties.find((p) => p.slug === 'hotel-quadis-sector-51-noida')!.base_price
+)
 /**
  * What one extra adult costs per night at the seeded rate, in whole rupees.
- * The engine rounds per night (40% of 1599 = 639.60 -> 640), so the expectation
- * has to round the same way.
+ * The engine rounds per night, so the expectation has to round the same way.
  */
 const UPLIFT_PER_NIGHT = Math.round(ROOM_RATE * (PCT / 100))
 
@@ -97,7 +105,7 @@ describe('Occupancy — extra adult and child rules', () => {
 
 describe('Occupancy — effect on the stay total', () => {
   const base = {
-    basePrice: 1599,
+    basePrice: ROOM_RATE,
     roomOffset: 0,
     mealOffset: 0,
     weekendSurchargePercent: 0,

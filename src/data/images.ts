@@ -39,6 +39,23 @@ for (const [dir, entries] of Object.entries(buckets)) {
 
 const at = (key: string): string[] => groups[key] ?? []
 
+/**
+ * One image from a folder, addressed by its SOURCE filename.
+ *
+ * Match on `entry.name` — the name on disk — and never on the emitted URL.
+ * Vite deduplicates byte-identical assets: it emits a single hashed file and
+ * points every importer at it, under whichever source name it processed first.
+ * public/images/experiences/hotels-in-delhi-ncr.png is byte-identical to
+ * public/images/hotels/hero.png, so its built URL is /assets/hero-<hash>.png —
+ * a URL-substring match for "hotels-in-delhi-ncr" finds nothing and silently
+ * falls back to some unrelated photo.
+ *
+ * The trap is that this only bites in a production build. `vite dev` serves the
+ * real paths, so a URL match looks correct right up until it is deployed.
+ */
+const namedIn = (dir: string, file: string): string | undefined =>
+  buckets[dir]?.find((e) => e.name.toLowerCase().startsWith(file.toLowerCase()))?.url
+
 // Categorized collections from public/images/**
 export const galleryDeluxe: string[] = at('rooms/deluxe')
 export const gallerySuperior: string[] = at('rooms/superior')
@@ -49,7 +66,10 @@ export const galleryDining: string[] = at('restaurant/dining')
 // Section artwork — page banners and the Airlines/Homes concept renders. These
 // are design assets, not property photography, so they must never surface in the
 // "Moments of Calm & Comfort" gallery.
-const SECTION_ARTWORK = ['banner', 'service-leadership', 'employee-vendor-welfare', 'quadis-airlines', 'quadis-homes']
+// `tier-*` covers public/images/tiers/. Two of the three are renders of the
+// Select and Experience formats, which do not exist yet — a guest browsing the
+// gallery must not meet them as though they were properties they could book.
+const SECTION_ARTWORK = ['banner', 'service-leadership', 'employee-vendor-welfare', 'quadis-airlines', 'quadis-homes', 'tier-']
 const isSectionArtwork = (name: string): boolean =>
   SECTION_ARTWORK.some((slug) => name.toLowerCase().startsWith(slug))
 
@@ -191,7 +211,7 @@ export const aboutImages: string[] = at('about').length ? at('about') : homeImag
  * moment a file is added to the folder.
  */
 const aboutNamed = (file: string, fallback: string[]): string =>
-  at('about').find((url) => url.includes(`/${file}`)) ?? fallback[0] ?? homeImages[0] ?? ''
+  namedIn('about', file) ?? fallback[0] ?? homeImages[0] ?? ''
 
 export const aboutBanner: string = aboutNamed('banner', aboutImages)
 export const aboutServiceLeadership: string = aboutNamed('service-leadership', galleryFacade)
@@ -237,3 +257,30 @@ export const banquetHallImage: string =
 /** A dining room, distinct from restaurant/hero.png. */
 export const diningHallImage: string =
   firstMatching(galleryDining, 'dining-hall') ?? galleryDining[0] ?? homeImages[0] ?? ''
+
+/*
+ * Client photography for the three-card "Experiences by Quadis" band and the
+ * "Expanding into three categories" roadmap (both re-sent July 2026).
+ *
+ * Addressed by filename, like the About artwork above: these folders hold one
+ * image per card, and an index would repoint the moment a file is added.
+ * Fallbacks are the images each section used before the client supplied its
+ * own, so a missing file degrades to the shipped look rather than to nothing.
+ */
+export const experienceHotelsImage: string =
+  namedIn('experiences', 'hotels-in-delhi-ncr') ?? galleryFacade[0] ?? homeImages[0] ?? ''
+export const experienceBanquetImage: string =
+  namedIn('experiences', 'banquet-hall-in-delhi-ncr') ?? banquetHallImage
+export const experienceRestaurantImage: string =
+  namedIn('experiences', 'restaurant-in-noida') ?? diningHallImage
+
+export const tierCentralImage: string =
+  namedIn('tiers', 'tier-quadis-central') ?? galleryFacade[1] ?? galleryFacade[0] ?? ''
+export const tierSelectImage: string =
+  namedIn('tiers', 'tier-quadis-select') ?? galleryDeluxe[0] ?? homeImages[0] ?? ''
+export const tierExperienceImage: string =
+  namedIn('tiers', 'tier-quadis-experience') ?? galleryRoyal[0] ?? homeImages[0] ?? ''
+
+/** The client's corporate/long-stay shot, used by the home card and the hero. */
+export const corporateStayImage: string =
+  namedIn('corporate', 'corporate-and-long-stays') ?? gallerySuperior[0] ?? homeImages[0] ?? ''

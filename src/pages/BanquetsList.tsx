@@ -5,10 +5,15 @@ import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.
 import { Button } from '../components/ui.tsx'
 import { Photo } from '../components/media.tsx'
 import { IconPin } from '../components/icons.tsx'
+import Seo from '../components/Seo.tsx'
 
 export default function BanquetsList() {
   return (
     <>
+      <Seo
+        title="Banquet Halls in Delhi NCR"
+        description="Pillarless banquet halls in Noida and Lajpat Nagar for weddings, receptions and corporate events, with in-house catering and valet parking."
+      />
       <PhotoHero image={banquetHero[0]} overline="CELEBRATE WITH QUADIS" title="Banquets by Quadis" height="short" />
 
       <section className="section bg-cream">

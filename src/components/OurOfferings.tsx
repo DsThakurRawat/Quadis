@@ -1,7 +1,7 @@
 import { PROPERTY_COUNT } from '../data/site.ts'
 import { SectionHeader, Button } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-import { homeImages, banquetHero, restaurantImages, gallerySuperior } from '../data/images.ts'
+import { homeImages, banquetHero, restaurantImages, corporateStayImage } from '../data/images.ts'
 
 interface Offering {
   title: string
@@ -37,10 +37,11 @@ const OFFERINGS: Offering[] = [
     subtitle: 'Tailored business packages',
     description: `Dedicated GST-compliant invoicing, express check-in, priority laundry, and discounted long-stay corporate tariffs across our ${PROPERTY_COUNT} NCR properties.`,
     badge: 'BUSINESS TRAVEL',
-    // public/images/corporate/ is empty, so corporateImages falls back to
-    // homeImages — meaning corporateImages[0] IS homeImages[0], the same photo
-    // as the first card. Point at a real superior-room shot instead.
-    image: gallerySuperior[0] || '/images/home/hero.jpg',
+    // The client's own corporate/long-stay photograph (July 2026). Before it
+    // arrived, public/images/corporate/ was empty and corporateImages fell back
+    // to homeImages — so this card showed homeImages[0], the same photo as the
+    // first card.
+    image: corporateStayImage,
     link: '/corporate-hotel-booking',
     cta: 'CORPORATE TARIFFS',
   },

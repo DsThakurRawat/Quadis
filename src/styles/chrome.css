@@ -10,7 +10,13 @@
 .home-hero__content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; max-width: 900px; }
 .home-hero__title { max-width: 16ch; }
 .home-hero__title .script { font-size: inherit; }
-.home-hero__bar { position: relative; z-index: 3; margin-top: 32px; }
+.home-hero__bar { position: relative; z-index: 3; }
+
+/* Hero carrying only the search bar: park the bar in the lower third of the
+   video rather than dead-centre, so the frame still reads as a video and the
+   bar clears the bottom edge. Anchoring from the bottom keeps that gap fixed
+   while the hero itself flexes between 560px and 660px. */
+.home-hero--bar-only { justify-content: flex-end; padding-bottom: clamp(48px, 8vh, 88px); }
 
 .nav__inner { height: 76px; display: flex; align-items: center; gap: var(--s-6); }
 

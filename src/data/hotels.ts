@@ -57,37 +57,51 @@ const MEALS_UPGRADED: HotelRoom['mealOptions'] = [
 ]
 
 /**
- * Room categories differ by property (client brief, July 2026). Only the
- * properties whose categories were confirmed are listed here; the rest fall
- * back to DEFAULT_ROOMS until their real categories are supplied.
+ * The client's rate sheet (27 Jul 2026) settles the category question: there
+ * are three across the group — DELUXE, SUPER and ROYAL — not the five this file
+ * used to carry. Every hotel sells Deluxe and Super; only Downtown EOK and Amar
+ * Inn sell a Royal, one key each.
+ *
+ * Pricing is uniform, again per the sheet: "Upper category 1000 plus in each
+ * hotel". The per-hotel variation is entirely in `price` (the Deluxe rate) —
+ * Super is always +1,000 on it and Royal always +2,000, at every property. So
+ * these are offsets, not rates, and the sheet's Super and Royal columns fall
+ * out of them: Cladis 15 at 1,800 quotes Super at 2,800, EOK at 3,000 quotes
+ * Royal at 5,000.
+ *
+ * Slugs are unchanged on purpose — `room_types.id` is derived from them and
+ * `bookings.room_type_id` points at it, so renaming would strand live bookings.
  */
-const SUPER_DELUXE: HotelRoom = {
+const SUPER: HotelRoom = {
   id: 'super-deluxe',
   name: 'Super Deluxe',
   description: 'A larger, more considered room with an upgraded seating area, high-speed Wi-Fi and evening turndown.',
   size: '290 sq ft',
   bed: 'King Bed',
   maxGuests: 3,
-  basePriceOffset: 400,
-  mealOptions: MEALS_UPGRADED,
-}
-const SUPER_DELUXE_BALCONY: HotelRoom = {
-  id: 'super-deluxe-balcony',
-  name: 'Super Deluxe with Balcony',
-  description: 'The Super Deluxe with a private balcony — outdoor seating and open city views.',
-  size: '330 sq ft',
-  bed: 'King Bed + Balcony',
-  maxGuests: 3,
-  basePriceOffset: 650,
+  basePriceOffset: 1000,
   mealOptions: MEALS_UPGRADED,
 }
 const DELUXE: HotelRoom = { ...DEFAULT_ROOMS[0]!, mealOptions: MEALS_STANDARD }
-const SUPERIOR: HotelRoom = DEFAULT_ROOMS[1]!
+const ROYAL: HotelRoom = { ...DEFAULT_ROOMS[2]!, basePriceOffset: 2000 }
 
+/**
+ * Every property is listed now, so the DEFAULT_ROOMS fallback below is only
+ * reached by a slug this file has never heard of. Must stay in step with
+ * ROOMS_BY_SLUG in backend/src/data/seed.ts, which additionally carries the
+ * key counts — a category the site offers but the API has not seeded cannot be
+ * booked.
+ */
 const ROOMS_BY_SLUG: Record<string, HotelRoom[]> = {
-  'hotel-quadis-sector-51-noida': [DELUXE, SUPER_DELUXE, SUPER_DELUXE_BALCONY],
-  'hotel-downtown-sector-51-noida': [DELUXE, SUPER_DELUXE, SUPER_DELUXE_BALCONY],
-  'hotel-downtown-sector-15-noida': [DELUXE, SUPERIOR],
+  'hotel-downtown-sector-15-noida': [DELUXE, SUPER],
+  'hotel-downtown-sector-51-noida': [DELUXE, SUPER],
+  'hotel-cladis-sector-19-noida': [DELUXE, SUPER],
+  'hotel-quadis-sector-51-noida': [DELUXE, SUPER],
+  'hotel-cladis-sector-15-noida': [DELUXE, SUPER],
+  'hotel-quadis-central-sector-27-noida': [DELUXE, SUPER],
+  'hotel-downtown-east-of-kailash': [DELUXE, SUPER, ROYAL],
+  'hotel-amby-inn-lajpat-nagar-ii': [DELUXE, SUPER],
+  'hotel-amar-in': [DELUXE, SUPER, ROYAL],
 }
 
 export const getHotelRooms = (hotel: Hotel): HotelRoom[] =>
@@ -98,15 +112,15 @@ import { getApiUrl } from '../config/api'
 import { useState, useEffect } from 'react'
 
 export const STATIC_HOTELS: Hotel[] = [
-  { slug: 'hotel-quadis-sector-51-noida', coords: { lat: 28.5833, lng: 77.3712 }, transit: { metro: { name: 'Sector 52 Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '32 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '24 km' }, landmark: { name: 'Sector 51 Market', note: 'dining & retail' } }, name: 'Hotel Quadis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', price: 1599, rating: 4.6 },
-  { slug: 'hotel-quadis-central-sector-27-noida', coords: { lat: 28.5778, lng: 77.3243 }, transit: { metro: { name: 'Sector 18 Metro', value: '10 min walk' }, airport: { name: 'IGI Airport T3', value: '28 km · 45 min' }, rail: { name: 'Nizamuddin Railway Station', value: '15 km' }, landmark: { name: 'Atta Market', note: 'dining & retail' } }, name: 'Hotel Quadis Central', area: 'Sector 27', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida, Uttar Pradesh 201301', price: 1799, rating: 4.5 },
-  { slug: 'hotel-downtown-sector-15-noida', coords: { lat: 28.5847, lng: 77.3129 }, transit: { metro: { name: 'Sector 15 Metro', value: '2 min walk' }, airport: { name: 'IGI Airport T3', value: '26 km · 40 min' }, rail: { name: 'Nizamuddin Railway Station', value: '13 km' }, landmark: { name: 'Sector 15 Indian Oil', note: 'Metro Pillar 33' } }, name: 'Hotel Downtown Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 1599, rating: 4.4 },
-  { slug: 'hotel-cladis-sector-15-noida', coords: { lat: 28.5855, lng: 77.311 }, transit: { metro: { name: 'Sector 15 Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '26 km · 40 min' }, rail: { name: 'Nizamuddin Railway Station', value: '13 km' }, landmark: { name: 'Naya Bans Village', note: 'neighbourhood' } }, name: 'Hotel Cladis Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'New Ashok Nagar Rd, opposite metro pillar no. 36, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 1499, rating: 4.4 },
-  { slug: 'hotel-cladis-sector-19-noida', coords: { lat: 28.583, lng: 77.321 }, transit: { metro: { name: 'Sector 16 Metro', value: '8 min walk' }, airport: { name: 'IGI Airport T3', value: '27 km · 45 min' }, rail: { name: 'Nizamuddin Railway Station', value: '14 km' }, landmark: { name: 'Indo Gulf Hospital', note: 'landmark' } }, name: 'Hotel Cladis Sector 19 Noida', area: 'Sector 19', city: 'Noida', address: 'A-369, A Block, Pocket A, Sector 19, Noida, Uttar Pradesh 201301', price: 1399, rating: 4.3 },
-  { slug: 'hotel-downtown-sector-51-noida', coords: { lat: 28.5815, lng: 77.375 }, transit: { metro: { name: 'Sector 52 Metro', value: '10 min walk' }, airport: { name: 'IGI Airport T3', value: '33 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '25 km' }, landmark: { name: 'Kendriya Vihar', note: 'neighbourhood' } }, name: 'Hotel Downtown Sector 51 Noida', area: 'Sector 51', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', price: 1699, rating: 4.5 },
-  { slug: 'hotel-downtown-east-of-kailash', coords: { lat: 28.555, lng: 77.245 }, transit: { metro: { name: 'Kailash Colony Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '18 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '4 km' }, landmark: { name: 'ISKCON Temple', note: 'landmark' } }, name: 'Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', price: 1999, rating: 4.6 },
-  { slug: 'hotel-amby-inn-lajpat-nagar-ii', coords: { lat: 28.57, lng: 77.24 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '3 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Central Market', note: 'dining & retail' } }, name: 'Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', price: 1899, rating: 4.5 },
-  { slug: 'hotel-amar-in', coords: { lat: 28.571, lng: 77.2415 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Jal Vihar', note: 'neighbourhood' } }, name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', price: 1799, rating: 4.4 },
+  { slug: 'hotel-quadis-sector-51-noida', coords: { lat: 28.5833, lng: 77.3712 }, transit: { metro: { name: 'Sector 52 Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '32 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '24 km' }, landmark: { name: 'Sector 51 Market', note: 'dining & retail' } }, name: 'Hotel Quadis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', price: 1500, rating: 4.6 },
+  { slug: 'hotel-quadis-central-sector-27-noida', coords: { lat: 28.5778, lng: 77.3243 }, transit: { metro: { name: 'Sector 18 Metro', value: '10 min walk' }, airport: { name: 'IGI Airport T3', value: '28 km · 45 min' }, rail: { name: 'Nizamuddin Railway Station', value: '15 km' }, landmark: { name: 'Atta Market', note: 'dining & retail' } }, name: 'Hotel Quadis Central', area: 'Sector 27', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida, Uttar Pradesh 201301', price: 2500, rating: 4.5 },
+  { slug: 'hotel-downtown-sector-15-noida', coords: { lat: 28.5847, lng: 77.3129 }, transit: { metro: { name: 'Sector 15 Metro', value: '2 min walk' }, airport: { name: 'IGI Airport T3', value: '26 km · 40 min' }, rail: { name: 'Nizamuddin Railway Station', value: '13 km' }, landmark: { name: 'Sector 15 Indian Oil', note: 'Metro Pillar 33' } }, name: 'Hotel Downtown Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 2000, rating: 4.4 },
+  { slug: 'hotel-cladis-sector-15-noida', coords: { lat: 28.5855, lng: 77.311 }, transit: { metro: { name: 'Sector 15 Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '26 km · 40 min' }, rail: { name: 'Nizamuddin Railway Station', value: '13 km' }, landmark: { name: 'Naya Bans Village', note: 'neighbourhood' } }, name: 'Hotel Cladis Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'New Ashok Nagar Rd, opposite metro pillar no. 36, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 1800, rating: 4.4 },
+  { slug: 'hotel-cladis-sector-19-noida', coords: { lat: 28.583, lng: 77.321 }, transit: { metro: { name: 'Sector 16 Metro', value: '8 min walk' }, airport: { name: 'IGI Airport T3', value: '27 km · 45 min' }, rail: { name: 'Nizamuddin Railway Station', value: '14 km' }, landmark: { name: 'Indo Gulf Hospital', note: 'landmark' } }, name: 'Hotel Cladis Sector 19 Noida', area: 'Sector 19', city: 'Noida', address: 'A-369, A Block, Pocket A, Sector 19, Noida, Uttar Pradesh 201301', price: 2000, rating: 4.3 },
+  { slug: 'hotel-downtown-sector-51-noida', coords: { lat: 28.5815, lng: 77.375 }, transit: { metro: { name: 'Sector 52 Metro', value: '10 min walk' }, airport: { name: 'IGI Airport T3', value: '33 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '25 km' }, landmark: { name: 'Kendriya Vihar', note: 'neighbourhood' } }, name: 'Hotel Downtown Sector 51 Noida', area: 'Sector 51', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', price: 2500, rating: 4.5 },
+  { slug: 'hotel-downtown-east-of-kailash', coords: { lat: 28.555, lng: 77.245 }, transit: { metro: { name: 'Kailash Colony Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '18 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '4 km' }, landmark: { name: 'ISKCON Temple', note: 'landmark' } }, name: 'Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', price: 3000, rating: 4.6 },
+  { slug: 'hotel-amby-inn-lajpat-nagar-ii', coords: { lat: 28.57, lng: 77.24 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '3 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Central Market', note: 'dining & retail' } }, name: 'Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', price: 2500, rating: 4.5 },
+  { slug: 'hotel-amar-in', coords: { lat: 28.571, lng: 77.2415 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Jal Vihar', note: 'neighbourhood' } }, name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', price: 3000, rating: 4.4 },
 ]
 
 /**
@@ -212,7 +226,11 @@ export const UPCOMING_HOTELS: UpcomingHotel[] = [
   { name: 'Dehradun', location: 'Dehradun, Uttarakhand', image: '/images/upcoming/dehradun.jpg', badge: 'COMING SOON' },
   { name: 'Faridabad', location: 'Faridabad, Haryana', image: '/images/upcoming/faridabad.png', badge: 'COMING SOON' },
   { name: 'Gurgaon', location: 'Gurgaon, Haryana', image: '/images/upcoming/gurgaon.jpg', badge: 'COMING SOON' },
-  { name: 'Manesar', location: 'Manesar, Haryana', image: '/images/upcoming/manesar.png', badge: 'COMING SOON' },
+  // Manesar was dropped at the client's request (July 2026): with it the
+  // Destinations grid ran to nine tiles and wrapped onto a second row.
+  // DestinationsGrid renders the two live cities plus every entry here that
+  // is not already live (New Delhi is), so this list must stay at seven for
+  // the grid to hold one line.
   { name: 'New Delhi', location: 'New Delhi', image: '/images/upcoming/delhi.jpg', badge: 'COMING SOON' },
 ]
 

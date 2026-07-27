@@ -16,6 +16,11 @@
 
 @media (max-width: 768px){
   .home-hero { height: auto; min-height: auto; padding-block: 68px 32px; }
+  /* `height: auto` was sized for a hero that also carried a headline. With only
+     the search bar left, the section would shrink to the bar plus its padding
+     and the background video — absolutely positioned, so it contributes no
+     height — would show as a thin strip. Give it back a floor. */
+  .home-hero--bar-only { min-height: 460px; padding-block: 56px 36px; }
 }
 
 /* ============================ Stats / intro ============================ */
@@ -476,30 +481,9 @@
   background: #000 !important; color: #fff !important; border-color: #000 !important;
 }
 
-/* Featured Press */
+/* Section band shared by Offers For You. The "Featured In" press rules that
+   used to live here went with the section itself (client, 27 Jul 2026). */
 .featured-section { background-color: var(--bg-cream); padding: 80px 0; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); }
-.featured-press-container { margin-bottom: 64px; text-align: center; }
-/* auto-fit rather than a fixed 4/7: seven logos into four columns left a
-   ragged trailing row of three, and the count is no longer fixed now that
-   unverified entries are filtered out. */
-.press-logos-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 24px; align-items: center; justify-content: center; margin-top: 32px;
-}
-
-.press-logo-card {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  padding: 14px 18px;
-  background: rgba(255,255,255,0.8); border-radius: var(--radius-md); border: 1px solid rgba(0,0,0,0.06);
-  min-height: 72px; box-shadow: var(--shadow-sm);
-  transition: background .2s ease, box-shadow .2s ease, transform .2s ease;
-}
-.press-logo-card:hover { background: var(--surface); box-shadow: var(--shadow-card); transform: translateY(-2px); }
-/* Greyscale at rest so six competing brand palettes stop fighting the
-   cream-and-gold; full colour on hover. */
-.press-logo-card .logo-mark { filter: grayscale(1); opacity: .7; transition: filter .2s ease, opacity .2s ease; }
-.press-logo-card:hover .logo-mark { filter: grayscale(0); opacity: 1; }
-.press-logo-card__date { font-size: 11px; color: var(--text-muted); letter-spacing: .04em; }
 
 /* Supplied logos vary in aspect ratio and canvas padding — contain them so each
    sits on the same optical baseline instead of stretching to the card. */

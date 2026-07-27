@@ -13,6 +13,7 @@ import {
   type TourZone,
   type HotspotPin,
 } from '../data/virtualTourData.ts'
+import Seo from '../components/Seo.tsx'
 
 type TourMode = 'walkthrough' | 'discovery' | 'customizer'
 
@@ -141,6 +142,10 @@ export default function VirtualTour() {
 
   return (
     <>
+      <Seo
+        title="Virtual Tour"
+        description="Walk through Quadis rooms and public spaces before you book, with a 360-degree tour of our Delhi NCR properties."
+      />
       <PhotoHero
         image={currentStop.getImage()}
         title="The Quadis Virtual Tour"

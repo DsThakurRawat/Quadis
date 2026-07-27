@@ -10,6 +10,7 @@ import {
 import { PROPERTY_COUNT, spellOut } from '../data/site.ts'
 import { HeroMedia, Photo } from '../components/media.tsx'
 import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
+import Seo from '../components/Seo.tsx'
 
 interface Value { title: string; body: string }
 const VALUES: Value[] = [
@@ -29,6 +30,10 @@ export default function About() {
 
   return (
     <>
+      <Seo
+        title="About Us"
+        description="Quadis Hotels has grown from a single property into nine across Delhi NCR, built on considered rooms and genuinely attentive service."
+      />
       <PhotoHero image={heroImg} title="About Us" sub="Quadis Services Private Limited — A tradition of considered comfort since 2017." height="short" />
 
       {/* Chapter 1: Story & Philosophy */}

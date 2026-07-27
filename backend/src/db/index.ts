@@ -21,6 +21,39 @@ export function generateBookingCode(): string {
   return `QD-${out}`
 }
 
+/**
+ * TLS settings for a Postgres connection.
+ *
+ * node-postgres connects in plaintext unless told otherwise, and RDS refuses
+ * that outright — Postgres 16 and later ship with `rds.force_ssl` on, so the
+ * server answers with:
+ *
+ *   no pg_hba.conf entry for host "...", user "...", database "...",
+ *   no encryption
+ *
+ * which reads like a firewall or credentials problem and is neither. It cost a
+ * deploy to find, precisely because `psql` negotiates TLS by default and so
+ * connects happily with the identical URL — the manual check passes while the
+ * application cannot start.
+ *
+ * Localhost is exempt: a dev Postgres and the CI container have no certificate.
+ *
+ * `rejectUnauthorized: false` encrypts the connection without verifying the
+ * server certificate. That stops passwords and guest data crossing the network
+ * in the clear, which is the immediate need, but it does not defend against an
+ * active man-in-the-middle. Verifying properly means shipping Amazon's RDS root
+ * CA bundle and pointing `ca` at it — worth doing before this holds real
+ * bookings.
+ */
+function sslFor(connectionString: string): { rejectUnauthorized: boolean } | false {
+  const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(connectionString)
+  if (isLocal) return false
+  // An explicit sslmode=disable in the URL wins, so a deployment that genuinely
+  // cannot use TLS still has a way out.
+  if (/[?&]sslmode=disable\b/.test(connectionString)) return false
+  return { rejectUnauthorized: false }
+}
+
 // DatabaseEngine abstraction layer providing seamless support for real PostgreSQL via pg Pool
 // or structured in-memory ACID store when DATABASE_URL is not set (for zero-config local dev/tests).
 
@@ -45,7 +78,7 @@ export class DatabaseEngine {
     const dbUrl = process.env.DATABASE_URL
     if (dbUrl && dbUrl !== 'in-memory') {
       this.useInMemory = false
-      this.pool = new Pool({ connectionString: dbUrl })
+      this.pool = new Pool({ connectionString: dbUrl, ssl: sslFor(dbUrl) })
     } else {
       this.useInMemory = true
       this.initializeInMemorySeed()
