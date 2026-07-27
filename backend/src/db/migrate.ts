@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { db } from './index'
+import { seedPostgres } from './seedPostgres'
 
 /**
  * Applies db/schema.sql on boot.
@@ -46,4 +47,8 @@ export async function runMigrations(): Promise<void> {
 
   await pool.query(sql)
   console.log('🗃️  Database schema applied.')
+
+  // Tables without rows are not a working site. Seeding is idempotent and never
+  // overwrites an existing row, so it is safe on every boot — see seedPostgres.
+  await seedPostgres(pool)
 }
