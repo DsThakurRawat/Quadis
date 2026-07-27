@@ -1,4 +1,4 @@
-import { Pool } from 'pg'
+import { Pool, types as pgTypes } from 'pg'
 import { randomBytes } from 'crypto'
 import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan, UserRecord, PropertyImageRecord } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
@@ -20,6 +20,31 @@ export function generateBookingCode(): string {
   for (let i = 0; i < 8; i++) out += CODE_ALPHABET[bytes[i]! % CODE_ALPHABET.length]
   return `QD-${out}`
 }
+
+/**
+ * Return NUMERIC columns as JavaScript numbers.
+ *
+ * node-postgres hands back NUMERIC as a *string* by default, because the type
+ * is arbitrary-precision and cannot always survive a float. Every price, rate
+ * and rating in this schema is NUMERIC, so the API served `"1500.00"` and
+ * `"4.60"` the moment a real database was connected.
+ *
+ * That took the whole site down. `rating.toFixed(1)` threw
+ * "toFixed is not a function", React unmounted, and every page rendered blank.
+ * `hotel.price + roomOffset` was quietly worse — string concatenation, so a
+ * 1500 room with a 1000 upgrade would have quoted "15001000".
+ *
+ * None of it appeared in development or in the tests, because the in-memory
+ * store holds real numbers. It only existed against PostgreSQL.
+ *
+ * 1700 is NUMERIC. Precision loss is not a concern here: these are rupee
+ * amounts and 0-5 ratings, nowhere near the range where a double stops being
+ * exact. Anything genuinely arbitrary-precision must not use this parser.
+ */
+pgTypes.setTypeParser(1700, (v: string) => (v === null ? null : parseFloat(v)))
+// 20 is INT8/BIGINT, also stringified by default. Counts and ids here are far
+// below Number.MAX_SAFE_INTEGER.
+pgTypes.setTypeParser(20, (v: string) => (v === null ? null : parseInt(v, 10)))
 
 /**
  * TLS settings for a Postgres connection.

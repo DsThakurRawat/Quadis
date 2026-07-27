@@ -189,13 +189,23 @@ export function useHotels(): Hotel[] {
                   h.lat != null && h.lng != null
                     ? { lat: Number(h.lat), lng: Number(h.lng), placeId: h.place_id ?? undefined }
                     : base?.coords,
-                price: h.base_price,
-                weekendSurchargePercent: h.weekend_surcharge_percent,
+                // Coerce every numeric the API hands back.
+                //
+                // Postgres NUMERIC arrives as a string unless a type parser is
+                // registered, and one missing coercion took the entire site
+                // down: `rating.toFixed(1)` threw and React unmounted, so every
+                // page rendered blank. The backend now parses these properly,
+                // but this stays as the second line of defence — a string
+                // reaching `hotel.price + offset` concatenates instead of
+                // adding, which misquotes a room rather than crashing, and is
+                // therefore the more dangerous failure of the two.
+                price: Number(h.base_price),
+                weekendSurchargePercent: Number(h.weekend_surcharge_percent ?? 0),
                 // Postgres returns NUMERIC as a string, so coerce rather than
                 // letting "500" reach the arithmetic as a string.
                 extraAdultPercent: h.extra_adult_percent != null ? Number(h.extra_adult_percent) : undefined,
                 childFreeUnderAge: h.child_free_under_age != null ? Number(h.child_free_under_age) : undefined,
-                rating: h.rating,
+                rating: Number(h.rating),
                 // Admin-uploaded photography. Carried through the merge so
                 // `imagesForHotel` can prefer it over the bundled glob; absent
                 // on an API that predates the feature, which just means the
