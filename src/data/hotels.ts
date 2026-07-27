@@ -235,18 +235,18 @@ export function useHotels(): Hotel[] {
 }
 
 export const UPCOMING_HOTELS: UpcomingHotel[] = [
-  { name: 'Rishikesh', location: 'Rishikesh, Uttarakhand', image: '/images/upcoming/rishikesh.png', badge: 'COMING SOON' },
-  { name: 'Agra', location: 'Agra, Uttar Pradesh', image: '/images/upcoming/agra.png', badge: 'COMING SOON' },
-  { name: 'Chandigarh', location: 'Chandigarh, Punjab', image: '/images/upcoming/chandigarh.jpg', badge: 'COMING SOON' },
-  { name: 'Dehradun', location: 'Dehradun, Uttarakhand', image: '/images/upcoming/dehradun.jpg', badge: 'COMING SOON' },
-  { name: 'Faridabad', location: 'Faridabad, Haryana', image: '/images/upcoming/faridabad.png', badge: 'COMING SOON' },
-  { name: 'Gurgaon', location: 'Gurgaon, Haryana', image: '/images/upcoming/gurgaon.jpg', badge: 'COMING SOON' },
+  { name: 'Rishikesh', location: 'Rishikesh, Uttarakhand', image: '/images/upcoming/rishikesh.webp', badge: 'COMING SOON' },
+  { name: 'Agra', location: 'Agra, Uttar Pradesh', image: '/images/upcoming/agra.webp', badge: 'COMING SOON' },
+  { name: 'Chandigarh', location: 'Chandigarh, Punjab', image: '/images/upcoming/chandigarh.webp', badge: 'COMING SOON' },
+  { name: 'Dehradun', location: 'Dehradun, Uttarakhand', image: '/images/upcoming/dehradun.webp', badge: 'COMING SOON' },
+  { name: 'Faridabad', location: 'Faridabad, Haryana', image: '/images/upcoming/faridabad.webp', badge: 'COMING SOON' },
+  { name: 'Gurgaon', location: 'Gurgaon, Haryana', image: '/images/upcoming/gurgaon.webp', badge: 'COMING SOON' },
   // Manesar was dropped at the client's request (July 2026): with it the
   // Destinations grid ran to nine tiles and wrapped onto a second row.
   // DestinationsGrid renders the two live cities plus every entry here that
   // is not already live (New Delhi is), so this list must stay at seven for
   // the grid to hold one line.
-  { name: 'New Delhi', location: 'New Delhi', image: '/images/upcoming/delhi.jpg', badge: 'COMING SOON' },
+  { name: 'New Delhi', location: 'New Delhi', image: '/images/upcoming/delhi.webp', badge: 'COMING SOON' },
 ]
 
 export const CITIES: City[] = ['Noida', 'New Delhi']

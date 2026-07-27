@@ -20,8 +20,8 @@ interface Destination {
 
 /** City tiles, not property shots. Every file here is a cityscape. */
 const CITY_IMAGES: Record<string, string> = {
-  'Noida': '/images/upcoming/noida.png',
-  'New Delhi': '/images/upcoming/delhi.jpg',
+  'Noida': '/images/upcoming/noida.webp',
+  'New Delhi': '/images/upcoming/delhi.webp',
 }
 
 export default function DestinationsGrid() {
@@ -30,7 +30,7 @@ export default function DestinationsGrid() {
   const destinations = useMemo<Destination[]>(() => {
     const active = [...new Set(hotels.map((h) => h.city))].map((city) => ({
       name: city,
-      image: CITY_IMAGES[city] ?? '/images/upcoming/delhi.jpg',
+      image: CITY_IMAGES[city] ?? '/images/upcoming/delhi.webp',
       comingSoon: false,
     }))
 
@@ -40,7 +40,7 @@ export default function DestinationsGrid() {
       .filter((u) => !activeNames.has(u.name))
       .map((u) => ({
         name: u.name,
-        image: u.image ?? '/images/upcoming/delhi.jpg',
+        image: u.image ?? '/images/upcoming/delhi.webp',
         comingSoon: true,
       }))
 

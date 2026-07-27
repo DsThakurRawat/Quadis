@@ -120,7 +120,7 @@ export const imagesForHotel = (hotel: { slug: string; images?: Array<{ url: stri
 // Per-entity photo sets (arrays of real photo URLs with smart production fallbacks).
 export const hotelImages = (slug: string): string[] => {
   const explicit = at(`hotels/${slug}`)
-  const pool = galleryFacade.length ? galleryFacade : (allPhotos.length ? allPhotos : ['/images/home/hero.jpg'])
+  const pool = galleryFacade.length ? galleryFacade : (allPhotos.length ? allPhotos : ['/images/home/hero.webp'])
   const idx = hashSlug(slug)
 
   // Fallback 5 distinct photos from available pool
@@ -196,7 +196,7 @@ export const roomImages = (hotelSlug: string, roomId: string): string[] => {
 export const banquetImages = (slug: string): string[] => {
   const explicit = at(`banquets/${slug}`)
   if (explicit.length) return explicit
-  const pool = galleryDining.length ? galleryDining : (allPhotos.length ? allPhotos : ['/images/home/hero.jpg'])
+  const pool = galleryDining.length ? galleryDining : (allPhotos.length ? allPhotos : ['/images/home/hero.webp'])
   const idx = hashSlug(slug)
   return [
     pool[(idx + 1) % pool.length] ?? pool[0]!,
@@ -208,7 +208,7 @@ export const banquetImages = (slug: string): string[] => {
 export const restaurantImages = (): string[] => {
   const explicit = at('restaurant')
   if (explicit.length) return explicit
-  const pool = galleryDining.length ? galleryDining : (allPhotos.length ? allPhotos : ['/images/home/hero.jpg'])
+  const pool = galleryDining.length ? galleryDining : (allPhotos.length ? allPhotos : ['/images/home/hero.webp'])
   return [pool[0]!, pool[1 % pool.length] ?? pool[0]!, pool[2 % pool.length] ?? pool[0]!]
 }
 

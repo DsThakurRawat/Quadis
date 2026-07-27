@@ -49,7 +49,7 @@ const getPhoto = (pool: string[], index: number, fallbackPool: string[], fallbac
     const item = fallbackPool[fallbackIndex % fallbackPool.length]
     if (item) return item
   }
-  return '/images/home/hero.jpg'
+  return '/images/home/hero.webp'
 }
 
 export const TOUR_PROPERTIES: { id: TourProperty; label: string }[] = [

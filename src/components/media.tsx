@@ -145,7 +145,7 @@ interface HeroVideoShowcaseProps {
  */
 export function HeroVideoShowcase({
   videoUrl = '/videos/Quadis.mp4',
-  posterUrl = '/images/home/hero.jpg'
+  posterUrl = '/images/home/hero.webp'
 }: HeroVideoShowcaseProps) {
   const [videoFailed, setVideoFailed] = useState(false)
   const [reduceMotion, setReduceMotion] = useState(false)

@@ -45,7 +45,7 @@ export default function GalleryPage() {
     }
   }, [tab])
 
-  const heroImg = galleryFacade[0] ?? galleryAll[0] ?? '/images/home/hero.jpg'
+  const heroImg = galleryFacade[0] ?? galleryAll[0] ?? '/images/home/hero.webp'
 
   return (
     <>

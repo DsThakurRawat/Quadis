@@ -16,7 +16,7 @@ const DEALS: Deal[] = [
     badgeColor: 'bg-dark text-gold',
     title: 'Deal Of The Day',
     description: "Enjoy today's special deal with up to 25% instant discount across all properties!",
-    image: '/images/offers/deal-of-the-day.png',
+    image: '/images/offers/deal-of-the-day.webp',
     link: '/hotels',
   },
   {
@@ -24,7 +24,7 @@ const DEALS: Deal[] = [
     badgeColor: 'bg-dark text-gold',
     title: 'Never Too Old',
     description: 'Enjoy Our Full-Fledged Senior Citizen Package with special ground-floor rooms and complimentary breakfast!',
-    image: '/images/offers/never-too-old.png',
+    image: '/images/offers/never-too-old.webp',
     link: '/hotels',
   },
   {
@@ -32,7 +32,7 @@ const DEALS: Deal[] = [
     badgeColor: 'bg-dark text-gold',
     title: 'Boss Lady',
     description: 'Exclusive Perks, priority 24x7 security, and express check-in for Solo Female Travelers!',
-    image: '/images/offers/boss-lady.png',
+    image: '/images/offers/boss-lady.webp',
     link: '/hotels',
   },
   {
@@ -40,7 +40,7 @@ const DEALS: Deal[] = [
     badgeColor: 'bg-dark text-gold',
     title: 'Stay Long Stay Green',
     description: 'Big Savings up to 35% off on weekly and monthly extended stays across Noida & Delhi!',
-    image: '/images/offers/stay-long-stay-green.png',
+    image: '/images/offers/stay-long-stay-green.webp',
     link: '/hotels',
   },
 ]
@@ -63,7 +63,7 @@ export default function DealsSection() {
                   <div className="deal-card-fern__circle">
                     {/* Fallback styling for images if missing */}
                     <img src={deal.image} alt={deal.title} loading="lazy" onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/home/hero.jpg'
+                      (e.target as HTMLImageElement).src = '/images/home/hero.webp'
                     }} />
                   </div>
                 </div>

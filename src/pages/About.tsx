@@ -21,8 +21,8 @@ const VALUES: Value[] = [
 
 export default function About() {
   // Client supplied banner.webp specifically for this page's hero.
-  const heroImg = aboutBanner || aboutImages[0] || '/images/home/hero.jpg'
-  const faImg = aboutImages[1] ?? galleryFacade[0] ?? '/images/home/hero.jpg'
+  const heroImg = aboutBanner || aboutImages[0] || '/images/home/hero.webp'
+  const faImg = aboutImages[1] ?? galleryFacade[0] ?? '/images/home/hero.webp'
   const leadershipImg = aboutServiceLeadership || heroImg
   const welfareImg = aboutWelfare || heroImg
   const airlinesImg = aboutAirlines || heroImg
