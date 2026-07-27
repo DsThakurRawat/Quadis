@@ -69,3 +69,6 @@ scripts/archive/
 /image*.png
 /*.zip
 /*.jpeg
+
+# Agents
+.agents/
