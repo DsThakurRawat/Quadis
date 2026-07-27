@@ -240,11 +240,11 @@ export const banquetHero: string[] = at('banquets').length ? at('banquets') : ho
 export const hotelsHero: string[] = at('hotels').length ? at('hotels') : homeImages
 
 export const heroShowcaseImages: string[] = [
-  '/images/home/hero.jpg',
-  '/images/hotels/hotel-downtown-sector-51-noida/03.png',
-  '/images/hotels/hotel-downtown-sector-51-noida/02.png',
-  '/images/hotels/hotel-downtown-sector-51-noida/01.png',
-  '/images/restaurant/dining/banquet-2-.png',
+  '/images/home/hero.webp',
+  '/images/hotels/hotel-downtown-sector-51-noida/03.webp',
+  '/images/hotels/hotel-downtown-sector-51-noida/02.webp',
+  '/images/hotels/hotel-downtown-sector-51-noida/01.webp',
+  '/images/restaurant/dining/banquet-2-.webp',
 ].filter(Boolean)
 
 const authSet: string[] = at('')

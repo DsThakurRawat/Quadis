@@ -70,13 +70,16 @@ pgTypes.setTypeParser(20, (v: string) => (v === null ? null : parseInt(v, 10)))
  * CA bundle and pointing `ca` at it — worth doing before this holds real
  * bookings.
  */
-function sslFor(connectionString: string): { rejectUnauthorized: boolean } | false {
+function sslFor(connectionString: string): { rejectUnauthorized: boolean; ca?: string } | false {
   const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(connectionString)
   if (isLocal) return false
   // An explicit sslmode=disable in the URL wins, so a deployment that genuinely
   // cannot use TLS still has a way out.
   if (/[?&]sslmode=disable\b/.test(connectionString)) return false
-  return { rejectUnauthorized: false }
+  return { 
+    rejectUnauthorized: true,
+    ca: require('fs').readFileSync(require('path').join(__dirname, 'global-bundle.pem')).toString()
+  }
 }
 
 // DatabaseEngine abstraction layer providing seamless support for real PostgreSQL via pg Pool

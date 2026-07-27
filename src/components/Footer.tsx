@@ -22,6 +22,7 @@ const HOTELS_LINKS: FooterLink[] = [
 ]
 const IMPORTANT: FooterLink[] = [
   { label: 'Contact Us', to: '/contact' },
+  { label: 'Cancellation Policy', to: '/cancellation-policy' },
 ]
 
 export default function Footer() {

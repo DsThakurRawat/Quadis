@@ -4,7 +4,7 @@
   "description": "Quadis Hotels Node.js + TypeScript API Server & Booking Engine",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc && node -e \"require('fs').copyFileSync('src/db/schema.sql','dist/db/schema.sql')\"",
+    "build": "tsc && node -e \"require('fs').copyFileSync('src/db/schema.sql','dist/db/schema.sql');require('fs').copyFileSync('src/db/global-bundle.pem','dist/db/global-bundle.pem')\"",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "test": "jest --runInBand --forceExit"
