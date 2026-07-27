@@ -77,6 +77,22 @@ export interface Hotel {
   childFreeUnderAge?: number
   rating: number // 0–5
   rooms?: HotelRoom[]
+  /**
+   * Photography uploaded from the admin panel. Present only once the API has
+   * responded; when it is non-empty it replaces the bundled images for this
+   * property entirely, so a hotel that uploads its own photos never sees
+   * another property's rooms mixed in.
+   */
+  images?: HotelImage[]
+}
+
+/** One uploaded photo, as returned by the API. */
+export interface HotelImage {
+  id: string
+  url: string
+  thumb_url?: string | null
+  alt_text?: string | null
+  sort_order?: number
 }
 
 export interface BanquetVenue {

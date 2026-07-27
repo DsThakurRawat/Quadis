@@ -5,10 +5,10 @@
 **`questions-round-3.txt`** — Part A is four messages for the client, Part B is
 decisions needed from Divyansh.
 
-**`message-cloudinary.txt`** — send separately. Asks the client to open a
-Cloudinary account so photo editing can be built, and sets out what the admin
-panel already does. Read its warning header first: photo editing is **not**
-built yet, and the message must not imply that it is.
+**`message-photo-storage.txt`** — send separately. Explains what the admin panel
+already does, then asks the client to choose where uploaded photos are stored:
+Cloudinary or Amazon S3. Read its warning header first — photo editing is being
+built but is **not** live, and the message must not imply that it is.
 
 Send Part A in three goes, not one: message 1 alone first, then 2, then 3 and 4
 together. Round 1 went out as a single block and came back roughly half

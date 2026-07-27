@@ -1,6 +1,6 @@
 import { Pool } from 'pg'
 import { randomBytes } from 'crypto'
-import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan, UserRecord } from '../types'
+import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan, UserRecord, PropertyImageRecord } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
 import { computeStayBreakdown, mealOffsetFor, extraAdultsFor, policyFor } from '../lib/pricing'
 import { nightsBetween, todayIso } from '../lib/nights'
@@ -65,6 +65,8 @@ export class DatabaseEngine {
   // In-Memory state store for testing without active PostgreSQL cloud instance
   public memoryProperties: Map<string, PropertyRecord> = new Map()
   public memoryRoomTypes: Map<string, RoomTypeRecord> = new Map()
+  /** Uploaded photography, keyed by image id. */
+  public memoryPropertyImages: Map<string, PropertyImageRecord> = new Map()
   public memoryBookings: Map<string, BookingRecord> = new Map()
   public memoryEnquiries: Map<string, EnquiryRecord> = new Map()
   public memoryChatLogs: Map<string, ChatLogRecord> = new Map()
@@ -88,6 +90,7 @@ export class DatabaseEngine {
   public initializeInMemorySeed() {
     this.memoryProperties.clear()
     this.memoryRoomTypes.clear()
+    this.memoryPropertyImages.clear()
     this.memoryBookings.clear()
     this.memoryEnquiries.clear()
     this.memoryChatLogs.clear()
@@ -141,6 +144,91 @@ export class DatabaseEngine {
       .filter((r) => r.property_id === prop.id)
       .map((r) => this.withTonightAvailability(r))
     return { property: prop, roomTypes: rooms }
+  }
+
+  /* ------------------------------------------------------------------
+   * Property photography
+   *
+   * These rows override the build-time image glob in the frontend, which is
+   * what makes a photo changeable without a redeploy. Ordered by sort_order so
+   * the hotel controls which shot leads.
+   * ------------------------------------------------------------------ */
+
+  public async getPropertyImages(propertyId: string): Promise<PropertyImageRecord[]> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        'SELECT * FROM property_images WHERE property_id = $1 ORDER BY sort_order ASC, created_at ASC',
+        [propertyId]
+      )
+      return res.rows
+    }
+    return Array.from(this.memoryPropertyImages.values())
+      .filter((i) => i.property_id === propertyId)
+      .sort((a, b) => a.sort_order - b.sort_order)
+  }
+
+  public async addPropertyImage(
+    img: Omit<PropertyImageRecord, 'id' | 'sort_order' | 'created_at'> & { sort_order?: number }
+  ): Promise<PropertyImageRecord> {
+    // Append by default: a new upload goes to the end rather than silently
+    // displacing whichever photo the hotel chose as its hero.
+    const existing = await this.getPropertyImages(img.property_id)
+    const order = img.sort_order ?? existing.length
+
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `INSERT INTO property_images (property_id, url, thumb_url, storage_key, alt_text, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+        [img.property_id, img.url, img.thumb_url, img.storage_key, img.alt_text, order]
+      )
+      return res.rows[0]
+    }
+    const row: PropertyImageRecord = { ...img, id: randomBytes(8).toString('hex'), sort_order: order }
+    this.memoryPropertyImages.set(row.id, row)
+    return row
+  }
+
+  public async getPropertyImageById(id: string): Promise<PropertyImageRecord | null> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('SELECT * FROM property_images WHERE id = $1', [id])
+      return res.rows[0] ?? null
+    }
+    return this.memoryPropertyImages.get(id) ?? null
+  }
+
+  public async deletePropertyImage(id: string): Promise<boolean> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query('DELETE FROM property_images WHERE id = $1', [id])
+      return (res.rowCount ?? 0) > 0
+    }
+    return this.memoryPropertyImages.delete(id)
+  }
+
+  /** Reorders in one pass; ids not in the list keep their current position. */
+  public async reorderPropertyImages(propertyId: string, orderedIds: string[]): Promise<void> {
+    if (!this.useInMemory && this.pool) {
+      const client = await this.pool.connect()
+      try {
+        await client.query('BEGIN')
+        for (let i = 0; i < orderedIds.length; i++) {
+          await client.query(
+            'UPDATE property_images SET sort_order = $1 WHERE id = $2 AND property_id = $3',
+            [i, orderedIds[i], propertyId]
+          )
+        }
+        await client.query('COMMIT')
+      } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+      } finally {
+        client.release()
+      }
+      return
+    }
+    orderedIds.forEach((id, i) => {
+      const row = this.memoryPropertyImages.get(id)
+      if (row && row.property_id === propertyId) this.memoryPropertyImages.set(id, { ...row, sort_order: i })
+    })
   }
 
   /** Lookup is case-insensitive: nobody expects Bob@x.com to be a second account. */
@@ -533,6 +621,21 @@ export class DatabaseEngine {
       return res.rows[0] || null
     }
     return this.memoryProperties.get(id) || null
+  }
+
+  /**
+   * Accepts either identifier, matching how the admin routes address a
+   * property elsewhere — the panel holds slugs, scripts tend to hold ids.
+   */
+  public async getPropertyByIdOrSlug(idOrSlug: string): Promise<PropertyRecord | null> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        'SELECT * FROM properties WHERE id = $1 OR slug = $1', [idOrSlug]
+      )
+      return res.rows[0] || null
+    }
+    return Array.from(this.memoryProperties.values())
+      .find((p) => p.id === idOrSlug || p.slug === idOrSlug) || null
   }
 
   public async getRoomTypeById(id: string): Promise<RoomTypeRecord | null> {

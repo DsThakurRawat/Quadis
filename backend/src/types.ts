@@ -116,6 +116,20 @@ export interface PropertyRecord {
   tier_label?: string
 }
 
+/** A photo uploaded from the admin panel, stored in object storage. */
+export interface PropertyImageRecord {
+  id: string
+  property_id: string
+  url: string
+  thumb_url: string | null
+  /** Handle for the stored object, so a delete removes the file too. */
+  storage_key: string
+  alt_text: string | null
+  /** Lowest first. The first image is the property hero. */
+  sort_order: number
+  created_at?: Date
+}
+
 export interface UserRecord {
   id: string
   full_name: string

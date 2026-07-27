@@ -100,6 +100,23 @@ function hashSlug(str: string): number {
   return Math.abs(hash)
 }
 
+/**
+ * Uploaded photography wins over anything bundled.
+ *
+ * `hotelImages(slug)` below reads the build-time glob, which is fixed at
+ * compile time and is why changing a photo used to need a redeploy. Once a
+ * hotel uploads its own set from the admin panel, the API returns it on the
+ * property record and this takes over — completely, not merged, because the
+ * whole point is that a property stops showing other properties' rooms.
+ *
+ * Falls through to the bundled set when nothing has been uploaded, so a
+ * property nobody has touched looks exactly as it does today.
+ */
+export const imagesForHotel = (hotel: { slug: string; images?: Array<{ url: string }> }): string[] => {
+  const uploaded = hotel.images?.map((i) => i.url).filter(Boolean) ?? []
+  return uploaded.length ? uploaded : hotelImages(hotel.slug)
+}
+
 // Per-entity photo sets (arrays of real photo URLs with smart production fallbacks).
 export const hotelImages = (slug: string): string[] => {
   const explicit = at(`hotels/${slug}`)

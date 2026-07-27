@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { DEFAULT_CONTENT, refreshContent } from '../data/content.ts'
 import { getApiUrl } from '../config/api'
 
@@ -372,6 +372,106 @@ function ContentEditor({ authedFetch }: { authedFetch: AuthedFetch }) {
   )
 }
 
+/**
+ * Per-property photo management.
+ *
+ * This is the piece that removes the developer from the loop. Photography used
+ * to come from a build-time glob, so changing one picture meant an edit, a
+ * rebuild and a redeploy. Uploads here go straight to storage and are live on
+ * the next page load.
+ *
+ * It also answers the client's actual complaint — that some hotels display
+ * other hotels' rooms. Uploading even one photo to a property makes it use its
+ * own set exclusively.
+ */
+function PropertyPhotos({ item, authedFetch, onSaved }: {
+  item: EditablePropertyItem; authedFetch: AuthedFetch; onSaved: () => void
+}) {
+  const [images, setImages] = useState<Array<{ id: string; url: string; thumb_url?: string | null }>>(
+    (item.property as any).images || []
+  )
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const upload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    setBusy(true); setError('')
+    try {
+      const form = new FormData()
+      Array.from(files).forEach((f) => form.append('photos', f))
+      const json = await authedFetch(`admin/properties/${item.property.id}/images`, {
+        method: 'POST', body: form,
+      })
+      setImages((prev) => [...prev, ...(json.data || [])])
+      onSaved()
+    } catch (e: any) {
+      setError(e.message || 'Upload failed')
+    } finally {
+      setBusy(false)
+      // Clear the input so re-picking the same file still fires a change event.
+      if (inputRef.current) inputRef.current.value = ''
+    }
+  }
+
+  const remove = async (id: string) => {
+    setBusy(true); setError('')
+    try {
+      await authedFetch(`admin/images/${id}`, { method: 'DELETE' })
+      setImages((prev) => prev.filter((i) => i.id !== id))
+      onSaved()
+    } catch (e: any) {
+      setError(e.message || 'Could not remove that photo')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div style={{ ...s.panel, background: '#0c0a09', border: '1px solid #292524' }}>
+      <h3 style={{ fontSize: '.95rem', fontWeight: 800, margin: '0 0 .2rem' }}>{item.property.name}</h3>
+      <p style={{ ...s.hint, margin: '0 0 .8rem' }}>
+        {images.length === 0
+          ? 'No photos uploaded. This hotel is currently showing the photos built into the website.'
+          : `${images.length} photo${images.length === 1 ? '' : 's'}. The first one is used as the main picture.`}
+      </p>
+
+      {images.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '.6rem', marginBottom: '.9rem' }}>
+          {images.map((img, i) => (
+            <div key={img.id} style={{ position: 'relative' }}>
+              <img
+                src={img.thumb_url || img.url}
+                alt=""
+                style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: '6px', display: 'block' }}
+              />
+              {i === 0 && (
+                <span style={{ position: 'absolute', top: 4, left: 4, background: '#d97706', color: '#0c0a09',
+                               fontSize: '.62rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>MAIN</span>
+              )}
+              <button
+                type="button" onClick={() => remove(img.id)} disabled={busy}
+                title="Remove this photo"
+                style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%',
+                         border: 'none', background: 'rgba(0,0,0,.75)', color: '#fff', cursor: 'pointer',
+                         fontSize: '.8rem', lineHeight: 1 }}
+              >x</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <input
+        ref={inputRef} type="file" accept="image/*" multiple disabled={busy}
+        onChange={(e) => upload(e.target.files)}
+        style={{ fontSize: '.8rem', color: '#a8a29e' }}
+      />
+      {busy && <p style={{ ...s.hint, margin: '.5rem 0 0' }}>Uploading and resizing…</p>}
+      {error && <p style={{ ...s.hint, margin: '.5rem 0 0', color: '#f87171' }}>{error}</p>}
+    </div>
+  )
+}
+
 /* ---------- Composed editor ---------- */
 
 export default function AdminEditor({ properties, authedFetch, onSaved }: {
@@ -379,7 +479,7 @@ export default function AdminEditor({ properties, authedFetch, onSaved }: {
   authedFetch: AuthedFetch
   onSaved: () => void
 }) {
-  const [tab, setTab] = useState<'hotels' | 'rooms' | 'text'>('hotels')
+  const [tab, setTab] = useState<'hotels' | 'rooms' | 'photos' | 'text'>('hotels')
 
   const tabBtn = (id: typeof tab, label: string) => (
     <button
@@ -402,6 +502,7 @@ export default function AdminEditor({ properties, authedFetch, onSaved }: {
       <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         {tabBtn('hotels', 'EDIT HOTELS')}
         {tabBtn('rooms', 'EDIT ROOMS & RATES')}
+        {tabBtn('photos', 'PHOTOS')}
         {tabBtn('text', 'EDIT WEBSITE TEXT')}
       </div>
 
@@ -414,6 +515,20 @@ export default function AdminEditor({ properties, authedFetch, onSaved }: {
           </p>
           {properties.map((item) => (
             <PropertyForm key={item.property.id} item={item} authedFetch={authedFetch} onSaved={onSaved} />
+          ))}
+        </div>
+      )}
+
+      {tab === 'photos' && (
+        <div style={s.panel}>
+          <h2 style={s.h2}>Photos</h2>
+          <p style={s.hint}>
+            Upload photos for each hotel. They appear on the website within a few seconds — no
+            developer needed. Photos are resized automatically so the site stays fast on a phone.
+            Once a hotel has its own photos, it stops showing any from other properties.
+          </p>
+          {properties.map((item) => (
+            <PropertyPhotos key={item.property.id} item={item} authedFetch={authedFetch} onSaved={onSaved} />
           ))}
         </div>
       )}

@@ -57,6 +57,32 @@ CREATE TABLE IF NOT EXISTS room_types (
 );
 
 -- Guest accounts. password_hash holds a salted scrypt digest, never plaintext.
+-- Photography uploaded from the admin panel.
+--
+-- Photos used to be resolved by a build-time glob over public/images, which
+-- meant changing one required a developer, a rebuild and a redeploy. Rows here
+-- take precedence over that glob, so an upload is live without shipping code.
+--
+-- The file itself lives in object storage; only its URL is kept. Deleting a
+-- property takes its photo rows with it, but not the stored objects - those are
+-- removed explicitly, so a mis-click cannot orphan the originals.
+CREATE TABLE IF NOT EXISTS property_images (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  property_id VARCHAR(64) NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  -- Full-size (long edge 1600px) and a 400px thumbnail for grids.
+  url TEXT NOT NULL,
+  thumb_url TEXT,
+  -- Storage key, so a delete can remove the object and not just the row.
+  storage_key TEXT NOT NULL,
+  alt_text VARCHAR(255),
+  -- Lowest sorts first; the first image is the property's hero.
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_property_images_property
+  ON property_images (property_id, sort_order);
+
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name VARCHAR(128) NOT NULL,

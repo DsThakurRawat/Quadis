@@ -72,10 +72,14 @@ export default function AdminDashboard() {
   }, [token])
 
   const authedFetch = async (endpoint: string, init: RequestInit = {}) => {
+    // A photo upload sends FormData, and the browser must set Content-Type
+    // itself so it can include the multipart boundary. Forcing
+    // application/json here made every upload fail to parse server-side.
+    const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData
     const res = await fetch(getApiUrl(endpoint), {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         Authorization: `Bearer ${token}`,
         ...(init.headers || {}),
       },

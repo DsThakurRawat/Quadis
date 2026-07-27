@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { db } from '../db'
 import { razorpayService } from '../services/RazorpayService'
 import { notificationService } from '../services/NotificationService'
+import { imageStore } from '../services/ImageStore'
+import multer from 'multer'
 
 export const adminRouter = Router()
 
@@ -179,6 +181,116 @@ adminRouter.patch('/room-types/:id', async (req: Request, res: Response) => {
     res.json({ success: true, message: `${updated.name} updated`, data: updated })
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to update room category' })
+  }
+})
+
+/* ------------------------------------------------------------------
+ * Property photography
+ *
+ * Photos used to require a developer, a rebuild and a redeploy. These three
+ * routes are what make them editable, and they answer the client's actual
+ * complaint — that some hotels display other hotels' rooms.
+ * ------------------------------------------------------------------ */
+
+/**
+ * In memory, then straight to storage: the file is resized before it is kept,
+ * so writing the original to disk first would only add a temp file to clean up.
+ * 12 MB is comfortably above a phone photo and well under what would let a
+ * single request exhaust the instance.
+ */
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 12 * 1024 * 1024, files: 10 },
+  fileFilter: (_req, file, cb) => {
+    // Trust the decoder, not the extension — sharp rejects anything that is not
+    // really an image, and this only filters the obvious cases early.
+    if (/^image\/(jpe?g|png|webp|avif|heic|heif)$/i.test(file.mimetype)) return cb(null, true)
+    cb(new Error(`Unsupported file type: ${file.mimetype}`))
+  },
+})
+
+/** 503 rather than a silent success when storage is not configured. */
+const requireStore = (res: Response): boolean => {
+  if (imageStore) return true
+  res.status(503).json({
+    success: false,
+    error: 'Photo storage is not configured. Set IMAGE_BUCKET on the server.',
+  })
+  return false
+}
+
+// POST /api/admin/properties/:idOrSlug/images — upload one or more photos.
+adminRouter.post('/properties/:idOrSlug/images', upload.array('photos', 10), async (req: Request, res: Response) => {
+  try {
+    if (!requireStore(res)) return
+
+    const property = await db.getPropertyByIdOrSlug(req.params.idOrSlug!)
+    if (!property) return res.status(404).json({ success: false, error: 'Property not found' })
+
+    const files = (req.files as Express.Multer.File[]) || []
+    if (files.length === 0) {
+      return res.status(400).json({ success: false, error: 'No photos were attached' })
+    }
+
+    const saved = []
+    for (const file of files) {
+      const stored = await imageStore!.save({
+        buffer: file.buffer,
+        propertySlug: property.slug,
+        originalName: file.originalname,
+      })
+      saved.push(await db.addPropertyImage({
+        property_id: property.id,
+        url: stored.url,
+        thumb_url: stored.thumbUrl,
+        storage_key: stored.storageKey,
+        alt_text: typeof req.body?.alt_text === 'string' ? req.body.alt_text.slice(0, 255) : null,
+      }))
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `${saved.length} photo${saved.length === 1 ? '' : 's'} added to ${property.name}`,
+      data: saved,
+    })
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Upload failed' })
+  }
+})
+
+// DELETE /api/admin/images/:id — remove a photo and its stored files.
+adminRouter.delete('/images/:id', async (req: Request, res: Response) => {
+  try {
+    const img = await db.getPropertyImageById(req.params.id!)
+    if (!img) return res.status(404).json({ success: false, error: 'Photo not found' })
+
+    // Row first: an orphaned object costs pennies, a row pointing at a deleted
+    // file renders a broken image on the live site.
+    await db.deletePropertyImage(img.id)
+    if (imageStore) await imageStore.remove(img.storage_key)
+
+    res.json({ success: true, message: 'Photo removed' })
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Delete failed' })
+  }
+})
+
+const reorderSchema = z.object({ order: z.array(z.string()).min(1) })
+
+// PATCH /api/admin/properties/:idOrSlug/images/order — set the display order.
+adminRouter.patch('/properties/:idOrSlug/images/order', async (req: Request, res: Response) => {
+  try {
+    const parsed = reorderSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: 'Expected { order: [imageId, ...] }' })
+    }
+    const property = await db.getPropertyByIdOrSlug(req.params.idOrSlug!)
+    if (!property) return res.status(404).json({ success: false, error: 'Property not found' })
+
+    await db.reorderPropertyImages(property.id, parsed.data.order)
+    res.json({ success: true, data: await db.getPropertyImages(property.id) })
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Reorder failed' })
   }
 })
 

@@ -196,6 +196,11 @@ export function useHotels(): Hotel[] {
                 extraAdultPercent: h.extra_adult_percent != null ? Number(h.extra_adult_percent) : undefined,
                 childFreeUnderAge: h.child_free_under_age != null ? Number(h.child_free_under_age) : undefined,
                 rating: h.rating,
+                // Admin-uploaded photography. Carried through the merge so
+                // `imagesForHotel` can prefer it over the bundled glob; absent
+                // on an API that predates the feature, which just means the
+                // bundled images keep being used.
+                images: Array.isArray(h.images) ? h.images : undefined,
               }
             }))
             listeners.forEach(l => l())

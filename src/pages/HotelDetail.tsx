@@ -5,7 +5,7 @@ import type { MealPlan } from '../types.ts'
 import { useHotels, priceNight, inr, getHotelRooms } from '../data/hotels.ts'
 import { computeStayBreakdown, countWeekendNights, extraAdultsFor, policyFor } from '../lib/pricing.ts'
 import { readStayParams, todayIso, nextDay } from '../data/stay.ts'
-import { hotelImages, roomImages } from '../data/images.ts'
+import { imagesForHotel, roomImages } from '../data/images.ts'
 import { HotelCard, Button } from '../components/ui.tsx'
 import { CtaBand } from '../components/blocks.tsx'
 import { MapFacade, GettingHere, LocationActions } from '../components/Location.tsx'
@@ -38,7 +38,7 @@ export default function HotelDetail() {
   const [params] = useSearchParams()
   const hotels = useHotels()
   const hotel = hotels.find((h) => h.slug === slug)
-  const images = slug ? hotelImages(slug) : []
+  const images = hotel ? imagesForHotel(hotel) : []
   const hotelRooms = useMemo(() => (hotel ? getHotelRooms(hotel) : []), [hotel])
 
   /*

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useState, useId } from 'react'
 import type { ReactNode, MouseEventHandler, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
 import { IconPin, IconStar } from './icons.tsx'
-import { hotelImages } from '../data/images.ts'
+import { imagesForHotel } from '../data/images.ts'
 import { Photo } from './media.tsx'
 import { priceNight } from '../data/hotels.ts'
 import type { Hotel } from '../types.ts'
@@ -186,7 +186,7 @@ export function FilterPills<T extends string>({ options, value, onChange, ariaLa
  * search forward instead of dropping it.
  */
 export function HotelCard({ hotel, stayQuery = '' }: { hotel: Hotel; stayQuery?: string }) {
-  const img = hotelImages(hotel.slug)[0]
+  const img = imagesForHotel(hotel)[0]
   const href = stayQuery ? `/hotels/${hotel.slug}?${stayQuery}` : `/hotels/${hotel.slug}`
   return (
     <article className="hcard">
