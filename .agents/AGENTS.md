@@ -43,10 +43,15 @@ Rules:
 3. **Do not change occupancy pricing without a written client answer.** It
    decides what guests are billed. Current rule, from 27 Jul: extra adult 30%,
    under-8 free, 8–12 at 20%, 13+ as adult.
-4. **Do not build further into booking or payments.** Whether "Book Now" stays
-   on our site or redirects to the client's PMS is unanswered. If it redirects,
-   CheckoutModal, RazorpayService, InvoiceService and the soft-hold engine are
-   all discarded.
+4. **Do not build further into booking, payments or the admin panel.** Two
+   things are unanswered and either one can discard that work:
+   - Whether "Book Now" stays on our site or redirects to the client's PMS. If
+     it redirects, CheckoutModal, RazorpayService, InvoiceService and the
+     soft-hold engine are all unused.
+   - **The client already has a working hotel management system** at
+     `adminweb.quadishotels.com` — hotels, bookings, coupons, occupancy, users,
+     SEO fields, image upload — holding their real inventory. See §5. We may be
+     rebuilding what they already have.
 5. **`Ready` is not `working`.** Finish every deploy with a browser check. §6.
 
 ---
@@ -122,8 +127,33 @@ Keep the glob as the fallback and let uploads override it, which is what
 
 ## 5. Blocked on the client
 
-Messages are drafted and waiting in `docs/client-comms/questions-round-3.txt`
-and `message-photo-storage.txt`.
+Messages are drafted in `docs/client-comms/`. Send
+`message-existing-admin-panel.txt` first — it is the one that can invalidate
+work already done.
+
+### They already have an admin panel — discovered 27 Jul
+
+`adminweb.quadishotels.com` is a live hotel management system on their existing
+host: Dashboard, Hotels, Booking, Settings, Pages, Menu, Coupon, Add Occupancy,
+Users. It holds their real inventory — Quadis Central 17 rooms, Downtown Sector
+15 28 rooms, matching the rate sheet. It already has SEO meta fields, image
+upload, occupancy pricing and a booking module: four things built here in the
+last two days.
+
+Verified: resolves to `115.124.108.190` (same server as the site), HTTPS 200,
+titled "Hotel QuaDis". `booking.quadishotels.com` sits on the same IP.
+
+Almost certainly the "Booking System connected with admin panel" from their
+first reply, and possibly what the revenue manager meant by PMS.
+
+**If it stays, rates and availability are maintained in two places** — which is
+the double-source problem that causes double bookings, and the same one the PMS
+question is about. It has to be one system or the other, and the client has to
+say which.
+
+Open: is it live and taking bookings · who built it and is it supported · is
+there data to migrate (bookings, coupons, users) · does the new site replace it
+or run alongside.
 
 The 13–17 age band · the theserverindia hosting login · live Razorpay keys
 (still `rzp_test_simulated`, so no real payment can be taken) · photo storage
