@@ -25,16 +25,47 @@ until the nameservers are moved, and moving the nameservers moves the whole zone
 
 ## The safe path
 
-Get the theserverindia panel login (the client has asked the previous designer
-for it) and change **only the A record** to point at the new host. Leave the
-nameservers and every other record alone. Mail is untouched because MX never
-moves.
+**Update 27 Jul: the client has refused the panel login**, because their other
+websites are hosted on the same server. That is a fair refusal — a shared-hosting
+cPanel exposes every site on the account — and it is not needed.
 
-## The risky path, if it has to be taken
+Ask the previous designer or theserverindia support to change **one record**:
 
-If the nameservers are ever repointed to Route 53 or GoDaddy, every record below
-must be recreated in the new zone *before* the switch, or Google Workspace mail
-stops and the Search Console verifications break:
+> Point the A record for `quadishotels.com` at the new address. Change nothing
+> else — leave MX, TXT and every subdomain exactly as they are.
+
+Nobody has to hand over a password for that. It is the lowest-risk option
+because the zone never moves, so nothing can be lost in transit.
+
+## The fallback, if they will not do even that
+
+Move **only quadishotels.com's** nameservers to Route 53 or GoDaddy DNS. This is
+done at the registrar, where the client already has access, so theserverindia is
+not involved.
+
+**Their other websites are safe.** Verified 27 Jul: reverse DNS on
+115.124.108.190 is `yellow.theserverindia.com`, a shared server, and the client's
+other sites are separate *domains* on it — not subdomains of quadishotels.com.
+Moving this domain's nameservers cannot touch them. Their objection is honest but
+does not apply here, and saying so plainly is what unblocks the conversation.
+
+The real risk is losing records that only exist in the old zone. A public
+resolver shows the following; `docs/dns-zone-observed.txt` has the captured
+version. Every one must exist in the new zone **before** the switch:
+
+```
+@          A      115.124.108.190
+www        CNAME  quadishotels.com.
+mail       A      115.124.108.190
+webmail    A      115.124.108.190
+ftp        CNAME  quadishotels.com.
+blog       A      115.124.108.190
+api        A      115.124.108.190
+booking    A      115.124.108.190
+```
+
+There is no wildcard — those are explicit records, so each one is a live thing
+that breaks if it is dropped. Plus the mail records:
 
 ```
 MX   1  smtp.google.com
