@@ -1,31 +1,33 @@
 # Client communications
 
-Drafts written **to** the client. What they sent **to us** lives in
-`client-assets/briefs/` — see its INDEX for the material these questions are
-based on.
+## Send from this file
+
+**`questions-round-3.txt`** — the only live one. Part A is four messages for
+the client, Part B is decisions needed from Divyansh.
+
+Send Part A in three goes, not one: message 1 alone first, then 2, then 3 and 4
+together. Round 1 went out as a single block and came back roughly half
+answered — and the skipped items were the launch blockers, not the easy ones.
+
+Everything else in `sent/` is history. Do not send from it.
+
+## sent/
 
 | File | What it is |
 |---|---|
-| `whatsapp-message.txt` | Round 1, sent. Their replies came back in `client-assets/briefs/2026-07-27-SENSITIVE-answers-and-logins.txt` |
-| `whatsapp-message-2.txt` | Round 2, **not yet sent**. Four messages, in send order |
-| `client-questions.md` | The running question list, grouped by how urgent each is |
+| `round-1-sent.txt` | Sent 26 Jul. Their replies are in `client-assets/briefs/2026-07-27-SENSITIVE-answers-and-logins.txt` |
+| `round-2-superseded.txt` | Never sent as written — the client answered the room counts and rates before it went out. What survived is folded into round 3 |
+| `running-notes.md` | Working list, grouped by urgency |
 
-## Round 2, in the order it should go out
+## What round 3 still turns on
 
-1. **Message 5 — passwords.** Send alone, first. Bundled with work questions it
-   reads as a footnote and gets skipped, and it is the only one with money
-   attached.
-2. **Message 6 — pricing.** Asks them to price one worked example rather than
-   "which rule is right", because they have now answered that question three
-   different ways. Also names both rate documents explicitly, since "the sheet"
-   was ambiguous when they had sent two.
-3. **Messages 7 and 8** — outstanding access, and the PMS checklist to take into
-   their conversation with the revenue manager.
+The **third-person charge**. The client has now stated it three ways — 40%, a
+flat ₹500, and 30% — so message 2 asks them to price one worked example rather
+than to pick a rule. A number cannot come back ambiguous.
 
-## The one that decides the most
+Whether a **child** triggers the same charge is still open. Children are free in
+the code today.
 
-Message 8, question 1: after **Book Now**, does the guest stay on our site or go
-to the PMS vendor's own booking page? If it is the vendor's page, then
-CheckoutModal, RazorpayService, InvoiceService and the soft-hold engine all stop
-being used. Nothing further should be built in the booking or payments path
-until that is answered.
+And message 4 question 1, which decides the most: after **Book Now**, does the
+guest stay on our site or go to the PMS vendor's booking page? If it is the
+vendor's page, the checkout, payments and GST invoice work all stops being used.
