@@ -73,11 +73,7 @@ scripts/archive/
 # Agents
 ..agents/
 
-# Per-agent working context. Local only.
-#
-# These are each agent's own notes on the repo — what it measured, what it
-# believes is broken, what it was told not to touch. They go stale fast, they
-# contradict each other by design, and two of them disagreeing in a diff is
-# noise rather than history. The durable versions of anything here belong in
-# docs/ and get committed there.
-.agents/
+# Per-agent context files are gone — AGENTS.md at the repo root replaces them,
+# and it IS committed. Two private context files existed, they disagreed about
+# what was done, and the disagreement cost a database outage and 27 broken
+# image paths. A shared contract only works if everyone can see it.
