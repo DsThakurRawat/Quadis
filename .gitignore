@@ -71,4 +71,13 @@ scripts/archive/
 /*.jpeg
 
 # Agents
+..agents/
+
+# Per-agent working context. Local only.
+#
+# These are each agent's own notes on the repo — what it measured, what it
+# believes is broken, what it was told not to touch. They go stale fast, they
+# contradict each other by design, and two of them disagreeing in a diff is
+# noise rather than history. The durable versions of anything here belong in
+# docs/ and get committed there.
 .agents/
