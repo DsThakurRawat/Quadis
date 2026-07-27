@@ -2,7 +2,7 @@ import { Pool, types as pgTypes } from 'pg'
 import { randomBytes } from 'crypto'
 import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan, UserRecord, PropertyImageRecord } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
-import { computeStayBreakdown, mealOffsetFor, extraAdultsFor, policyFor } from '../lib/pricing'
+import { computeStayBreakdown, mealOffsetFor, chargeableGuestsFor, policyFor } from '../lib/pricing'
 import { nightsBetween, todayIso } from '../lib/nights'
 
 /**
@@ -455,11 +455,12 @@ export class DatabaseEngine {
         }
 
         const policy = policyFor(room)
-        const extraAdults = extraAdultsFor({
+        const { extraAdults, extraChildren } = chargeableGuestsFor({
           adults: adultsCount,
           childAges,
           roomsCount: payload.roomsCount,
           childFreeUnderAge: policy.childFreeUnderAge,
+          adultFromAge: policy.adultFromAge,
         })
 
         const breakdown = computeStayBreakdown({
@@ -471,7 +472,9 @@ export class DatabaseEngine {
           checkOut: payload.checkOut,
           roomsCount: payload.roomsCount,
           extraAdults,
+          extraChildren,
           extraAdultPercent: policy.extraAdultPercent,
+          childPercent: policy.childPercent,
         })
         const totalAmount = breakdown.total
 
@@ -568,11 +571,12 @@ export class DatabaseEngine {
       bookingCode = generateBookingCode()
     }
     const policy = policyFor(prop)
-    const extraAdults = extraAdultsFor({
+    const { extraAdults, extraChildren } = chargeableGuestsFor({
       adults: adultsCount,
       childAges,
       roomsCount: payload.roomsCount,
       childFreeUnderAge: policy.childFreeUnderAge,
+      adultFromAge: policy.adultFromAge,
     })
 
     const breakdown = computeStayBreakdown({
@@ -584,7 +588,9 @@ export class DatabaseEngine {
       checkOut: payload.checkOut,
       roomsCount: payload.roomsCount,
       extraAdults,
+      extraChildren,
       extraAdultPercent: policy.extraAdultPercent,
+      childPercent: policy.childPercent,
     })
     const totalAmount = breakdown.total
 
@@ -871,6 +877,8 @@ export class DatabaseEngine {
     'weekend_surcharge_percent',
     'extra_adult_percent',
     'child_free_under_age',
+    'child_percent',
+    'adult_from_age',
     'lat',
     'lng',
     'place_id',

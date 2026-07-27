@@ -205,6 +205,8 @@ export function useHotels(): Hotel[] {
                 // letting "500" reach the arithmetic as a string.
                 extraAdultPercent: h.extra_adult_percent != null ? Number(h.extra_adult_percent) : undefined,
                 childFreeUnderAge: h.child_free_under_age != null ? Number(h.child_free_under_age) : undefined,
+                childPercent: h.child_percent != null ? Number(h.child_percent) : undefined,
+                adultFromAge: h.adult_from_age != null ? Number(h.adult_from_age) : undefined,
                 rating: Number(h.rating),
                 // Admin-uploaded photography. Carried through the merge so
                 // `imagesForHotel` can prefer it over the bundled glob; absent

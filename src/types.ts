@@ -75,6 +75,10 @@ export interface Hotel {
    */
   extraAdultPercent?: number
   childFreeUnderAge?: number
+  /** Percentage per child between childFreeUnderAge and adultFromAge. */
+  childPercent?: number
+  /** At this age and above a guest is charged as an adult. */
+  adultFromAge?: number
   rating: number // 0–5
   rooms?: HotelRoom[]
   /**

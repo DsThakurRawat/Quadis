@@ -112,7 +112,9 @@ const propertyPatchSchema = z
       .number()
       .min(0, 'Cannot be negative')
       .max(200, 'A triple-occupancy uplift above 200% looks wrong — check the figure'),
-    child_free_under_age: z
+    child_percent: z.coerce.number().min(0).max(100).optional(),
+  adult_from_age: z.coerce.number().int().min(0).max(30).optional(),
+  child_free_under_age: z
       .number()
       .int('Enter a whole number of years')
       .min(0, 'Cannot be negative')

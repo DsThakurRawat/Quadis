@@ -106,8 +106,12 @@ export interface PropertyRecord {
   weekend_surcharge_percent: number
   /** Percentage of the nightly room rate added per extra adult. Admin-set. */
   extra_adult_percent: number
-  /** Below this age a guest is a child and is never charged. Admin-set. */
+  /** Below this age a guest stays free. Admin-set. */
   child_free_under_age: number
+  /** Percentage added per child between child_free_under_age and adult_from_age. */
+  child_percent?: number
+  /** At this age and above, a guest is charged as an adult. */
+  adult_from_age?: number
   /** Null until a real coordinate is confirmed; the UI falls back to address search. */
   lat?: number | null
   lng?: number | null

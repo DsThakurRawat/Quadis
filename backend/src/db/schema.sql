@@ -28,7 +28,11 @@ CREATE TABLE IF NOT EXISTS properties (
   -- defaults to 18 so that "if it's child then no" holds at any age, and can be
   -- lowered by a hotel that wants to charge for older children.
   extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 30.00,
-  child_free_under_age INTEGER NOT NULL DEFAULT 18,
+  -- Three age bands, per the client 27 Jul 2026: 0-7 free, 8-12 at
+  -- child_percent, adult_from_age and above charged as an adult.
+  child_free_under_age INTEGER NOT NULL DEFAULT 8,
+  child_percent NUMERIC(5, 2) NOT NULL DEFAULT 20.00,
+  adult_from_age INTEGER NOT NULL DEFAULT 13,
   -- Null until a real coordinate is confirmed for the property. The UI falls
   -- back to an address search rather than showing an invented pin.
   lat NUMERIC(10, 7),
@@ -222,7 +226,14 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS extra_adult_charge NUMERIC(10, 2) 
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS map_link TEXT;
 
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 30.00;
-ALTER TABLE properties ADD COLUMN IF NOT EXISTS child_free_under_age INTEGER NOT NULL DEFAULT 18;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS child_free_under_age INTEGER NOT NULL DEFAULT 8;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS child_percent NUMERIC(5, 2) NOT NULL DEFAULT 20.00;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS adult_from_age INTEGER NOT NULL DEFAULT 13;
+
+-- Databases seeded before 27 Jul carry the old single-threshold policy, where
+-- every under-18 was free. Move them onto the three-band rule the client gave.
+-- Scoped to the old default so a hotel that has since set its own is untouched.
+UPDATE properties SET child_free_under_age = 8 WHERE child_free_under_age = 18;
 
 -- Databases created against the earlier flat-rupee model carry a redundant
 -- properties.extra_adult_charge column. Harmless if present; dropped so the

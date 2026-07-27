@@ -30,6 +30,8 @@ export interface EditableProperty {
   weekend_surcharge_percent?: number
   extra_adult_percent?: number
   child_free_under_age?: number
+  child_percent?: number
+  adult_from_age?: number
 }
 
 export interface EditableRoom {
@@ -154,7 +156,9 @@ function PropertyForm({ item, authedFetch, onSaved }: {
           is_active: !!draft.is_active,
           weekend_surcharge_percent: Number(draft.weekend_surcharge_percent ?? 0),
           extra_adult_percent: Number(draft.extra_adult_percent ?? 0),
-          child_free_under_age: Number(draft.child_free_under_age ?? 18),
+          child_free_under_age: Number(draft.child_free_under_age ?? 8),
+          child_percent: Number(draft.child_percent ?? 20),
+          adult_from_age: Number(draft.adult_from_age ?? 13),
         }),
       })
       setStatus({ kind: 'ok' })
@@ -197,7 +201,9 @@ function PropertyForm({ item, authedFetch, onSaved }: {
       </p>
       <div style={s.grid}>
         <NumField label="Triple occupancy uplift (%)" value={draft.extra_adult_percent} onChange={set('extra_adult_percent')} step="1" />
-        <NumField label="Counts as a child under age" value={draft.child_free_under_age} onChange={set('child_free_under_age')} />
+        <NumField label="Stays free under age" value={draft.child_free_under_age} onChange={set('child_free_under_age')} />
+        <NumField label="Child uplift (%)" value={draft.child_percent} onChange={set('child_percent')} />
+        <NumField label="Charged as adult from age" value={draft.adult_from_age} onChange={set('adult_from_age')} />
       </div>
       {/* Worked example, so a manager sees the rupee effect of the percentage
           they just typed without doing the arithmetic themselves. */}

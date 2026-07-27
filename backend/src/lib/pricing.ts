@@ -53,51 +53,108 @@ export const DEFAULT_EXTRA_ADULT_PERCENT = 30
 export const STANDARD_OCCUPANCY_PER_ROOM = 2
 
 /**
- * Fallback age below which a guest counts as a child and is never charged.
+ * Age bands, per the client on 27 Jul 2026:
  *
- * 18, because the client's rule is "if it's child then no" — children do not
- * trigger the increase at any age. Admin-settable per property, so a hotel that
- * wants to charge for, say, 12-and-over can lower it.
+ *   "for extra adult 30%, 0-7 years waalo ka free rahega stay,
+ *    baki 8-12 years ka 20%"
  *
- * See the note above: their 27 Jul wording ("third person", charged for a
- * mattress) may supersede this, but it is not confirmed yet.
+ * So three bands, not the single free/charged threshold this file used to have:
+ *
+ *   0-7    free
+ *   8-12   20% of the nightly room rate
+ *   13+    charged as an adult, currently 30%
+ *
+ * ASSUMPTION, NOT CONFIRMED: the client specified 0-7 and 8-12 and stopped. 13
+ * to 17 is read as adult, because "baki 8-12 ka 20%" implies the concession
+ * ends at 12. If they meant under-18s to stay on 20%, raise DEFAULT_ADULT_FROM_AGE.
+ * Flagged in docs/client-comms/.
  */
-export const DEFAULT_CHILD_FREE_UNDER_AGE = 18
+export const DEFAULT_CHILD_FREE_UNDER_AGE = 8
+export const DEFAULT_CHILD_PERCENT = 20
+export const DEFAULT_ADULT_FROM_AGE = 13
 
 /** The occupancy policy in force for one property. */
 export interface OccupancyPolicy {
   /** Percentage of the nightly room rate added per extra adult. */
   extraAdultPercent: number
+  /** Below this age a guest is free. */
   childFreeUnderAge: number
+  /** Percentage added per child in the concession band. */
+  childPercent: number
+  /** At this age and above, a guest is charged as an adult. */
+  adultFromAge: number
 }
 
 /** Reads the policy off a property row, falling back for older records. */
 export function policyFor(property: {
   extra_adult_percent?: number | string | null
   child_free_under_age?: number | string | null
+  child_percent?: number | string | null
+  adult_from_age?: number | string | null
 } | null | undefined): OccupancyPolicy {
-  const percent = Number(property?.extra_adult_percent)
-  const age = Number(property?.child_free_under_age)
+  const num = (v: unknown, fallback: number): number => {
+    const n = Number(v)
+    return Number.isFinite(n) && n >= 0 ? n : fallback
+  }
   return {
-    extraAdultPercent:
-      Number.isFinite(percent) && percent >= 0 ? percent : DEFAULT_EXTRA_ADULT_PERCENT,
-    childFreeUnderAge: Number.isFinite(age) && age >= 0 ? age : DEFAULT_CHILD_FREE_UNDER_AGE,
+    extraAdultPercent: num(property?.extra_adult_percent, DEFAULT_EXTRA_ADULT_PERCENT),
+    childFreeUnderAge: num(property?.child_free_under_age, DEFAULT_CHILD_FREE_UNDER_AGE),
+    childPercent: num(property?.child_percent, DEFAULT_CHILD_PERCENT),
+    adultFromAge: num(property?.adult_from_age, DEFAULT_ADULT_FROM_AGE),
   }
 }
 
 export interface OccupancyInput {
   adults: number
-  /**
-   * One entry per child. Ages at or above the property's childFreeUnderAge are
-   * charged as adults; younger children are free.
-   */
+  /** One entry per child, their age at check-in. */
   childAges?: number[]
   roomsCount: number
-  /** Defaults to the group-wide fallback when a property has no policy set. */
   childFreeUnderAge?: number
+  adultFromAge?: number
 }
 
-/** Children old enough to need their own bed, and therefore their own charge. */
+/** Heads beyond the included occupancy, split by the rate each is charged at. */
+export interface ChargeableGuests {
+  /** Charged at extraAdultPercent. */
+  extraAdults: number
+  /** Charged at childPercent. */
+  extraChildren: number
+}
+
+/**
+ * Who has to be paid for, and at which rate.
+ *
+ * Two adults per room are included. Guests under childFreeUnderAge are free and
+ * never consume an included place — a toddler sharing the bed does not push a
+ * paying guest into a surcharge.
+ *
+ * The included places are filled with the most expensive heads first, so any
+ * excess is drawn from the cheaper band. Two adults and a ten-year-old in one
+ * room therefore pay the child rate on the child, not the adult rate: the
+ * adults take the two included places. Doing it the other way round would
+ * quietly overcharge every family.
+ *
+ * Counted across the whole booking rather than per room, so three adults in two
+ * rooms sit inside the four included places and pay nothing extra.
+ */
+export function chargeableGuestsFor(input: OccupancyInput): ChargeableGuests {
+  const freeUnder = Number.isFinite(Number(input.childFreeUnderAge))
+    ? Number(input.childFreeUnderAge) : DEFAULT_CHILD_FREE_UNDER_AGE
+  const adultFrom = Number.isFinite(Number(input.adultFromAge))
+    ? Number(input.adultFromAge) : DEFAULT_ADULT_FROM_AGE
+
+  const ages = Array.isArray(input.childAges) ? input.childAges.map(Number) : []
+  const childBand = ages.filter((a) => a >= freeUnder && a < adultFrom).length
+  const adultLike = (Number(input.adults) || 0) + ages.filter((a) => a >= adultFrom).length
+
+  const included = STANDARD_OCCUPANCY_PER_ROOM * (Number(input.roomsCount) || 1)
+  const extraAdults = Math.max(0, adultLike - included)
+  const includedLeft = Math.max(0, included - adultLike)
+
+  return { extraAdults, extraChildren: Math.max(0, childBand - includedLeft) }
+}
+
+/** Children old enough to be charged at all — the 8-12 band plus any 13+. */
 export function chargeableChildren(
   childAges: number[] | undefined,
   childFreeUnderAge: number = DEFAULT_CHILD_FREE_UNDER_AGE
@@ -107,17 +164,12 @@ export function chargeableChildren(
 }
 
 /**
- * Heads that must be paid for beyond what the room rate already covers.
- *
- * Counts across the whole booking rather than per room: three adults in two
- * rooms are within the four included places and pay no extra, which is what a
- * guest booking two rooms expects.
+ * Kept for callers that only need a single count. Prefer chargeableGuestsFor —
+ * this collapses two different rates into one number and will under-quote a
+ * booking that includes a child in the concession band.
  */
 export function extraAdultsFor(input: OccupancyInput): number {
-  const paying =
-    (Number(input.adults) || 0) + chargeableChildren(input.childAges, input.childFreeUnderAge)
-  const included = STANDARD_OCCUPANCY_PER_ROOM * (Number(input.roomsCount) || 1)
-  return Math.max(0, paying - included)
+  return chargeableGuestsFor(input).extraAdults
 }
 
 /* ---------- Nightly rate ---------- */
@@ -147,8 +199,15 @@ export interface StayPricingInput {
    * extraAdultPercent of that night's room rate, for every night of the stay.
    */
   extraAdults?: number
+  /**
+   * Children in the concession band (8-12 by default), from
+   * chargeableGuestsFor(). Each adds childPercent of that night's room rate.
+   */
+  extraChildren?: number
   /** The property's admin-set percentage uplift per extra adult. */
   extraAdultPercent?: number
+  /** The property's admin-set percentage uplift per concession-band child. */
+  childPercent?: number
 }
 
 export interface StayPricingBreakdown {
@@ -158,8 +217,12 @@ export interface StayPricingBreakdown {
   /** Extra-adult charge for the whole stay. */
   extraAdultTotal: number
   extraAdults: number
-  /** The percentage applied, so callers can display and store it. */
+  /** Concession-band child charge for the whole stay. */
+  extraChildTotal: number
+  extraChildren: number
+  /** The percentages applied, so callers can display and store them. */
   extraAdultPercent: number
+  childPercent: number
   /**
    * Rupees per extra adult per night, averaged over the stay. Derived, not an
    * input — stored on the booking so an invoice can show a figure, and averaged
@@ -187,11 +250,15 @@ export function computeStayBreakdown(input: StayPricingInput): StayPricingBreakd
   const surcharge = Number(input.weekendSurchargePercent) || 0
 
   const extraAdults = Math.max(0, Number(input.extraAdults) || 0)
+  const extraChildren = Math.max(0, Number(input.extraChildren) || 0)
   const rooms = Number(input.roomsCount) || 1
 
-  const rawPercent = Number(input.extraAdultPercent)
-  const extraAdultPercent =
-    Number.isFinite(rawPercent) && rawPercent >= 0 ? rawPercent : DEFAULT_EXTRA_ADULT_PERCENT
+  const pct = (v: unknown, fallback: number): number => {
+    const n = Number(v)
+    return Number.isFinite(n) && n >= 0 ? n : fallback
+  }
+  const extraAdultPercent = pct(input.extraAdultPercent, DEFAULT_EXTRA_ADULT_PERCENT)
+  const childPercent = pct(input.childPercent, DEFAULT_CHILD_PERCENT)
 
   const end = new Date(input.checkOut)
   const cursor = new Date(input.checkIn)
@@ -204,14 +271,17 @@ export function computeStayBreakdown(input: StayPricingInput): StayPricingBreakd
    * the guest's summary, which reads as a bug rather than a price.
    */
   const upliftPerAdult = (rate: number) => Math.round(rate * (extraAdultPercent / 100))
+  const upliftPerChild = (rate: number) => Math.round(rate * (childPercent / 100))
 
   let roomTotal = 0
   let extraAdultTotal = 0
+  let extraChildTotal = 0
   let nights = 0
   while (cursor < end) {
     const rate = isWeekendNight(cursor) ? nightly * (1 + surcharge / 100) : nightly
     roomTotal += rate
     extraAdultTotal += upliftPerAdult(rate) * extraAdults
+    extraChildTotal += upliftPerChild(rate) * extraChildren
     nights += 1
     cursor.setUTCDate(cursor.getUTCDate() + 1)
   }
@@ -221,21 +291,26 @@ export function computeStayBreakdown(input: StayPricingInput): StayPricingBreakd
   if (nights === 0) {
     roomTotal = nightly
     extraAdultTotal = upliftPerAdult(nightly) * extraAdults
+    extraChildTotal = upliftPerChild(nightly) * extraChildren
     nights = 1
   }
 
   const round = (n: number) => Math.round(n * 100) / 100
   const roomCharge = round(roomTotal * rooms)
   const extraCharge = round(extraAdultTotal)
+  const childCharge = round(extraChildTotal)
 
   return {
     nights,
     roomTotal: roomCharge,
     extraAdultTotal: extraCharge,
     extraAdults,
+    extraChildTotal: childCharge,
+    extraChildren,
     extraAdultPercent,
+    childPercent,
     extraAdultChargePerNight: extraAdults > 0 ? round(extraCharge / (extraAdults * nights)) : 0,
-    total: round(roomCharge + extraCharge),
+    total: round(roomCharge + extraCharge + childCharge),
   }
 }
 

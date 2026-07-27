@@ -4,6 +4,9 @@ import { db } from '../src/db'
 import {
   DEFAULT_EXTRA_ADULT_PERCENT,
   DEFAULT_CHILD_FREE_UNDER_AGE,
+  DEFAULT_CHILD_PERCENT,
+  DEFAULT_ADULT_FROM_AGE,
+  chargeableGuestsFor,
   extraAdultsFor,
   chargeableChildren,
   computeStayBreakdown,
@@ -52,9 +55,11 @@ describe('Occupancy — extra adult and child rules', () => {
     expect(chargeableChildren(undefined, 12)).toBe(0)
   })
 
-  it('never charges for a child by default — the client\'s "if it\'s child then no"', () => {
-    // The default threshold is 18, so no child of any age is chargeable.
-    expect(chargeableChildren([4, 11, 12, 15, 17])).toBe(0)
+  it('charges from 8, per the client\'s three age bands', () => {
+    // 27 Jul 2026: "0-7 years waalo ka free rahega stay, baki 8-12 ka 20%".
+    // Under 8 is free; everyone above it is chargeable at one rate or another.
+    expect(chargeableChildren([4, 6, 7])).toBe(0)
+    expect(chargeableChildren([8, 11, 12, 15, 17])).toBe(5)
   })
 
   it('honours a property-specific free-child age', () => {
@@ -68,11 +73,15 @@ describe('Occupancy — extra adult and child rules', () => {
     expect(policyFor(null)).toEqual({
       extraAdultPercent: DEFAULT_EXTRA_ADULT_PERCENT,
       childFreeUnderAge: DEFAULT_CHILD_FREE_UNDER_AGE,
+      childPercent: DEFAULT_CHILD_PERCENT,
+      adultFromAge: DEFAULT_ADULT_FROM_AGE,
     })
     // Postgres returns NUMERIC as a string; it must still be read as a number.
-    expect(policyFor({ extra_adult_percent: '55', child_free_under_age: '10' })).toEqual({
-      extraAdultPercent: 55,
-      childFreeUnderAge: 10,
+    expect(policyFor({
+      extra_adult_percent: '55', child_free_under_age: '10',
+      child_percent: '15', adult_from_age: '14',
+    })).toEqual({
+      extraAdultPercent: 55, childFreeUnderAge: 10, childPercent: 15, adultFromAge: 14,
     })
   })
 
@@ -88,12 +97,34 @@ describe('Occupancy — extra adult and child rules', () => {
     expect(extraAdultsFor({ adults: 2, childAges: [5], roomsCount: 1 })).toBe(0)
   })
 
-  it('does not charge a 12-year-old under the default policy', () => {
-    // Was chargeable under the earlier "under 12 free" rule. The client's rule
-    // supersedes it: a child never triggers the uplift.
-    expect(extraAdultsFor({ adults: 2, childAges: [12], roomsCount: 1 })).toBe(0)
-    // A hotel that opts into charging 12+ still can.
-    expect(extraAdultsFor({ adults: 2, childAges: [12], roomsCount: 1, childFreeUnderAge: 12 })).toBe(1)
+  it('puts a 12-year-old in the child band and a 13-year-old on the adult rate', () => {
+    // The boundary the client drew. A 12-year-old is the last concession year.
+    const twelve = chargeableGuestsFor({ adults: 2, childAges: [12], roomsCount: 1 })
+    expect(twelve).toEqual({ extraAdults: 0, extraChildren: 1 })
+
+    const thirteen = chargeableGuestsFor({ adults: 2, childAges: [13], roomsCount: 1 })
+    expect(thirteen).toEqual({ extraAdults: 1, extraChildren: 0 })
+  })
+
+  it('fills the included places with adults first, so the excess is the cheaper head', () => {
+    // Two adults and a ten-year-old: the adults take the two included places and
+    // the child pays the child rate. Charging the child rate on an adult instead
+    // would under-bill; charging the adult rate on the child would over-bill
+    // every family that books.
+    expect(chargeableGuestsFor({ adults: 2, childAges: [10], roomsCount: 1 }))
+      .toEqual({ extraAdults: 0, extraChildren: 1 })
+
+    // One adult and one ten-year-old both fit inside the two included places.
+    expect(chargeableGuestsFor({ adults: 1, childAges: [10], roomsCount: 1 }))
+      .toEqual({ extraAdults: 0, extraChildren: 0 })
+  })
+
+  it('never lets a free child push a paying guest into a surcharge', () => {
+    // A toddler shares the bed. It must not consume an included place.
+    expect(chargeableGuestsFor({ adults: 2, childAges: [5], roomsCount: 1 }))
+      .toEqual({ extraAdults: 0, extraChildren: 0 })
+    expect(chargeableGuestsFor({ adults: 2, childAges: [5, 10], roomsCount: 1 }))
+      .toEqual({ extraAdults: 0, extraChildren: 1 })
   })
 
   it('spreads the included occupancy across every room booked', () => {
@@ -208,11 +239,11 @@ describe('POST /api/bookings/initiate — occupancy', () => {
     expect(Number(withChild.body.data.total_amount)).toBe(Number(twoAdults.body.data.total_amount))
   })
 
-  it('does not charge for a child of any age', async () => {
-    // 2 adults + 1 child costs the same as 2 adults, per the client's rule.
+  it('does not charge for an under-8', async () => {
+    // 2 adults + 1 small child costs the same as 2 adults.
     const withTeen = await request(app)
       .post('/api/bookings/initiate')
-      .send({ ...payload, guestsCount: 3, adultsCount: 2, childAges: [16] })
+      .send({ ...payload, guestsCount: 3, adultsCount: 2, childAges: [5] })
 
     const twoAdults = await request(app)
       .post('/api/bookings/initiate')
@@ -261,10 +292,11 @@ describe('POST /api/bookings/initiate — occupancy', () => {
   })
 
   it('honours an admin-set free-child age', async () => {
-    // Drop the threshold to 5, so a 7-year-old now counts as an adult.
+    // Drop the free age to 5 and the adult age to 6, so a 7-year-old is billed
+    // as an adult at this property.
     await request(app)
       .patch('/api/admin/properties/hotel-quadis-sector-51-noida')
-      .send({ child_free_under_age: 5 })
+      .send({ child_free_under_age: 5, adult_from_age: 6 })
 
     const res = await request(app)
       .post('/api/bookings/initiate')

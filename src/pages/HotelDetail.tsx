@@ -3,7 +3,7 @@ import { useParams, Link, useSearchParams } from 'react-router-dom'
 import type { ComponentType, SVGProps } from 'react'
 import type { MealPlan } from '../types.ts'
 import { useHotels, priceNight, inr, getHotelRooms } from '../data/hotels.ts'
-import { computeStayBreakdown, countWeekendNights, extraAdultsFor, policyFor } from '../lib/pricing.ts'
+import { computeStayBreakdown, countWeekendNights, chargeableGuestsFor, policyFor } from '../lib/pricing.ts'
 import { readStayParams, todayIso, nextDay } from '../data/stay.ts'
 import { imagesForHotel, roomImages } from '../data/images.ts'
 import { HotelCard, Button } from '../components/ui.tsx'
@@ -86,15 +86,18 @@ export default function HotelDetail() {
 
   const guests = adults + childAges.length
 
-  // The hotel's own occupancy policy, as set in the admin panel and delivered
-  // with the property record. Mirrors the server rule exactly: two adults per
-  // room included, children under the property's threshold free, rest extra beds.
+  // The hotel's own occupancy policy, delivered with the property record and
+  // set in the admin panel. Mirrors the server rule exactly: two adults per room
+  // included, under-8s free, 8-12 at the child rate, 13+ as an adult. The quote
+  // the guest sees here must match what the server charges, so both sides call
+  // the same function.
   const policy = policyFor(hotel)
-  const extraAdults = extraAdultsFor({
+  const { extraAdults, extraChildren } = chargeableGuestsFor({
     adults,
     childAges,
     roomsCount: rooms,
     childFreeUnderAge: policy.childFreeUnderAge,
+    adultFromAge: policy.adultFromAge,
   })
 
   const breakdown = n > 0
@@ -107,7 +110,9 @@ export default function HotelDetail() {
         checkOut: checkout,
         roomsCount: rooms,
         extraAdults,
+        extraChildren,
         extraAdultPercent: policy.extraAdultPercent,
+        childPercent: policy.childPercent,
       })
     : null
   const total = breakdown?.total ?? 0
@@ -349,7 +354,7 @@ export default function HotelDetail() {
                   </div>
                 )}
 
-                {breakdown && extraAdults > 0 && (
+                {breakdown && (extraAdults > 0 || extraChildren > 0) && (
                   <div className="book-card__line">
                     <span>{inr(effectiveNightPrice)} × {n} night{n > 1 ? 's' : ''} × {rooms} room{rooms > 1 ? 's' : ''}</span>
                     <span>{inr(breakdown.roomTotal)}</span>
@@ -369,6 +374,23 @@ export default function HotelDetail() {
                     </span>
                     <span>
                       {breakdown.extraAdultTotal > 0 ? inr(breakdown.extraAdultTotal) : 'No charge'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Children in the concession band are billed at their own rate,
+                    so they get their own line. Folding them into "extra adults"
+                    would show a family a number that does not reconcile against
+                    the percentage next to it. Under-8s never appear — they are
+                    free and listing them at ₹0 invites the question. */}
+                {breakdown && extraChildren > 0 && (
+                  <div className="book-card__line">
+                    <span>
+                      {extraChildren} child{extraChildren > 1 ? 'ren' : ''} aged {policy.childFreeUnderAge}–{policy.adultFromAge - 1}
+                      {breakdown.childPercent > 0 ? ` (× ${breakdown.childPercent}% of room rate)` : ''}
+                    </span>
+                    <span>
+                      {breakdown.extraChildTotal > 0 ? inr(breakdown.extraChildTotal) : 'No charge'}
                     </span>
                   </div>
                 )}
