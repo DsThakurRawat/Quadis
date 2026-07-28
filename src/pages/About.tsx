@@ -8,6 +8,7 @@ import {
   aboutHomes,
 } from '../data/images.ts'
 import { PROPERTY_COUNT, spellOut } from '../data/site.ts'
+import { useContent } from '../data/content.ts'
 import { HeroMedia, Photo } from '../components/media.tsx'
 import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
 import Seo from '../components/Seo.tsx'
@@ -20,6 +21,7 @@ const VALUES: Value[] = [
 ]
 
 export default function About() {
+  const { t } = useContent()
   // Client supplied banner.webp specifically for this page's hero.
   const heroImg = aboutBanner || aboutImages[0] || '/images/home/hero.webp'
   const faImg = aboutImages[1] ?? galleryFacade[0] ?? '/images/home/hero.webp'
@@ -34,12 +36,12 @@ export default function About() {
         title="About Us"
         description="Quadis Hotels has grown from a single property into nine across Delhi NCR, built on considered rooms and genuinely attentive service."
       />
-      <PhotoHero image={heroImg} title="About Us" sub="Quadis Services Private Limited — A tradition of considered comfort since 2017." height="short" />
+      <PhotoHero image={heroImg} title={t('about.hero.title')} sub={t('about.hero.sub')} height="short" />
 
       {/* Chapter 1: Story & Philosophy */}
       <section className="section bg-cream">
         <div className="container center-col">
-          <SectionHeader overline="QUADIS HOTELS GROUP" title="Comfort, made effortless" />
+          <SectionHeader overline={t('about.story.overline')} title={t('about.story.title')} />
           <Reveal className="prose center-col">
             <p>
               Quadis began in 2017 as a single venture with a simple conviction — that a stay should feel
@@ -69,7 +71,7 @@ export default function About() {
       {/* Chapter 2: No. 1 Hotel Chain & Service Leadership */}
       <section className="section bg-warm">
         <div className="container">
-          <SectionHeader overline="SERVICE & SATISFACTION LEADER" title="Why Quadis is No. 1 in Delhi NCR" />
+          <SectionHeader overline={t('about.leader.overline')} title={t('about.leader.title')} />
           
           <div className="vision-showcase grid-2">
             <Reveal className="vision-showcase__content">
@@ -91,7 +93,7 @@ export default function About() {
       {/* Chapter 3: Employee & Vendor Welfare */}
       <section className="section bg-dark welfare-section">
         <div className="container">
-          <SectionHeader overline="ETHICAL HOSPITALITY" title="Employee &amp; Vendor Welfare" onDark />
+          <SectionHeader overline={t('about.welfare.overline')} title={t('about.welfare.title')} onDark />
           
           <div className="vision-showcase grid-2">
             <Reveal className="vision-showcase__media">
@@ -113,7 +115,7 @@ export default function About() {
       {/* Chapter 4: Future Roadmap (Quadis Homes & Quadis Airlines) */}
       <section className="section bg-cream future-roadmap">
         <div className="container">
-          <SectionHeader overline="LOOKING AHEAD" title="Future Horizons of Luxury" />
+          <SectionHeader overline={t('about.future.overline')} title={t('about.future.title')} />
           <Reveal className="prose center-col mb-12">
             <p>
               As Quadis solidifies its position as the premier hospitality choice in Delhi NCR, our vision extends beyond traditional hotel stays into comprehensive luxury living and executive travel.
@@ -156,7 +158,7 @@ export default function About() {
       {/* Core Values */}
       <section className="section bg-warm">
         <div className="container">
-          <SectionHeader overline="WHAT WE STAND FOR" title="A considered way of hosting" />
+          <SectionHeader overline={t('about.values.overline')} title={t('about.values.title')} />
           <div className="card-grid values-grid">
             {VALUES.map((v) => (
               <Reveal key={v.title} className="value-card">

@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
+import { useContent } from '../data/content.ts'
 import { useSearchParams } from 'react-router-dom'
 import { useHotels, CITY_FILTERS } from '../data/hotels.ts'
 import { readStayParams, buildStayParams } from '../data/stay.ts'
@@ -15,6 +16,7 @@ import Seo from '../components/Seo.tsx'
 const isCityFilter = (v: string | null): v is CityFilter => !!v && (CITY_FILTERS as readonly string[]).includes(v)
 
 export default function HotelsList() {
+  const { t } = useContent()
   const [params, setParams] = useSearchParams()
   const cityParam = params.get('city')
   const [cityFilter, setCityFilter] = useState<CityFilter>(isCityFilter(cityParam) ? cityParam : 'All')
@@ -66,8 +68,8 @@ export default function HotelsList() {
       <section className="mini-hero scrim">
         <HeroMedia src={hotelsHero[0]} />
         <div className="container mini-hero__content">
-          <span className="overline on-dark">STAY WITH QUADIS</span>
-          <h1 className="h1 on-dark mini-hero__title">Our Hotels</h1>
+          <span className="overline on-dark">{t('hotels.hero.overline')}</span>
+          <h1 className="h1 on-dark mini-hero__title">{t('hotels.hero.title')}</h1>
         </div>
       </section>
 

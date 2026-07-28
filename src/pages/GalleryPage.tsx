@@ -1,4 +1,5 @@
 import { PROPERTY_COUNT, GALLERY_COUNT } from '../data/site.ts'
+import { useContent } from '../data/content.ts'
 import { useState, useMemo } from 'react'
 import {
   galleryAll,
@@ -24,6 +25,7 @@ const TABS: readonly GalleryTab[] = [
 ]
 
 export default function GalleryPage() {
+  const { t } = useContent()
   const [tab, setTab] = useState<GalleryTab>('All')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -53,11 +55,11 @@ export default function GalleryPage() {
         title="Photo Gallery"
         description="Rooms, lobbies, banquet halls and dining spaces photographed across all nine Quadis properties in Delhi NCR."
       />
-      <PhotoHero image={heroImg} title="Photo Gallery" sub={`A visual journey across our ${PROPERTY_COUNT} considered properties, refined suites, and grand banquets.`} height="short" />
+      <PhotoHero image={heroImg} title={t('gallery.hero.title')} sub={`A visual journey across our ${PROPERTY_COUNT} considered properties, refined suites, and grand banquets.`} height="short" />
 
       <section className="section bg-cream gallery-page">
         <div className="container center-col">
-          <SectionHeader overline="EXPLORE OUR SPACES" title={`${GALLERY_COUNT} Moments of Calm & Comfort`} />
+          <SectionHeader overline={t('gallery.explore.overline')} title={`${GALLERY_COUNT} Moments of Calm & Comfort`} />
           
           <div className="gallery-page__filters">
             <FilterPills options={TABS} value={tab} onChange={setTab} ariaLabel="Filter photo gallery categories" />

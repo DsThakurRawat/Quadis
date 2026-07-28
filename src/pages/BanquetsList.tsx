@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useContent } from '../data/content.ts'
 import { BANQUETS } from '../data/hotels.ts'
 import { banquetImages, banquetHero } from '../data/images.ts'
 import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
@@ -8,21 +9,19 @@ import { IconPin } from '../components/icons.tsx'
 import Seo from '../components/Seo.tsx'
 
 export default function BanquetsList() {
+  const { t } = useContent()
   return (
     <>
       <Seo
         title="Banquet Halls in Delhi NCR"
         description="Pillarless banquet halls in Noida and Lajpat Nagar for weddings, receptions and corporate events, with in-house catering and valet parking."
       />
-      <PhotoHero image={banquetHero[0]} overline="CELEBRATE WITH QUADIS" title="Banquets by Quadis" height="short" />
+      <PhotoHero image={banquetHero[0]} overline={t('banquets.hero.overline')} title={t('banquets.hero.title')} height="short" />
 
       <section className="section bg-cream">
         <div className="container">
-          <SectionHeader overline="OUR VENUES" title="Elegant halls for every occasion" />
-          <Reveal className="intro__body center-block">
-            From intimate receptions to grand weddings, our banquet halls across Delhi NCR pair refined
-            spaces with seamless catering and warm, attentive coordination.
-          </Reveal>
+          <SectionHeader overline={t('banquets.intro.overline')} title={t('banquets.intro.title')} />
+          <Reveal className="intro__body center-block">{t('banquets.intro.body')}</Reveal>
 
           <div className="venue-grid">
             {BANQUETS.map((v) => (
@@ -42,7 +41,10 @@ export default function BanquetsList() {
         </div>
       </section>
 
-      <CtaBand title="Planning an occasion?" cta="ENQUIRE NOW" to="/banquets/banquets-at-hotel-cladis" />
+      {/* Pointed at a single venue (Cladis) until 28 Jul 2026, which both
+          dead-ended when that venue was retired and made no sense for a
+          general "planning an occasion" prompt. Contact serves every venue. */}
+      <CtaBand title={t('banquets.cta.title')} cta="ENQUIRE NOW" to="/contact" />
     </>
   )
 }

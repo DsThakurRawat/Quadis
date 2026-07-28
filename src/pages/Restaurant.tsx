@@ -1,4 +1,5 @@
 import { restaurantImages, cateringImages } from '../data/images.ts'
+import { useContent } from '../data/content.ts'
 import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
 import { Button } from '../components/ui.tsx'
 import { Photo } from '../components/media.tsx'
@@ -7,6 +8,7 @@ import Seo from '../components/Seo.tsx'
 interface Offering { title: string; blurb: string; img?: string | undefined; to: string; cta: string }
 
 export default function Restaurant() {
+  const { t } = useContent()
   const rImgs = restaurantImages()
   const cImgs = cateringImages()
 
@@ -34,11 +36,11 @@ export default function Restaurant() {
         title="Restaurant & In-House Dining"
         description="Multi-cuisine in-house kitchens serving breakfast spreads, room dining and customised event menus across Quadis Hotels."
       />
-      <PhotoHero image={rImgs[0]} overline="TASTE THE QUADIS WAY" title="Dining by Quadis" height="short" />
+      <PhotoHero image={rImgs[0]} overline={t('restaurant.hero.overline')} title={t('restaurant.hero.title')} height="short" />
 
       <section className="section bg-cream">
         <div className="container">
-          <SectionHeader overline="WHAT'S ON OFFER" title="Considered food, warm service" />
+          <SectionHeader overline={t('restaurant.offer.overline')} title={t('restaurant.offer.title')} />
           <Reveal className="intro__body center-block">
             From relaxed in-house dining to full-service outdoor catering, Quadis brings the same attention to
             detail to the table as it does to the room.
@@ -59,7 +61,7 @@ export default function Restaurant() {
         </div>
       </section>
 
-      <CtaBand title="Hosting something special?" cta="ENQUIRE ON WHATSAPP" to="/restaurant/outdoor-catering-service" />
+      <CtaBand title={t('restaurant.cta.title')} cta="ENQUIRE ON WHATSAPP" to="/restaurant/outdoor-catering-service" />
     </>
   )
 }

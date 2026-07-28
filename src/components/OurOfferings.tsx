@@ -1,4 +1,5 @@
 import { PROPERTY_COUNT } from '../data/site.ts'
+import { useContent } from '../data/content.ts'
 import { SectionHeader, Button } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
 import { homeImages, banquetHero, restaurantImages, corporateStayImage } from '../data/images.ts'
@@ -57,10 +58,11 @@ const OFFERINGS: Offering[] = [
 ]
 
 export default function OurOfferings() {
+  const { t } = useContent()
   return (
     <section className="section bg-cream">
       <div className="container">
-        <SectionHeader overline="WHAT WE PROVIDE" title="Our Offerings" />
+        <SectionHeader overline={t('offerings.overline')} title={t('offerings.title')} />
         <Reveal className="offerings-grid">
           {OFFERINGS.map((offering) => (
             <article key={offering.title} className="offering-card">

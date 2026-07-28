@@ -255,9 +255,14 @@ export const CITIES: City[] = ['Noida', 'New Delhi']
 export const CITY_FILTERS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi']
 
 // Banquet venues — §4/§6.4. Capacities are representative venue specs.
+// Cladis was removed on the client's instruction, 28 Jul 2026: "cladis me
+// banquet hall nahi h" — the property has no banquet hall, so the venue never
+// existed. The Banquet Halls photo set they sent the same morning contains
+// only the three below, which corroborates it. This list drives the banquets
+// grid, the header dropdown and the /banquets/:slug routes, so removing the
+// entry retires the page everywhere at once.
 export const BANQUETS: BanquetVenue[] = [
   { slug: 'banquets-at-hotel-amby-inn', name: 'Banquets at Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', capacity: 350, hallArea: '4,200 sq ft', catering: 'Veg & Non-veg', parking: 'Valet available' },
-  { slug: 'banquets-at-hotel-cladis', name: 'Banquets at Hotel Cladis', area: 'Sector 15', city: 'Noida', capacity: 500, hallArea: '6,000 sq ft', catering: 'Veg & Non-veg', parking: 'On-site parking' },
   { slug: 'banquets-at-hotel-downtown-eok', name: 'Banquets at Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', capacity: 300, hallArea: '3,600 sq ft', catering: 'Veg & Non-veg', parking: 'Valet available' },
   { slug: 'banquets-at-hotel-downtown-sector-51', name: 'Banquets at Hotel Downtown Sector 51', area: 'Sector 51', city: 'Noida', capacity: 450, hallArea: '5,200 sq ft', catering: 'Veg & Non-veg', parking: 'On-site parking' },
 ]

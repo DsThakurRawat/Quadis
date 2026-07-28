@@ -16,6 +16,7 @@ import { IconPin, IconStar, IconWifi, IconAc, IconBreakfast, IconParking, IconDe
 import NotFound from './NotFound.tsx'
 import { CheckoutModal } from '../components/CheckoutModal.tsx'
 import Seo from '../components/Seo.tsx'
+import { useContent } from '../data/content.ts'
 
 interface Amenity { icon: ComponentType<SVGProps<SVGSVGElement>>; label: string }
 const AMENITIES: Amenity[] = [
@@ -37,6 +38,7 @@ export default function HotelDetail() {
   const { slug } = useParams()
   const [params] = useSearchParams()
   const hotels = useHotels()
+  const { t } = useContent()
   const hotel = hotels.find((h) => h.slug === slug)
   const images = hotel ? imagesForHotel(hotel) : []
   const hotelRooms = useMemo(() => (hotel ? getHotelRooms(hotel) : []), [hotel])
@@ -178,6 +180,27 @@ export default function HotelDetail() {
                   {AMENITIES.map(({ icon: Icon, label }) => (
                     <div className="amenity" key={label}><Icon /> <span>{label}</span></div>
                   ))}
+                </div>
+              </section>
+
+              {/* These three read from the admin's editable copy. The fields
+                  existed in the panel with nothing rendering them, so a client
+                  edit saved and then appeared nowhere. Check-in and check-out
+                  are also the two things guests most often ask reception. */}
+              <section className="detail-block">
+                <span className="overline">STAY POLICY</span>
+                <div className="stay-policy">
+                  <div className="stay-policy__times">
+                    <div className="stay-policy__time">
+                      <span className="stay-policy__label">Check-in</span>
+                      <span className="stay-policy__value">{t('policy.checkIn')}</span>
+                    </div>
+                    <div className="stay-policy__time">
+                      <span className="stay-policy__label">Check-out</span>
+                      <span className="stay-policy__value">{t('policy.checkOut')}</span>
+                    </div>
+                  </div>
+                  <p className="stay-policy__note">{t('policy.cancellation')}</p>
                 </div>
               </section>
 

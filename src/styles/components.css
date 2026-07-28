@@ -99,14 +99,40 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   font-size: 11px; letter-spacing: .12em; line-height: 1.35; text-transform: uppercase;
   padding: 5px 12px; border-radius: var(--radius-md);
 }
-.hcard__body { display: flex; flex-direction: column; gap: 10px; padding: 24px; }
-.hcard__name { margin: 0; }
-.hcard__addr { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+/* Grid stretches every card to the row's height, but the body used to hug its
+   content, so a name or address that wrapped pushed that card's price and CTA
+   down while its neighbours' stayed put. Client flagged the ragged row on
+   28 Jul. `flex: 1` lets the body own the full card height so the rules below
+   can distribute within it. */
+.hcard__body { display: flex; flex-direction: column; gap: 10px; padding: 24px; flex: 1; }
+/* Floor of two lines each. "Hotel Downtown Sector 51 Noida" wraps to two lines
+   and "Hotel Amar Inn" does not; without a floor the shorter card starts its
+   address a line higher and nothing below it lines up. Multipliers are the
+   line-heights these two rules already set — 1.2 on .h3, 1.4 here. */
+.hcard__name { margin: 0; min-height: 2.4em; }
+.hcard__addr {
+  display: flex; align-items: flex-start; gap: 6px; font-size: 13px;
+  color: var(--text-muted); line-height: 1.4; min-height: 2.8em;
+}
 .hcard__addr svg { flex: none; margin-top: 2px; color: var(--gold-deep); }
-.hcard__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+/* auto, not a fixed gap: pins price + CTA to the bottom so they align even if
+   something above still varies in height. */
+.hcard__foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 2px; }
 .hcard__price { font-family: var(--font-display); font-size: 20px; color: var(--text-primary); }
 .hcard__rating { display: inline-flex; align-items: center; gap: 5px; color: var(--gold); font-weight: 600; font-size: 14px; }
 .hcard__cta { width: 100%; margin-top: 6px; }
+
+/* Stay policy block on the hotel detail page. Values come from the admin's
+   editable copy, so they must tolerate an empty override gracefully. */
+.stay-policy { display: flex; flex-direction: column; gap: 14px; }
+.stay-policy__times { display: flex; gap: 40px; flex-wrap: wrap; }
+.stay-policy__time { display: flex; flex-direction: column; gap: 4px; }
+.stay-policy__label {
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 600;
+}
+.stay-policy__value { font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
+.stay-policy__note { font-size: 14px; line-height: 1.6; color: var(--text-muted); margin: 0; }
 
 /* generic content card (experiences etc.) */
 .card {
@@ -1104,6 +1130,33 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   scrollbar-width: none; /* Firefox */
 }
 .upcoming-grid::-webkit-scrollbar { display: none; }
+/* Wrapper exists so the arrows can be centred against the card strip rather
+   than the whole section, which is taller because of the heading. */
+.upcoming-shell { position: relative; }
+.upcoming-nav {
+  display: flex; justify-content: center; gap: 12px;
+  /* Sits under the strip on touch, where swiping already works and overlaid
+     arrows would cover a card. */
+  margin-top: 4px;
+}
+.upcoming-nav__btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: var(--radius-pill);
+  background: #fff; border: 1px solid var(--border-card);
+  color: var(--text-primary); cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
+.upcoming-nav__btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+/* Kept in the layout rather than hidden: the row must not reflow and shift the
+   remaining arrow sideways when one end is reached. */
+.upcoming-nav__btn:disabled { opacity: .35; cursor: default; }
+@media (min-width: 900px) {
+  /* Overlaid on the strip edges on desktop, where there is room outside the
+     cards and the pattern is expected. */
+  .upcoming-nav { position: absolute; inset: 0 -8px auto; top: 38%; margin: 0; justify-content: space-between; pointer-events: none; }
+  .upcoming-nav__btn { pointer-events: auto; }
+}
 .upcoming-card {
   flex: 0 0 280px;
   scroll-snap-align: start;

@@ -1,4 +1,5 @@
 import { FOUNDED_YEAR } from '../data/site.ts'
+import { useContent } from '../data/content.ts'
 import { Link } from 'react-router-dom'
 import { IconFacebook, IconXSocial, IconInstagram, IconLinkedin, IconYoutube, IconPhone, IconMail, IconPin } from './icons.tsx'
 import { Logo } from './ui.tsx'
@@ -26,15 +27,13 @@ const IMPORTANT: FooterLink[] = [
 ]
 
 export default function Footer() {
+  const { t } = useContent()
   return (
     <footer className="footer bg-darkest">
       <div className="container footer__inner">
         <div className="footer__col footer__brand">
           <Logo variant="footer" />
-          <p className="footer__blurb">
-            Quadis Services Private Limited is one of the leading hospitality brands in Delhi NCR,
-            offering premium hotel stays, elegant banquet halls, and quality restaurant services.
-          </p>
+          <p className="footer__blurb">{t('footer.tagline')}</p>
         </div>
 
         <nav className="footer__col" aria-label="Hotels">

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useContent } from '../data/content.ts'
 import { SectionHeader } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
 import { useHotels, UPCOMING_HOTELS } from '../data/hotels.ts'
@@ -25,6 +26,7 @@ const CITY_IMAGES: Record<string, string> = {
 }
 
 export default function DestinationsGrid() {
+  const { t } = useContent()
   const hotels = useHotels()
 
   const destinations = useMemo<Destination[]>(() => {
@@ -50,7 +52,7 @@ export default function DestinationsGrid() {
   return (
     <section id="where-we-are" className="section bg-cream">
       <div className="container">
-        <SectionHeader overline="WHERE WE ARE" title="Destinations For You" />
+        <SectionHeader overline={t('destinations.overline')} title={t('destinations.title')} />
 
         <Reveal className="destinations-grid">
           {destinations.map((dest) => (

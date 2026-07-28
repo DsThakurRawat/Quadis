@@ -52,7 +52,7 @@ export default function Corporate() {
         title="Corporate Hotel Booking in Delhi NCR"
         description="Negotiated corporate rates, priority availability and consolidated GST-compliant billing across every Quadis property in Delhi NCR."
       />
-      <PhotoHero image={heroImg} overline="FOR BUSINESS TRAVEL" title="Corporate Hotel Booking" height="short" />
+      <PhotoHero image={heroImg} overline={t('corporate.hero.overline')} title={t('corporate.hero.title')} height="short" />
 
       <section className="section bg-cream">
         <div className="container corp-split">
@@ -73,7 +73,7 @@ export default function Corporate() {
 
       <section className="section bg-warm">
         <div className="container">
-          <SectionHeader overline="WHY QUADIS FOR BUSINESS" title="Built for corporate travel" />
+          <SectionHeader overline={t('corporate.why.overline')} title={t('corporate.why.title')} />
           <div className="card-grid values-grid">
             {BENEFITS.map((b) => (
               <Reveal key={b.title} className="value-card">
@@ -88,7 +88,7 @@ export default function Corporate() {
 
       <section className="section bg-cream">
         <div className="container form-wrap">
-          <SectionHeader overline="REQUEST A PROPOSAL" title="Request corporate rates" />
+          <SectionHeader overline={t('corporate.rfp.overline')} title={t('corporate.rfp.title')} />
           {f.done ? (
             <SuccessPanel title="Request received" onReset={f.reset}>
               Thank you — our corporate desk will respond with negotiated rates and terms shortly.

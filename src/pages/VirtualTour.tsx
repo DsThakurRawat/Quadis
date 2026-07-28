@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useContent } from '../data/content.ts'
 import type { MouseEvent, TouchEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { PhotoHero } from '../components/blocks.tsx'
@@ -18,6 +19,7 @@ import Seo from '../components/Seo.tsx'
 type TourMode = 'walkthrough' | 'discovery' | 'customizer'
 
 export default function VirtualTour() {
+  const { t } = useContent()
   const [activeProperty, setActiveProperty] = useState<TourProperty>('all')
   const [activeZone, setActiveZone] = useState<TourZone>('lobby')
   const [activeMode, setActiveMode] = useState<TourMode>('walkthrough')
@@ -148,8 +150,8 @@ export default function VirtualTour() {
       />
       <PhotoHero
         image={currentStop.getImage()}
-        title="The Quadis Virtual Tour"
-        sub="Immersive spatial storytelling. Explore our calm lobbies, soundproof transit suites, and grand banquets with interactive discovery."
+        title={t('tour.hero.title')}
+        sub={t('tour.hero.sub')}
         height="short"
       />
 

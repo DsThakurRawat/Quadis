@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useContent } from '../data/content.ts'
 import { Link } from 'react-router-dom'
 import { useHotels } from '../data/hotels.ts'
 import { heroShowcaseImages, aboutHomes, aboutAirlines } from '../data/images.ts'
@@ -26,6 +27,7 @@ import { PARTNER_LOGOS } from '../data/logos.ts'
 import { CITY_FILTERS } from '../data/hotels.ts'
 import Seo from '../components/Seo.tsx'
 export default function Home() {
+  const { t } = useContent()
   const [filter, setFilter] = useState<CityFilter>('All')
   const hotels = useHotels()
 
@@ -60,7 +62,7 @@ export default function Home() {
       {/* 4. Hotels */}
       <section className="section bg-warm">
         <div className="container">
-          <SectionHeader overline="OUR PROPERTIES" title="Best Hotels in Delhi NCR" />
+          <SectionHeader overline={t('home.properties.overline')} title={t('home.properties.title')} />
           <div className="home-hotels__pills">
             <FilterPills options={CITY_FILTERS} value={filter} onChange={setFilter} ariaLabel="Filter hotels by city" />
           </div>
@@ -142,7 +144,7 @@ export default function Home() {
       {/* 11.5. Future Vision */}
       <section className="section bg-dark text-on-dark">
         <div className="container">
-          <SectionHeader overline="THE ROAD AHEAD" title="Beyond hospitality" onDark align="center" />
+          <SectionHeader overline={t('home.roadAhead.overline')} title={t('home.roadAhead.title')} onDark align="center" />
           <Reveal className="future-vision-grid mt-12">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
               <article className="future-card" style={{ background: 'var(--bg-warm)', color: 'var(--text-primary)', borderRadius: '8px', overflow: 'hidden' }}>
@@ -193,7 +195,7 @@ export default function Home() {
       {/* 14. Ecosystem & Partners banner */}
       <section className="section bg-dark">
         <div className="container center-col stack" style={{ gap: '40px' }}>
-          <SectionHeader overline="THE QUADIS ECOSYSTEM" title="A Vision Beyond Room Count" onDark />
+          <SectionHeader overline={t('home.ecosystem.overline')} title={t('home.ecosystem.title')} onDark />
           <Reveal className="prose center-col mb-4">
             <p>
               As Delhi NCR&rsquo;s leading hospitality brand, our leadership is anchored in genuine guest satisfaction, rigorous employee welfare, and ambitious future horizons including <strong>Quadis Airlines</strong> and <strong>Quadis Homes</strong>.

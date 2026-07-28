@@ -1,4 +1,5 @@
-import { SectionHeader, LocationMap } from '../components/blocks.tsx'
+import { SectionHeader, LocationMap, Reveal } from '../components/blocks.tsx'
+import { useContent } from '../data/content.ts'
 import { Field, Button } from '../components/ui.tsx'
 import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '../components/forms.tsx'
 import { IconPhone, IconMail, IconPin } from '../components/icons.tsx'
@@ -11,6 +12,7 @@ const TYPES: ContactType[] = ['General', 'Booking', 'Banquet', 'Corporate', 'Fee
 const HQ = encodeURIComponent('H-22, Sector 51, Noida, Gautam Buddha Nagar, UP 201307')
 
 export default function Contact() {
+  const { t } = useContent()
   const f = useForm<ContactPayload>(
     { name: '', email: '', phone: '', type: 'General', message: '' },
     (v) => {
@@ -34,6 +36,9 @@ export default function Contact() {
       <section className="section bg-cream">
         <div className="container">
           <SectionHeader overline="CONTACT US" title="We'd love to hear from you" />
+          {/* The 'contact.intro' admin field existed with nothing rendering it,
+              so editing it changed nothing. Same pattern as the banquets lead. */}
+          <Reveal className="intro__body center-block">{t('contact.intro')}</Reveal>
 
           <div className="contact-split">
             <div className="contact-form">

@@ -1,4 +1,5 @@
 import { PROPERTY_COUNT, spellOut } from '../data/site.ts'
+import { useContent } from '../data/content.ts'
 import { SectionHeader, Button } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
 import { experienceHotelsImage, experienceBanquetImage, experienceRestaurantImage } from '../data/images.ts'
@@ -41,10 +42,11 @@ const EXPERIENCES: Experience[] = [
 ]
 
 export default function ExperiencesByQuadis() {
+  const { t } = useContent()
   return (
     <section className="section bg-dark text-on-dark">
       <div className="container">
-        <SectionHeader overline="WE OFFER" title="Experiences by Quadis" onDark align="center" />
+        <SectionHeader overline={t('experiences.overline')} title={t('experiences.title')} onDark align="center" />
         <Reveal className="experiences-grid">
           {EXPERIENCES.map((exp) => (
             <article key={exp.title} className="experience-card">
