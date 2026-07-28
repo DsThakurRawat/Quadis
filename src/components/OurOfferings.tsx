@@ -2,7 +2,7 @@ import { PROPERTY_COUNT } from '../data/site.ts'
 import { useContent } from '../data/content.ts'
 import { SectionHeader, Button } from './ui.tsx'
 import { Reveal } from './blocks.tsx'
-import { homeImages, banquetHero, restaurantImages, corporateStayImage } from '../data/images.ts'
+import { banquetHero, restaurantImages, corporateStayImage, executiveStayImage } from '../data/images.ts'
 
 interface Offering {
   title: string
@@ -20,7 +20,9 @@ const OFFERINGS: Offering[] = [
     subtitle: 'Calm, considered rooms',
     description: 'Immaculate rooms designed around deep sleep, plush bedding, high-speed Wi-Fi, and 24x7 attentive room service across Sector 51, Sector 15, and Delhi.',
     badge: 'ROOMS & SUITES',
-    image: homeImages[0] || '/images/home/hero.webp',
+    // The client's captioned "Executive & Deluxe Stays image". Was homeImages[0],
+    // i.e. the same photo as the homepage hero directly above this card.
+    image: executiveStayImage,
     link: '/hotels',
     cta: 'EXPLORE ROOMS',
   },

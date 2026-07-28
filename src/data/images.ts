@@ -330,3 +330,19 @@ export const corporateBannerImage: string =
  *  banner lga dena". Falls back to the previous facade shot if it goes missing. */
 export const galleryBannerImage: string | undefined =
   namedIn('gallery', 'banner-gallery-landing')
+
+/**
+ * The room shot the client captioned "Executive & Deluxe Stays image" on
+ * 28 Jul, for the first card in OurOfferings.
+ *
+ * That card read `homeImages[0]`, which resolves to home/hero.webp — so the
+ * lead offering card was showing the same photograph as the homepage hero
+ * directly above it. The comment on the Corporate card records this exact
+ * failure happening once before, which is why this one is addressed by name.
+ *
+ * Lives at rooms/ root: nothing consumes at('rooms') — the tabs read
+ * rooms/deluxe, rooms/superior and rooms/royal — so it cannot displace a
+ * gallery category, and it is real photography, so it belongs in galleryAll.
+ */
+export const executiveStayImage: string =
+  namedIn('rooms', 'executive-and-deluxe-stays') ?? homeImages[0] ?? ''
