@@ -63,7 +63,7 @@ Rules:
 | AWS account / region | `093650262440` / `us-east-1` |
 | Site (live) | **`https://djqj43186y3yh.cloudfront.net`** — HTTPS, `/api/*` proxied, deep links fixed |
 | CloudFront distribution | `E1ZV1EQ1QRKH08` — invalidate `/index.html` and `/` after a frontend upload |
-| Deployed version | `co3-84a3e86` — both halves, 28 Jul |
+| Deployed version | Frontend `4fa8b1c`, 28 Jul (bundle `index-DvPrWQGR.js`). Backend `co3-84a3e86` — unchanged since, no backend code in `b44ad78`/`4fa8b1c` |
 | EB app / environment | `quadis-backend` / `quadis-backend-live` |
 | API origin | `http://quadis-backend-live.eba-ekdyt4m3.us-east-1.elasticbeanstalk.com` (HTTP; reach it through CloudFront) |
 | RDS | `quadis-db-live`, Postgres 18.3 — seeded: 9 properties, 20 room types, 197 keys |
@@ -140,6 +140,25 @@ fixed incident 5 (CORS). Verified after the fix: hold created from the browser
 returns a valid 1-page PDF. Payment stops with "Online payment is not enabled
 on this environment" — correct degradation for `rzp_test_simulated`, not a
 fault, and it is blocked on the client sending live keys.
+
+**28 Jul — corporate banner corrected and deployed (`4fa8b1c`).** The client
+flagged the wrong banner on the Corporate page; she was right. Fixed via a new
+`corporateBannerImage` rather than repointing `corporateStayImage`, which also
+feeds the home Offerings card. Verified live, not just built: the hero serves
+`corporate-hotel-booking-banner-fv5WBSdE.webp`, the home card still serves
+`corporate-and-long-stays-BiiR7QBY.webp` (read off the live DOM), console clean,
+`base_price` still unquoted.
+
+**Still unprocessed from the same 28 Jul batch:** `Banquet Halls.zip` holds 12
+photos across the three real venues, and `public/images/banquets/` still has
+only `hero.webp`. `banquetImages(slug)` looks for `banquets/<slug>/`, misses,
+and falls back to hash-picked *dining* photos — so all three banquet venue cards
+currently show restaurant interiors. Slugs are `banquets-at-hotel-amby-inn`,
+`banquets-at-hotel-downtown-eok`, `banquets-at-hotel-downtown-sector-51`.
+
+Also `tiers/tier-quadis-select.webp` is 395×276 beside siblings at 1200px. Not a
+conversion fault — the client's own source file is that size. Needs a bigger one
+from them.
 
 Only one file under `client-assets/` is tracked: `property-data.md`
 (lat/lng, copy decisions, photo categorisation). Checked at push time — it holds
