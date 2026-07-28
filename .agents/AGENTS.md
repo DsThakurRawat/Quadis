@@ -62,6 +62,8 @@ Rules:
 |---|---|
 | AWS account / region | `093650262440` / `us-east-1` |
 | Site (live) | **`https://djqj43186y3yh.cloudfront.net`** — HTTPS, `/api/*` proxied, deep links fixed |
+| CloudFront distribution | `E1ZV1EQ1QRKH08` — invalidate `/index.html` and `/` after a frontend upload |
+| Deployed version | `co3-84a3e86` — both halves, 28 Jul |
 | EB app / environment | `quadis-backend` / `quadis-backend-live` |
 | API origin | `http://quadis-backend-live.eba-ekdyt4m3.us-east-1.elasticbeanstalk.com` (HTTP; reach it through CloudFront) |
 | RDS | `quadis-db-live`, Postgres 18.3 — seeded: 9 properties, 20 room types, 197 keys |
@@ -91,13 +93,22 @@ Rules:
 
 ### Open
 
-- [ ] **Push** — commits sit unpushed on `main`.
-- [ ] **Deploy `8577e4b`** — child age-band pricing. Live backend is
-      `co3-cabcbc3`, which predates it.
-- [ ] **Walk a booking in a browser** — search, room, hold, pay, invoice. The
-      only end-to-end test so far was a `curl` POST, which proves the pricing
-      maths but cannot see a React crash or a CORS failure. Those are the two
-      things that have actually broken this site.
+- [ ] **Stop CloudFront masking API errors.** The SPA deep-link fallback rewrites
+      any `/api/*` 4xx/5xx into `index.html`, so every backend error reaches the
+      frontend as `Unexpected token '<'`. That is what made incident 5 cost an
+      afternoon instead of a minute. Exclude the `/api/*` behaviour from the
+      custom error response.
+- [ ] **Set `trust proxy`.** `express-rate-limit` throws
+      `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` on every request. Behind the load
+      balancer every visitor shares one key, so the 100-req/15-min limit is
+      global, not per-user — the site can rate-limit itself under light traffic.
+- [ ] **Guest phone numbers land in access logs.** `GET /:code/invoice` takes
+      `?phone=`, so every invoice download writes a real mobile number into
+      nginx `access.log` in plaintext. Move it to a header or POST body.
+- [ ] **`CORS_ORIGIN` must be updated at DNS cutover.** It is now
+      `https://djqj43186y3yh.cloudfront.net`. The day `quadishotels.com` goes
+      live it needs that origin too, or checkout breaks again — same failure as
+      incident 5, on the day it is least welcome.
 - [ ] **Confirm the 13–17 band with the client.** They gave 0–7 free and 8–12 at
       20% and stopped. Code reads 13+ as adult. Worth ₹600/night on a ₹2,000
       room. One constant — `DEFAULT_ADULT_FROM_AGE` — in both pricing mirrors.
@@ -110,6 +121,29 @@ hardcoded image paths repointed to `.webp` · HTTPS + deep links via CloudFront 
 orphan CloudFront deleted, one distribution left · cancellation policy page ·
 three stale buckets deleted · photo upload working end to end · child age bands
 implemented, 108 tests green.
+
+**28 Jul** — 8 commits pushed to `origin/main` (head `84a3e86`). Both halves of
+`8577e4b` deployed as `co3-84a3e86`: backend on EB (Ready/Green/Ok), frontend
+rebuilt and synced, CloudFront invalidated. Verified live, not just green — the
+API returns `child_free_under_age:8`, `child_percent:20`, `adult_from_age:13`,
+all unquoted, so `migrate.ts` applied the three-band schema and the
+`WHERE child_free_under_age = 18` update ran. **Live pricing changed at this
+point** — it is the first real billing change to reach production, and the
+13-17 band in it is still unconfirmed.
+
+**28 Jul — the booking flow was walked in a real browser, first time ever.**
+Search → property → room → age bands → hold → payment → invoice. Found and
+fixed incident 5 (CORS). Verified after the fix: hold created from the browser
+(`QD-MWW6N6N5`), all three age bands price correctly on screen (6 free, 10 at
+₹600, 15 at ₹900 on a ₹3,000 room), GST back-computes correctly (₹3,482.14 +
+12% = ₹3,900), images lazy-load, console clean throughout, invoice endpoint
+returns a valid 1-page PDF. Payment stops with "Online payment is not enabled
+on this environment" — correct degradation for `rzp_test_simulated`, not a
+fault, and it is blocked on the client sending live keys.
+
+Only one file under `client-assets/` is tracked: `property-data.md`
+(lat/lng, copy decisions, photo categorisation). Checked at push time — it holds
+no credentials. The briefs and passwords are untracked, as §2.1 requires.
 
 ### Known, not urgent
 
@@ -203,8 +237,23 @@ requests without an `Origin` header pass regardless.
    live, including the whole Destinations grid. Typecheck, build and tests all
    passed — the paths are strings.
 
+5. **CORS blocked every write, and only in a browser.** `CORS_ORIGIN` on EB was
+   still the pre-CloudFront S3 website URL, so the CloudFront origin was not on
+   the allowlist. Reads were unaffected and the site looked completely healthy —
+   because browsers omit `Origin` on same-origin GETs but **send it on every
+   non-GET**, even same-origin. So `POST /api/bookings/initiate` carried an
+   `Origin` the allowlist rejected, the cors middleware threw, and Express's
+   default handler returned its HTML error page. The frontend called
+   `res.json()` on that and surfaced `Unexpected token '<'`, which reads like a
+   routing bug and is not one. `curl` sends no `Origin`, so the same POST
+   returned 201 from both the origin and CloudFront. Booking had never once
+   worked from a browser; the only end-to-end test on record was a curl POST.
+   Found 28 Jul by walking the flow in a real browser — §6 predicted exactly
+   this and named the reason.
+
 The pattern: **the automated suite cannot see the failures this project
-actually has.** Assume a third exists.
+actually has.** Three of the five above were invisible to it. Assume a sixth
+exists.
 
 ---
 

@@ -94,7 +94,10 @@ Required, not optional. Half the fix lives in the bundle.
 ```bash
 cd /home/divyansh-rawat/Quadis
 
-VITE_API_URL=http://quadis-backend-live.eba-ekdyt4m3.us-east-1.elasticbeanstalk.com/api \
+# Must be the CloudFront origin, not the Elastic Beanstalk URL. EB is plain HTTP,
+# and the site is served over HTTPS — baking the EB URL in gets every API call
+# blocked as mixed content, in the browser only. curl will not show it.
+VITE_API_URL=https://djqj43186y3yh.cloudfront.net/api \
   npm run build
 
 printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt   # test bucket, never index it
