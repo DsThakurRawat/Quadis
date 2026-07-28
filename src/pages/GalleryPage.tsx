@@ -8,6 +8,7 @@ import {
   galleryRoyal,
   galleryFacade,
   galleryDining,
+  galleryBannerImage,
 } from '../data/images.ts'
 import { FilterPills } from '../components/ui.tsx'
 import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
@@ -47,7 +48,8 @@ export default function GalleryPage() {
     }
   }, [tab])
 
-  const heroImg = galleryFacade[0] ?? galleryAll[0] ?? '/images/home/hero.webp'
+  // The client's own banner leads; the facade shot stays as the fallback.
+  const heroImg = galleryBannerImage ?? galleryFacade[0] ?? galleryAll[0] ?? '/images/home/hero.webp'
 
   return (
     <>
@@ -55,7 +57,7 @@ export default function GalleryPage() {
         title="Photo Gallery"
         description="Rooms, lobbies, banquet halls and dining spaces photographed across all nine Quadis properties in Delhi NCR."
       />
-      <PhotoHero image={heroImg} title={t('gallery.hero.title')} sub={`A visual journey across our ${PROPERTY_COUNT} considered properties, refined suites, and grand banquets.`} height="short" />
+      <PhotoHero image={heroImg} title={t('gallery.hero.title')} sub={`A visual journey across our ${PROPERTY_COUNT} considered properties, refined suites, and grand banquets.`} height={galleryBannerImage ? 'banner' : 'short'} />
 
       <section className="section bg-cream gallery-page">
         <div className="container center-col">

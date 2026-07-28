@@ -10,10 +10,10 @@ export default function CancellationPolicy() {
         title="Cancellation & Refund Policy"
         description="Cancellation and refund policy for Quadis Hotels bookings."
       />
-      <div className="section-head pt-header bg-cream pb-12">
+      <div className="page-head bg-cream">
         <div className="container center-col">
-          <h1 className="h1">{t('cancellation.title')}</h1>
-          <p className="lead text-mid mt-4">
+          <h1 className="h1 h1--single-line">{t('cancellation.title')}</h1>
+          <p className="lead">
             At Quadis Hotels, we strive to provide a smooth and transparent booking experience for all our guests. Please read our cancellation and refund policy carefully before confirming your reservation.
           </p>
         </div>

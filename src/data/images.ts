@@ -304,13 +304,29 @@ export const corporateStayImage: string =
   namedIn('corporate', 'corporate-and-long-stays') ?? gallerySuperior[0] ?? homeImages[0] ?? ''
 
 /**
- * The Corporate landing hero, from the client's "Corporate Booking Landing
- * Page" zip. Kept separate from corporateStayImage because that one also feeds
- * the home Offerings card: the client asked for this banner on the corporate
- * page only, and repointing the shared export would have silently changed the
- * homepage too. This file is a 2.7:1 crop with the darkening already baked in,
- * which is what the white hero text needs — corporate-and-long-stays is an
- * undarkened 1.87:1 room shot and was never the banner they sent.
+ * Page banners the client designs and sends, as distinct from photography.
+ *
+ * The `banner-` prefix is load-bearing, not decorative: SECTION_ARTWORK above
+ * matches on it, which is the only thing keeping these out of galleryAll. Named
+ * corporate-hotel-booking-banner.webp first, and because that starts with
+ * "corporate" the filter missed it and a darkened design asset shipped into the
+ * public "Moments of Calm & Comfort" grid alongside real property photos.
+ * about/banner.webp had the convention right all along. Keep the prefix.
+ *
+ * Corporate is kept separate from corporateStayImage because that export also
+ * feeds the home Offerings card, and the client asked for this banner on the
+ * corporate page only — repointing the shared one would have silently changed
+ * the homepage too.
+ *
+ * Both files carry their own darkening, which is what the white hero text
+ * needs. They are also different shapes — 2.702:1 and 3:1 — so the hero renders
+ * them with `height="banner"`, which takes its height from the image instead of
+ * imposing a ratio. See .photo-hero--banner in pages.css.
  */
 export const corporateBannerImage: string =
-  namedIn('corporate', 'corporate-hotel-booking-banner') ?? corporateStayImage
+  namedIn('corporate', 'banner-corporate-hotel-booking') ?? corporateStayImage
+
+/** The Gallery landing banner, sent 28 Jul: "ye vale landing page me ye vala
+ *  banner lga dena". Falls back to the previous facade shot if it goes missing. */
+export const galleryBannerImage: string | undefined =
+  namedIn('gallery', 'banner-gallery-landing')

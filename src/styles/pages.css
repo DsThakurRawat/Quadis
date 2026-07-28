@@ -7,6 +7,39 @@
 .photo-hero { position: relative; display: flex; align-items: center; overflow: hidden; }
 .photo-hero--band { min-height: 420px; }
 .photo-hero--short { min-height: 320px; }
+
+/*
+ * For a composed banner rather than a photograph.
+ *
+ * --short is a fixed 320px band and .hero-media is object-fit:cover, so a
+ * full-bleed banner is scaled to the viewport width and then cropped to that
+ * band: the client's 1351x500 corporate banner becomes 711px tall on a 1920px
+ * screen and loses ~55% of its height, which is what she reported as "ye cut
+ * raha h". Cropping is right for a photograph — any crop still reads as the
+ * same room — and wrong for a banner, where the composition IS the content and
+ * she designed to a fixed size.
+ *
+ * So the image goes back into normal flow and the band takes ITS height. No
+ * ratio is written down here on purpose: the two banners she has sent are
+ * 2.702:1 (corporate) and 3:1 (gallery), so any hardcoded aspect-ratio would
+ * crop one of them. This crops neither, and needs no edit for the next one.
+ *
+ * The heading then overlays absolutely. min-height only matters on very narrow
+ * phones, where the banner's true height leaves too little room for the text.
+ */
+.photo-hero--banner { display: block; position: relative; min-height: 160px; }
+.photo-hero--banner .hero-media {
+  position: relative;
+  inset: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+.photo-hero--banner .photo-hero__content {
+  position: absolute;
+  inset: 0;
+  justify-content: center;
+}
 .photo-hero__content { position: relative; z-index: 2; text-align: center; margin-inline: auto; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .photo-hero__title { max-width: 16ch; }
 .photo-hero__sub { color: var(--text-on-dark-2); max-width: 52ch; }
@@ -40,6 +73,20 @@
 .center-block { max-width: 720px; margin: 20px auto 48px; text-align: center; color: var(--text-muted-2); font-size: 17px; line-height: 1.8; }
 .prose { max-width: 720px; margin-inline: auto; display: flex; flex-direction: column; gap: 18px; margin-top: 28px; }
 .prose.center-col p { text-align: center; }
+
+/*
+ * Title block for a route that has no PhotoHero. /cancellation-policy is the
+ * only one.
+ *
+ * It carried `section-head pt-header ... pb-12` with `mt-4` on the lead, and
+ * none of those four class names exist — §9, there is no Tailwind here, so they
+ * resolved to nothing. The block therefore had zero padding on every side: the
+ * heading sat flush against the bottom of the site header with the lead jammed
+ * under it, which is most of why the client read this page as wrong. The
+ * font-size was the part she could name.
+ */
+.page-head { padding-block: var(--s-7) var(--s-6); }
+.page-head .lead { margin-top: var(--s-4); max-width: 68ch; margin-inline: auto; }
 
 /* ============================ Home sections ============================ */
 .home-hotels__pills { margin: 20px 0 28px; }

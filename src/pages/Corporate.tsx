@@ -52,7 +52,7 @@ export default function Corporate() {
         title="Corporate Hotel Booking in Delhi NCR"
         description="Negotiated corporate rates, priority availability and consolidated GST-compliant billing across every Quadis property in Delhi NCR."
       />
-      <PhotoHero image={heroImg} overline={t('corporate.hero.overline')} title={t('corporate.hero.title')} height="short" />
+      <PhotoHero image={heroImg} overline={t('corporate.hero.overline')} title={t('corporate.hero.title')} height="banner" />
 
       <section className="section bg-cream">
         <div className="container corp-split">

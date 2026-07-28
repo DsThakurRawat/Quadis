@@ -86,6 +86,23 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; }
   color: var(--text-primary);
 }
 .h1.on-dark { color: var(--text-on-dark); }
+/*
+ * For a long heading that must not wrap — the client's "is text ko single line
+ * me krdo or font size thora chota krdo" about /cancellation-policy.
+ *
+ * "Cancellation & Refund Policy" sets 1357px wide at the base .h1 size of
+ * 104px, against a 1328px content box at 1920px viewport. It missed one line by
+ * 29px, so it broke to two and looked oversized.
+ *
+ * The display face renders this string at ~13.05x the font-size, and the
+ * content box is about 100vw - 112px, so one line needs roughly 7.6vw. 6.2vw
+ * takes that with margin and is the "thora chota" she asked for. It holds down
+ * to ~430px wide; below that it wraps again, which is correct on a phone —
+ * fitting one line there would need an 11px heading.
+ *
+ * Sized for this string. A much longer one set through the admin will wrap.
+ */
+.h1--single-line { font-size: clamp(30px, 6.2vw, 88px); }
 .h2 {
   font-family: var(--font-display);
   font-size: clamp(32px, 5vw, 56px);

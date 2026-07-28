@@ -10,7 +10,7 @@ interface PhotoHeroProps {
   overline?: string
   title: string
   sub?: string
-  height?: 'band' | 'short'
+  height?: 'band' | 'short' | 'banner'
   children?: ReactNode
 }
 // Full-bleed photo hero band with scrim + centered light text (§1, §6).
