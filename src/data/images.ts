@@ -298,6 +298,19 @@ export const tierSelectImage: string =
 export const tierExperienceImage: string =
   namedIn('tiers', 'tier-quadis-experience') ?? galleryRoyal[0] ?? homeImages[0] ?? ''
 
-/** The client's corporate/long-stay shot, used by the home card and the hero. */
+/** The client's corporate/long-stay shot. Home Offerings card only — the
+ *  Corporate hero uses corporateBannerImage. */
 export const corporateStayImage: string =
   namedIn('corporate', 'corporate-and-long-stays') ?? gallerySuperior[0] ?? homeImages[0] ?? ''
+
+/**
+ * The Corporate landing hero, from the client's "Corporate Booking Landing
+ * Page" zip. Kept separate from corporateStayImage because that one also feeds
+ * the home Offerings card: the client asked for this banner on the corporate
+ * page only, and repointing the shared export would have silently changed the
+ * homepage too. This file is a 2.7:1 crop with the darkening already baked in,
+ * which is what the white hero text needs — corporate-and-long-stays is an
+ * undarkened 1.87:1 room shot and was never the banner they sent.
+ */
+export const corporateBannerImage: string =
+  namedIn('corporate', 'corporate-hotel-booking-banner') ?? corporateStayImage

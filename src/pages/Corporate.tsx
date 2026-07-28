@@ -1,4 +1,4 @@
-import { corporateImages, corporateStayImage, galleryFacade } from '../data/images.ts'
+import { corporateImages, corporateBannerImage, galleryFacade } from '../data/images.ts'
 import { CITIES } from '../data/hotels.ts'
 import type { CorporateRFPPayload } from '../types.ts'
 import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
@@ -29,8 +29,8 @@ const lobbyPhoto = (): string | undefined =>
 
 export default function Corporate() {
   const { t } = useContent()
-  // The client's corporate photograph, supplied July 2026.
-  const heroImg = corporateStayImage
+  // The banner from the client's corporate landing-page zip, not the room shot.
+  const heroImg = corporateBannerImage
   const sideImg = lobbyPhoto() ?? corporateImages[0]
 
   const f = useForm<CorporateRFPPayload>(
