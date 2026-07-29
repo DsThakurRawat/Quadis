@@ -1,4 +1,4 @@
-import { restaurantImages, cateringImages } from '../data/images.ts'
+import { restaurantImages, cateringImages, restaurantBannerImage } from '../data/images.ts'
 import { useContent } from '../data/content.ts'
 import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
 import { Button } from '../components/ui.tsx'
@@ -16,7 +16,9 @@ export default function Restaurant() {
     {
       title: 'In-house Restaurant',
       blurb: 'Refined all-day dining inside our properties — generous flavours, considered menus and warm, unhurried service.',
-      img: rImgs[0],
+      // rImgs[1] first: rImgs[0] is hero.webp, which the PhotoHero above already
+      // shows, so this card was repeating the image directly above it.
+      img: rImgs[1] ?? rImgs[0],
       // Was 'VIEW MENU' pointing at this same page — there is no menu to show.
       to: '/contact',
       cta: 'ENQUIRE ABOUT DINING',
@@ -36,7 +38,14 @@ export default function Restaurant() {
         title="Restaurant & In-House Dining"
         description="Multi-cuisine in-house kitchens serving breakfast spreads, room dining and customised event menus across Quadis Hotels."
       />
-      <PhotoHero image={rImgs[0]} overline={t('restaurant.hero.overline')} title={t('restaurant.hero.title')} height="short" />
+      {/* The client's own landing-page banner when present, photography otherwise.
+          "banner" height contains it instead of cropping — see 3ac1877. */}
+      <PhotoHero
+        image={restaurantBannerImage ?? rImgs[0]}
+        overline={t('restaurant.hero.overline')}
+        title={t('restaurant.hero.title')}
+        height={restaurantBannerImage ? 'banner' : 'short'}
+      />
 
       <section className="section bg-cream">
         <div className="container">

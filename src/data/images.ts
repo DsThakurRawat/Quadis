@@ -40,6 +40,19 @@ for (const [dir, entries] of Object.entries(buckets)) {
 const at = (key: string): string[] => groups[key] ?? []
 
 /**
+ * Like `at`, but drops design assets — use it for anything that renders as a
+ * photo gallery.
+ *
+ * `isSectionArtwork` only guards `galleryAll`, so a banner dropped into a folder
+ * that doubles as a gallery source still surfaced. restaurant/ is exactly that:
+ * it holds hero.webp *and* the client's 2.702:1 landing-page banner, and
+ * `restaurantImages()` fed both to the offer cards. Safe here because buckets
+ * are sorted in place in the loop above, so order is preserved.
+ */
+const atPhotos = (key: string): string[] =>
+  (buckets[key] ?? []).filter((e) => !isSectionArtwork(e.name)).map((e) => e.url)
+
+/**
  * One image from a folder, addressed by its SOURCE filename.
  *
  * Match on `entry.name` — the name on disk — and never on the emitted URL.
@@ -221,7 +234,7 @@ export const banquetImages = (slug: string): string[] => {
 }
 
 export const restaurantImages = (): string[] => {
-  const explicit = at('restaurant')
+  const explicit = atPhotos('restaurant')
   if (explicit.length) return explicit
   const pool = galleryDining.length ? galleryDining : (allPhotos.length ? allPhotos : ['/images/home/hero.webp'])
   return [pool[0]!, pool[1 % pool.length] ?? pool[0]!, pool[2 % pool.length] ?? pool[0]!]
@@ -345,6 +358,13 @@ export const corporateBannerImage: string =
  *  banner lga dena". Falls back to the previous facade shot if it goes missing. */
 export const galleryBannerImage: string | undefined =
   namedIn('gallery', 'banner-gallery-landing')
+
+/** The dining & catering landing banner, sent 29 Jul in the zip of that name.
+ *  1351x500 (2.702:1) like the corporate one, so the hero renders it with
+ *  height="banner" — contained, not cropped. Undefined falls the hero back to
+ *  photography, which is the shipped look. */
+export const restaurantBannerImage: string | undefined =
+  namedIn('restaurant', 'banner-in-dining-catering')
 
 /**
  * The room shot the client captioned "Executive & Deluxe Stays image" on
