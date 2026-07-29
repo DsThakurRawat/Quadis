@@ -1,0 +1,55 @@
+AgentName : Div1
+Date      : 07-29-2026
+
+
+Draft 29 Jul 2026. The client asked about server cost twice on 29 Jul and has
+not been answered. This is the reply.
+
+Send it on its own. Her replies show she answers the last item and skips the
+rest, so the other pending questions (two Razorpay accounts, the regenerated
+key, Amby Inn room names) go in a SEPARATE message afterwards.
+
+The number to quote is Rs 1,500-2,000 a month. That is a 4 GB VPS in India,
+billed monthly, no lock-in. Do not quote the cheaper prepay figure -- that needs
+2-4 years paid upfront and is not a commitment to make on her behalf.
+
+---
+
+Ma'am, server ke kharche ka pura hisaab bata raha hoon.
+
+*Abhi kya hai*
+
+Aapki current website theserverindia pe hai. Wo shared hosting hai -- simple
+website ke liye theek hai, lekin usme online booking system nahi chal sakta.
+Uske liye alag se database chahiye, aur wo shared hosting support nahi karti.
+
+*Naya server*
+
+Naya server India me hi rahega (Mumbai/Bangalore), taaki website guests ke liye
+fast khule.
+
+Kharcha: *Rs 1,500-2,000 per month* (lagbhag Rs 18,000-24,000 saal ka).
+Monthly billing hai, koi lock-in nahi -- jab chahein band kar sakte hain.
+
+Isme ye sab aa jayega:
+- Online booking + payment system (Razorpay)
+- Database -- bookings, guests, rates sab store honge
+- HTTPS security lock
+- Saari photos aur pages
+- Roz ka automatic backup
+
+*Zaroori baat -- aapka email safe rahega*
+
+info@quadishotels.com Google pe chalta hai, aur usko hum bilkul touch nahi
+karenge. Sirf website ka address naye server pe point karenge. Email jaise chal
+raha hai waise hi chalta rahega.
+
+*Aur purani website?*
+
+Wo tab tak chalti rahegi jab tak nayi website puri tarah test na ho jaye. Pehle
+naya server ready karenge, sab check karenge, phir switch karenge. 2-3 hafte
+purani hosting bhi chalne denge -- safety ke liye.
+
+*Sirf ek cheez confirm kar dijiye:* Rs 1,500-2,000 per month theek hai?
+
+Aapka haan aate hi main server le kar kaam shuru kar dunga.

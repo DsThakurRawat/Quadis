@@ -110,3 +110,4 @@ and maintain ourselves. That is more moving parts for a worse outcome.
 
 If they pick S3 anyway it is fine - the adapter makes it a one-line switch,
 and CloudFront can be added later to bring the egress cost back down.
+/

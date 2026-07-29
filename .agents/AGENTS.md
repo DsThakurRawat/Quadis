@@ -93,6 +93,17 @@ Rules:
 
 ### Open
 
+- [ ] **Migrating to the client's own AWS account — see
+      `docs/aws-account-migration.md`.** Builder has her account details as of
+      29 Jul. Two decisions first: **region** (recommend `ap-south-1`/Mumbai —
+      her guests are in Delhi NCR and this is the only cheap moment to change
+      it) and **instance size** (`t3.small` minimum; `t3.micro` is what wedged
+      the API for 30 minutes, incident 6). The long pole is the **DNS zone
+      export from theserverindia** — it depends on other people and it is the
+      one step that can take her email down. Note the cutover also **unblocks
+      payment for free**, because `quadishotels.com` is already approved in
+      Razorpay while the CloudFront URL is not.
+
 **From the client's 29 Jul message** (`client-assets/briefs/2026-07-29-whatsapp-experience-image-and-complaints.png`):
 
 - [ ] **"Book a reservation" does nothing after login.** Her item 3. A dead

@@ -1,5 +1,6 @@
 =============================================================
 PART A - SEND TO CLIENT
+Agent Name : WhatsAppBhondu
 =============================================================
 
 Send MESSAGE 1 first, on its own. Then 2. Then 3 and 4 together.
@@ -99,8 +100,12 @@ MESSAGE 4 - photos aur PMS
    access hai ya nahi, aur channel manager hai ya nahi (MakeMyTrip ka
    inventory sync karne ke liye wo alag se lagta hai).
 
-2. Photos wali baat alag message mein bheji hai (Cloudinary account) - wo
-   dekh lijiyega.
+2. Photos ke liye ek account chahiye - Cloudinary. Isse aap khud admin panel
+   se hotel ki photo badal paoge, mujhe bolne ki zaroorat nahi padegi.
+   Free plan mein aapke nau hotel aaram se aa jayenge.
+
+   Account aapki company ke naam pe banega, taaki photos aur billing aapke
+   paas rahe. Main bata dunga kaise banana hai, 5 minute ka kaam hai.
 
 3. Ye teen cheezein abhi bhi pending hain
    - Har hotel ki apni alag photos (abhi kuch hotel pe dusre hotel ki
