@@ -113,6 +113,24 @@ Rules:
       Deluxe / Facade & Lounges / Royal Deluxe room — `All/` is a superset of
       the rest). Almost all are ~2 MB PNGs. They cannot go into `public/` as
       sent: see incident 4, and `dist` is already 48 MB.
+- [ ] **Finish the Razorpay wiring — see `docs/razorpay-golive.md`** for the
+      full runbook, the verification steps and the failure-mode decoder. Razorpay side is DONE
+      (29 Jul): live keys generated on the **Feb '26** merchant account, webhook
+      created and Enabled at
+      `https://djqj43186y3yh.cloudfront.net/api/webhooks/razorpay` with
+      `payment.captured` / `payment.failed` / `order.paid`, secret set. Keys
+      verified against Razorpay's API (`auth: 200`). **Our side is still on the
+      placeholders** — `RAZORPAY_KEY_ID=rzp_test_simulated`,
+      `RAZORPAY_WEBHOOK_SECRET` absent — because the EB config update wedged the
+      instance and rolled back. See the incident below. The secrets are in the
+      builder's password manager, not in this repo.
+- [ ] **Two Razorpay accounts exist**, both "QUADIS SERVICES PRIVATE LIMITED" —
+      created Sept '21 and Feb '26. We used **Feb '26**. If the client's old
+      site ever took payments on the Sept '21 one, that is a different merchant
+      account and settlements will land somewhere nobody is watching. Confirm.
+- [ ] **Confirm Razorpay Payment Capture = Automatic.** On Manual, guests are
+      debited, `payment.authorized` fires, we do not handle it, and the booking
+      never confirms — visually identical to a webhook-secret mismatch.
 - [ ] **Ask: is Amby Inn's "Executive room" the Super Deluxe?** She sent a photo
       captioned Executive, but Amby Inn's seeded categories are Deluxe 20 /
       Super Deluxe 3 — no Executive. Until she says, its Super Deluxe shows the
@@ -314,9 +332,35 @@ the double-source problem that causes double bookings, and the same one the PMS
 question is about. It has to be one system or the other, and the client has to
 say which.
 
-Open: is it live and taking bookings · who built it and is it supported · is
-there data to migrate (bookings, coupons, users) · does the new site replace it
-or run alongside.
+Open: who built it and is it supported · is there data to migrate (bookings,
+coupons, users) · does the new site replace it or run alongside.
+
+**29 Jul — "is it live and taking bookings" is largely answered, by TLS.**
+Certificates on the three subdomains, read off the live hosts:
+
+| Host | Cert validity | State |
+|---|---|---|
+| `www.quadishotels.com` | 24 Jun → 22 Sep 2026 | live, auto-renewing |
+| `adminweb.quadishotels.com` | 18 Jul → 16 Oct 2026 | live, renewed 18 Jul |
+| `booking.quadishotels.com` | 18 Jan → **18 Apr 2026** | **expired 3+ months** |
+
+These are 90-day certs on auto-renewal. Two keep renewing; `booking.` stopped in
+April, which is what happens when a vhost is disabled — not when a site is in
+use. An expired cert would have shown every guest a full-page security warning
+since 18 April, so **their guest-facing online booking is not running.**
+
+So the §2.4 fear — that we are rebuilding what they already have — does not hold
+for *booking*. They have a maintained **admin/PMS** and a **dead booking front
+end**; only the second is what CheckoutModal replaces. It also matches the
+client's own 29 Jul complaint, "abhi booking nhi bn pa rhi".
+
+Still confirm with her before betting on it: the panel may take bookings that
+staff key in by hand, which the dead subdomain says nothing about.
+
+Also verified 29 Jul: the existing site is an **Angular SPA on IIS / ASP.NET /
+Plesk for Windows**, not the Linux shared hosting `docs/dns-cutover.md` assumes.
+The existing stack cannot host the Node backend — long term this is
+replace-or-run-alongside, never merge.
 
 The 13–17 age band · the theserverindia hosting login · live Razorpay keys
 (still `rzp_test_simulated`, so no real payment can be taken) · photo storage
@@ -380,8 +424,33 @@ requests without an `Origin` header pass regardless.
    Found 28 Jul by walking the flow in a real browser — §6 predicted exactly
    this and named the reason.
 
+6. **A single env-var change took the API down for 30 minutes.** 29 Jul, setting
+   the three Razorpay variables. EB restarts the app for any config change; on
+   this box the restart wedged the instance — it stopped sending health data
+   ~90 seconds in, 50% of ELB requests went 5xx, EB burned its **15-minute**
+   timeout, **reverted the configuration**, then sat in `Updating` another 20
+   minutes. That state also blocks every EB operation, so `restart-app-server`
+   returned `InvalidParameterValue: Must be Ready`. What fixed it was going
+   around EB entirely: `aws ec2 reboot-instances`. API answered 200 five minutes
+   later.
+   - EC2 said `running`/`ok` throughout and CPU credits were untouched (270 of
+     288), so it was neither a dead VM nor throttling. CPU sat at ~50% — one of
+     the two vCPUs pegged — from the moment the update began.
+   - **The box is a `t3.micro`: 2 vCPU but only 1 GiB RAM**, and RDS is
+     `db.t3.micro`/20 GB. That is the **Free Tier** shape, and the July bill is
+     effectively ₹0 — which is *why* it was chosen. `t3.micro` is the only free
+     EC2 size, so there is no free way up.
+   - It had been up 7 days. A fresh reboot may be enough for a retry; the
+     durable fix is a swap file via `.ebextensions`, which costs nothing.
+   - Health had also been flapping `Ok → Warning → Ok` roughly hourly all that
+     day *before* anyone touched it. The instance was already at its limit.
+   - **When this moves to the client's own account, size it `t3.small`
+     minimum.** There will be no free-tier reason to accept 1 GiB.
+   - The frontend stayed up the whole time — it is served from S3, so only
+     `/api/*` died. Guests could browse; nothing could book.
+
 The pattern: **the automated suite cannot see the failures this project
-actually has.** Three of the five above were invisible to it. Assume a sixth
+actually has.** Three of the six above were invisible to it. Assume a seventh
 exists.
 
 ---
