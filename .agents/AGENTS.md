@@ -107,6 +107,25 @@ Rules:
       Suspect the CloudFront hostname rather than the site; in-app browsers are
       unpredictable about unfamiliar hosts. Test before spending on it — DNS
       cutover may remove it for free.
+- [ ] **Decide on 8 AI-generated images now live.** The 29 Jul gallery zip
+      included eight `ChatGPT Image *.png` files, six of them filed under
+      Facade & Lounges. They are photorealistic — receptions, lobbies,
+      corridors, two carrying "HOTEL DOWNTOWN51" signage — and a guest browsing
+      the gallery cannot tell they are synthetic. They were placed as sent, and
+      their filenames still start `chatgpt-`, so they are identifiable in the
+      page source and removable in one command:
+      `rm public/images/{rooms/deluxe,rooms/superior,facade}/chatgpt-*.webp`.
+      This is the client's call, not ours — but she should be asked, because
+      rooms and lobbies that do not exist are a different thing from the
+      concept renders on the "expanding into three categories" band.
+- [ ] **Seven photographs appear twice in the gallery.** Pre-existing, not from
+      the 29 Jul batch: seven byte-identical pairs across `public/images`, so
+      Vite emits one asset and two buckets both point at it. Includes
+      `upcoming/noida.webp` = `hotels/hotel-cladis-sector-15-noida/hero.webp`,
+      which is the "Noida photo is a building" complaint.
+- [ ] **`dist` is now 64 MB** (was 48 MB) — 30 MB in `dist/images`, 29 MB in
+      `dist/assets`, because every image still ships twice. See "Known, not
+      urgent"; the workaround there still stands, but the number is growing.
 - [ ] **Two zips landed unprocessed.** `in dining and catering landing page.zip`
       (8 files, SEO-named, for the dining/catering page) and `photo gallery.zip`
       (**294 MB**, ~72 unique images across All / Deluxe room / Superior & Super
