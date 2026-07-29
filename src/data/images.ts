@@ -153,9 +153,24 @@ export const roomImages = (hotelSlug: string, roomId: string): string[] => {
   const sub2 = at(`hotels/${hotelSlug}/${roomId}`)
   if (sub2.length) return sub2
 
-  // Fallback 1: keyword match on flat hotel files
+  // Fallback 1: match the room slug against flat hotel filenames.
+  //
+  // Whole slug first, loose keywords only if that finds nothing. The room slugs
+  // overlap, and the loose pass alone got it backwards: `super-deluxe` splits to
+  // ['super','deluxe'] and `.some()` matched 01-deluxe-room.webp, while
+  // `deluxe-room` splits to ['deluxe'] and matched 02-super-deluxe.webp. Each
+  // category served the other's photograph — a guest booking a Deluxe Room was
+  // shown the Super Deluxe, and the cheaper room was advertised with the dearer
+  // one's picture.
+  //
+  // Kept as a fallback rather than a replacement because the older per-hotel
+  // sets are named the other way round (room-deluxe.webp, 05-superior-room.webp)
+  // and only the loose pass finds those.
   const all = at(`hotels/${hotelSlug}`)
   if (all.length) {
+    const slugMatch = all.filter((url) => url.toLowerCase().includes(roomId.toLowerCase()))
+    if (slugMatch.length) return slugMatch
+
     const keywords = roomId.split('-').filter((k) => k !== 'room' && k.length > 2)
     const matched = all.filter((url) => {
       const lower = url.toLowerCase()

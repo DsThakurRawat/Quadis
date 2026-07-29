@@ -93,6 +93,41 @@ Rules:
 
 ### Open
 
+**From the client's 29 Jul message** (`client-assets/briefs/2026-07-29-whatsapp-experience-image-and-complaints.png`):
+
+- [ ] **"Book a reservation" does nothing after login.** Her item 3. A dead
+      button, so worth walking in a browser before assuming where it should go —
+      and note that where it *should* go is the §2.4 PMS question.
+- [ ] **"Quadis" is not the same font everywhere.** Her item 2, and she asks
+      whether the admin panel can change it. For this site the answer is no —
+      it is a CSS token, not content. Worth saying so plainly, because the
+      question is really §5 again: she is assuming her existing panel drives
+      this site.
+- [ ] **The link does not open in PhonePe's in-app browser.** Her item 4.
+      Suspect the CloudFront hostname rather than the site; in-app browsers are
+      unpredictable about unfamiliar hosts. Test before spending on it — DNS
+      cutover may remove it for free.
+- [ ] **Two zips landed unprocessed.** `in dining and catering landing page.zip`
+      (8 files, SEO-named, for the dining/catering page) and `photo gallery.zip`
+      (**294 MB**, ~72 unique images across All / Deluxe room / Superior & Super
+      Deluxe / Facade & Lounges / Royal Deluxe room — `All/` is a superset of
+      the rest). Almost all are ~2 MB PNGs. They cannot go into `public/` as
+      sent: see incident 4, and `dist` is already 48 MB.
+- [ ] **Ask: is Amby Inn's "Executive room" the Super Deluxe?** She sent a photo
+      captioned Executive, but Amby Inn's seeded categories are Deluxe 20 /
+      Super Deluxe 3 — no Executive. Until she says, its Super Deluxe shows the
+      Deluxe photo. One rename fixes it; guessing mis-sells a room.
+- [ ] **Ask for a real Noida city photo.** `upcoming/noida.webp` is
+      byte-identical to Hotel Cladis Sector 15's facade, which is precisely why
+      she said "the current one is a building".
+- [ ] **She asked for the AWS cost twice** — "Charges bata do server ka / Aws
+      server to kharidna hi hain na". Already listed in §5; she is now waiting
+      on it, so it is no longer just open, it is overdue.
+
+Her item 1 — vouchers and booking confirmation — she could not test because
+booking is unfinished, and §2.4 says do not build further into it. Her own
+wording agrees: *"usse phle everything is great."*
+
 - [ ] **Stop CloudFront masking API errors.** The SPA deep-link fallback rewrites
       any `/api/*` 4xx/5xx into `index.html`, so every backend error reaches the
       frontend as `Unexpected token '<'`. That is what made incident 5 cost an
@@ -149,12 +184,87 @@ feeds the home Offerings card. Verified live, not just built: the hero serves
 `corporate-and-long-stays-BiiR7QBY.webp` (read off the live DOM), console clean,
 `base_price` still unquoted.
 
-**Still unprocessed from the same 28 Jul batch:** `Banquet Halls.zip` holds 12
-photos across the three real venues, and `public/images/banquets/` still has
-only `hero.webp`. `banquetImages(slug)` looks for `banquets/<slug>/`, misses,
-and falls back to hash-picked *dining* photos — so all three banquet venue cards
-currently show restaurant interiors. Slugs are `banquets-at-hotel-amby-inn`,
-`banquets-at-hotel-downtown-eok`, `banquets-at-hotel-downtown-sector-51`.
+**29 Jul — Quadis Experience tier image replaced, built but NOT deployed.** The
+client sent a pool/facade render with "Quadis Experience" on the signage and
+asked for it on that tier card, replacing the one already there ("vo vali htane
+k liye khre h"). Swapped in place at
+`public/images/tiers/tier-quadis-experience.webp` — same filename deliberately,
+because `namedIn` matches on `startsWith`, so a second file beginning
+`tier-quadis-experience` would make which one wins depend on glob order. Source
+1536×1024, converted at the project's 1200px/q80 settings to 1200×800, 147 kB.
+The card is `aspect-ratio: 4/3` + `object-fit: cover`, so a 3:2 source loses
+~6% off each side; checked against a rendered centre crop, the signage and pool
+both survive it. Typecheck and build clean, new hash
+`tier-quadis-experience-C2QAx-kq.webp`. **Still needs an upload, a CloudFront
+invalidation and a browser check before it counts as done — §2.5.**
+
+~~Still unprocessed from the same 28 Jul batch: `Banquet Halls.zip`...~~
+**Resolved in `8bcf756`** — all 12 photos are in `public/images/banquets/` under
+the three venue slugs (4 each), verified on disk 29 Jul. The banquet cards no
+longer fall back to dining photos. This paragraph claimed otherwise for a day
+after it stopped being true; if you are reading a "still outstanding" note here,
+check it on disk before repeating it.
+
+**Genuinely still outstanding — per-hotel photography.** Six of the nine hotels
+have exactly one image in `public/images/hotels/<slug>/`:
+
+| Hotel | Files |
+|---|---|
+| `hotel-amar-in` | 15 |
+| `hotel-quadis-central-sector-27-noida` | 8 |
+| `hotel-quadis-sector-51-noida` | 8 |
+| `hotel-downtown-sector-51-noida` | 6 |
+| the other five | **1 each** |
+
+`images.ts` pads any property under five photos from *other* properties, so
+those five currently show rooms the guest is not booking. The 29 Jul
+`photo gallery.zip` does **not** fix this — it is filed by room type (Deluxe,
+Superior & Super Deluxe, Royal Deluxe, Facade & Lounges), not by hotel, so it
+improves the shared pools without making any single property accurate.
+
+> **RESOLVED 29 Jul — built, NOT deployed.** The five hotels' own photos had
+> been sitting in `client-assets/unpacked/Hotels/` since the `Hotels.zip` send;
+> we had only ever cut the facade as `hero.webp`. 26 photos placed at
+> 1200px/q80. All nine properties now resolve ≥5 of their own photos and none
+> is padded from another — simulated against the real tree, then walked in a
+> browser. The table above is kept as the record of what was wrong.
+>
+> **Naming rule, keep it: room-type keywords only where the client's own
+> filename states the type.** `roomImages()` keyword-matches the room slug
+> against the filename, so a wrong keyword shows a guest the wrong room class on
+> a booking page. The SEO-named shots ("best hotel near sector 15 noida.png")
+> are `NN-room.webp` — they fill the gallery, which was the actual bug, and
+> claim nothing about category. Flat files, **not** per-room subfolders: buckets
+> are keyed on the exact directory (`images.ts:22-30`), so a subfolder feeds
+> `roomImages()` but not `hotelImages()` and would leave the padding in place.
+>
+> `Royal Deluxe Room.png` was placed as `03-royal-suite.webp` — named for the
+> seed slug and deliberately without the word "deluxe", because `deluxe-room`
+> matches on that substring and the suite would have been served as a Deluxe.
+>
+> **Two things this exposed:**
+>
+> 1. **`roomImages()` had deluxe and super-deluxe crossed.** `super-deluxe`
+>    splits to `['super','deluxe']` and `.some()` matched `01-deluxe-room.webp`,
+>    while `deluxe-room` split to `['deluxe']` and matched
+>    `02-super-deluxe.webp` — each category served the other's photograph, and
+>    the cheaper room was advertised with the dearer one's picture. Fixed by
+>    trying a whole-slug match first, keeping the loose pass as fallback because
+>    the older sets are named the other way round (`room-deluxe.webp`,
+>    `05-superior-room.webp`) and only the loose pass finds those. Verified in a
+>    browser on three properties.
+> 2. **`upcoming/noida.webp` is byte-identical to
+>    `hotels/hotel-cladis-sector-15-noida/hero.webp`.** The "Noida" destination
+>    photo *is* the Hotel Cladis building — exactly the client's complaint that
+>    "the current one is a building". Root cause confirmed; still needs a real
+>    city photo from her.
+>
+> **Still owed by the client here:** Amby Inn's Super Deluxe falls back to its
+> own Deluxe photo. She sent Deluxe and *Executive*, no Super Deluxe, and
+> "Executive" matches no seeded category (Amby Inn is deluxe 20 / super 3). If
+> Executive **is** what they call the Super Deluxe, renaming
+> `02-executive-room.webp` to `02-super-deluxe.webp` fixes it — ask first. Do
+> not guess which room a guest is paying for.
 
 Also `tiers/tier-quadis-select.webp` is 395×276 beside siblings at 1200px. Not a
 conversion fault — the client's own source file is that size. Needs a bigger one
