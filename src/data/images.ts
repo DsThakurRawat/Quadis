@@ -31,10 +31,28 @@ for (const [path, url] of Object.entries(files)) {
 
 // hero.jpg leads; numbered gallery files follow in ascending order.
 const rank = (name: string): number => (name.toLowerCase().startsWith('hero') ? -1 : 0)
+/**
+ * Deduplicate by built URL, not by filename.
+ *
+ * The client sends the same photograph under several names — the 29 Jul gallery
+ * zip alone had nine — and some images are legitimately filed twice for
+ * different purposes (experiences/hotels-in-delhi-ncr.webp and hotels/hero.webp
+ * are the same shot, and both are referenced by name, so neither can be
+ * deleted). Vite emits ONE hashed asset per set of identical bytes, so those
+ * duplicates arrive here sharing a URL and would otherwise render as repeated
+ * tiles: the same room twice in a gallery, or Quadis 51's facade twice on its
+ * own page, since facade-2.webp and hero.webp are byte-identical.
+ *
+ * Deduping on the URL fixes every case at once without deleting a file that
+ * something else resolves by name. Note this only bites in a production build —
+ * `vite dev` serves real paths, so the URLs differ and duplicates still show.
+ */
+const uniq = (urls: string[]): string[] => [...new Set(urls)]
+
 const groups: Record<string, string[]> = {}
 for (const [dir, entries] of Object.entries(buckets)) {
   entries.sort((a, b) => rank(a.name) - rank(b.name) || a.name.localeCompare(b.name, undefined, { numeric: true }))
-  groups[dir] = entries.map((e) => e.url)
+  groups[dir] = uniq(entries.map((e) => e.url))
 }
 
 const at = (key: string): string[] => groups[key] ?? []
@@ -50,7 +68,7 @@ const at = (key: string): string[] => groups[key] ?? []
  * are sorted in place in the loop above, so order is preserved.
  */
 const atPhotos = (key: string): string[] =>
-  (buckets[key] ?? []).filter((e) => !isSectionArtwork(e.name)).map((e) => e.url)
+  uniq((buckets[key] ?? []).filter((e) => !isSectionArtwork(e.name)).map((e) => e.url))
 
 /**
  * One image from a folder, addressed by its SOURCE filename.
@@ -92,10 +110,12 @@ const isSectionArtwork = (name: string): boolean =>
 // category tabs showed all of them: a guest could see a room under "Deluxe
 // Rooms" that "All" hid. Only section artwork is excluded, since that is design
 // material rather than photography.
-export const galleryAll: string[] = Object.values(buckets)
-  .flat()
-  .filter((e) => !isSectionArtwork(e.name))
-  .map((e) => e.url)
+export const galleryAll: string[] = uniq(
+  Object.values(buckets)
+    .flat()
+    .filter((e) => !isSectionArtwork(e.name))
+    .map((e) => e.url)
+)
 
 const allPhotos = galleryAll
 
