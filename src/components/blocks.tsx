@@ -57,14 +57,31 @@ export function StatsStrip() {
   )
 }
 
-interface CtaBandProps { title?: string; cta?: string; to?: string }
-export function CtaBand({ title = 'Ready to book your stay?', cta = 'BOOK A RESERVATION', to = '/hotels' }: CtaBandProps) {
+/**
+ * `href` is for an in-page target, `to` for a route. Pass `href` on any page
+ * that is already the destination.
+ *
+ * The client reported this button as "not working" (29 Jul, item 3). It was:
+ * `to` defaults to /hotels, so on /hotels itself the button linked to the page
+ * it was already on. React Router navigated to the identical route, nothing
+ * re-rendered, and the click did nothing at all. On a hotel detail page it was
+ * worse than dead — it sent the guest back to the list, away from the booking
+ * widget sitting further up the same page.
+ *
+ * A route link cannot express "scroll to the rooms" — hence the split. `href`
+ * renders a plain anchor, which the browser scrolls natively and which honours
+ * the `scroll-behavior` already set in global.css.
+ */
+interface CtaBandProps { title?: string; cta?: string; to?: string; href?: string }
+export function CtaBand({ title = 'Ready to book your stay?', cta = 'BOOK A RESERVATION', to = '/hotels', href }: CtaBandProps) {
   const ref = useReveal()
   return (
     <section className="section bg-cream">
       <div ref={ref} className="container reveal cta-band">
         <h2 className="h2">{title}</h2>
-        <Button to={to} variant="primary">{cta}</Button>
+        {href
+          ? <Button href={href} variant="primary">{cta}</Button>
+          : <Button to={to} variant="primary">{cta}</Button>}
       </div>
     </section>
   )

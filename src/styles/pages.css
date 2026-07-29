@@ -181,6 +181,12 @@
 .detail-grid { display: grid; grid-template-columns: 1fr 380px; gap: 48px; margin-top: 40px; align-items: start; }
 .detail-grid--simple { grid-template-columns: 1fr 320px; }
 .detail-main { display: flex; flex-direction: column; gap: 48px; }
+/* Scroll targets for the "BOOK A RESERVATION" band. The nav is position:sticky
+   at 76px (.nav__inner in chrome.css), so without this the browser scrolls the
+   heading to y=0 and the header sits on top of it — the guest lands on a
+   section whose title is hidden. 96px is the 76px bar plus breathing room. */
+#choose-room, #hotel-grid { scroll-margin-top: 96px; }
+
 .detail-block { display: flex; flex-direction: column; gap: 16px; }
 .detail-block .overline { margin-bottom: 2px; }
 

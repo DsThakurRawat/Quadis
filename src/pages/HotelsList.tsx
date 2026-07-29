@@ -73,7 +73,7 @@ export default function HotelsList() {
         </div>
       </section>
 
-      <section className="section bg-cream">
+      <section className="section bg-cream" id="hotel-grid">
         <div className="container">
           <div className="list-pills">
             <FilterPills options={CITY_FILTERS} value={cityFilter} onChange={onCityFilter} ariaLabel="Filter hotels by city" />
@@ -103,7 +103,9 @@ export default function HotelsList() {
 
       <UpcomingHotels />
 
-      <CtaBand />
+      {/* Default `to` is /hotels, which is this page — the button did nothing
+          at all. Send them back up to the filters and the grid instead. */}
+      <CtaBand href="#hotel-grid" />
     </>
   )
 }

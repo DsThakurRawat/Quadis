@@ -204,7 +204,7 @@ export default function HotelDetail() {
                 </div>
               </section>
 
-              <section className="detail-block">
+              <section className="detail-block" id="choose-room">
                 <span className="overline">AVAILABLE ACCOMMODATIONS</span>
                 <h2 className="h3" style={{ marginTop: 6, marginBottom: 20 }}>Choose your room</h2>
                 <div className="rooms-grid">
@@ -471,7 +471,9 @@ export default function HotelDetail() {
         </div>
       </section>
 
-      <CtaBand />
+      {/* This page IS the booking page — send the guest up to the room list,
+          not back to /hotels, which is where the default `to` would take them. */}
+      <CtaBand href="#choose-room" />
 
       {showCheckoutModal && activeRoom && (
         <CheckoutModal
