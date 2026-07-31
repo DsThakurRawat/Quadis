@@ -12,11 +12,11 @@
  * Every rate on this site is quoted for two adults sharing a room. A third
  * adult is an extra bed, not a free upgrade.
  *
- * The rule, per the client (27 Jul 2026): a third person adds 30% of that
- * night's room rate; a CHILD adds nothing. Percentage rather than flat, so it
+ * The rule, per the client (27 Jul 2026): a third ADULT adds 30% of that
+ * night's room rate. CHILDREN are three bands, not free — under 8 free, 8 to 12
+ * at 20%, 13 and over charged as an adult. Percentage rather than flat, so it
  * tracks the room rate and the weekend surcharge automatically. See the fuller
- * note in backend/src/lib/pricing.ts — the client has stated this three ways
- * and the child half is still unconfirmed.
+ * note in backend/src/lib/pricing.ts and AGENTS.md §2 rule 3.
  *
  * The live figures are per property and set by the hotel from the admin panel;
  * they arrive on the hotel record as `extraAdultPercent` and `childFreeUnderAge`.

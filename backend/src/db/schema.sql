@@ -24,9 +24,11 @@ CREATE TABLE IF NOT EXISTS properties (
   -- Rates are quoted for two adults per room. A third ADULT adds
   -- extra_adult_percent of that night's room rate. Client, 27 Jul 2026: "If a
   -- third person is included in the same room, a 30% extra charge will apply
-  -- for the additional mattress." A child adds nothing — child_free_under_age
-  -- defaults to 18 so that "if it's child then no" holds at any age, and can be
-  -- lowered by a hotel that wants to charge for older children.
+  -- for the additional mattress."
+  --
+  -- Children are NOT free at any age. That was her first answer and it was
+  -- superseded on 27 Jul by the three bands below; the defaults on the next
+  -- three columns are the live rule (AGENTS.md §2 rule 3).
   extra_adult_percent NUMERIC(5, 2) NOT NULL DEFAULT 30.00,
   -- Three age bands, per the client 27 Jul 2026: 0-7 free, 8-12 at
   -- child_percent, adult_from_age and above charged as an adult.

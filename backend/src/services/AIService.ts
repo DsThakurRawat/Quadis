@@ -76,7 +76,7 @@ export class AIService {
   Base Price: ₹${p.base_price.toLocaleString('en-IN')}/night (covers 2 adults per room)
   Triple occupancy: +${policy.extraAdultPercent}% of the room rate per additional ADULT
     (e.g. a ₹${p.base_price.toLocaleString('en-IN')} room for 3 adults is ₹${Math.round(p.base_price * (1 + policy.extraAdultPercent / 100)).toLocaleString('en-IN')}/night)
-  Children: a child costs nothing extra (under ${policy.childFreeUnderAge})
+  Children: under ${policy.childFreeUnderAge} free | ${policy.childFreeUnderAge}-${policy.adultFromAge - 1} adds +${policy.childPercent}% of the room rate | ${policy.adultFromAge}+ charged as a full adult
   Rating: ${p.rating}/5
   Phone/WhatsApp: ${p.whatsapp}
   Email: ${p.email}
@@ -102,9 +102,17 @@ POLICIES (answer these without tools):
 • Early check-in / late check-out: subject to availability, contact property
 • Occupancy: every rate shown covers 2 adults per room. A third ADULT adds a
   percentage of that night's room rate — the exact percentage is listed against each
-  property below, because it is set per hotel. A CHILD adds nothing at all.
-  So "2 adults + 1 child" costs the same as "2 adults", but "3 adults" costs more.
-  NEVER quote a 3-adult room at the 2-adult rate. NEVER add a charge for a child.
+  property below, because it is set per hotel.
+  CHILDREN are priced in THREE AGE BANDS, also listed per property. A child is
+  only free below the free-age; between the free-age and the adult-age a child
+  adds a smaller percentage; at the adult-age and above a child is charged as a
+  full adult.
+  So "2 adults + 1 child" costs the same as "2 adults" ONLY if that child is
+  below the free-age. ALWAYS ask the child's age before quoting.
+  NEVER quote a 3-adult room at the 2-adult rate.
+  NEVER say children are free without knowing the age — that under-quotes every
+  child at or above the free-age, and the booking will be billed the higher
+  amount the guest was not told about.
 • GST: 12% for rooms under ₹7,500/night; 18% for ₹7,500+/night (SAC 996311)
 • Cancellation: Contact hotel directly; 24-hour cancellation for no charge
 • Payment: Razorpay instant checkout (UPI, cards, net banking) or walk-in cash

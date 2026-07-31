@@ -37,15 +37,17 @@ export interface RoomMealOffsets {
  * a triple on a surcharged Friday costs 30% more than that Friday's double,
  * not 30% more than a weekday double.
  *
- * STILL UNCONFIRMED: they wrote third "person", not third "adult", and gave the
- * reason as a mattress — which a child also needs. That contradicts "if it's
- * child then no". Children remain free (see DEFAULT_CHILD_FREE_UNDER_AGE) until
- * the client confirms, because charging for a child nobody agreed to charge for
- * is worse than under-billing. See docs/whatsapp-message-2.txt, message 6.
+ * RESOLVED 27 Jul 2026 — this paragraph used to say children were free at any
+ * age pending confirmation. She confirmed, and the answer was three bands, not
+ * "free": under 8 free, 8-12 at 20%, 13 and over charged as an adult. That is
+ * AGENTS.md §2 rule 3 and it is what the DEFAULT_ constants below encode.
+ * Do not reintroduce "children are free" — it under-bills every 8-to-12-year-old
+ * and it disagrees with the schema, the seed and the live API.
  *
  * The live figures are per property, set from the admin panel and stored on
- * `properties` (`extra_adult_percent`, `child_free_under_age`). These constants
- * are only the fallbacks for a record that predates those columns.
+ * `properties` (`extra_adult_percent`, `child_free_under_age`, `child_percent`,
+ * `adult_from_age`). These constants are only the fallbacks for a record that
+ * predates those columns.
  */
 export const DEFAULT_EXTRA_ADULT_PERCENT = 30
 

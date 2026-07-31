@@ -1,5 +1,12 @@
 # Quadis — Change Order #3
 
+> **HISTORICAL — delivered 26 Jul 2026. One section is now wrong.**
+> The occupancy pricing in §6 below ("a third adult adds +40%", "a child adds
+> nothing, at any age") was the client's **first** answer and she superseded it
+> on **27 Jul**. The binding rule is extra adult **30%**, under-8 free, **8–12
+> at 20%**, 13+ as an adult — AGENTS.md §2 rule 3. Do not price anything off
+> this file. Kept as the record of what was asked for and delivered on 26 Jul.
+
 Client list of 26 Jul 2026 (2 headline asks + 9 numbered items), answered item by
 item. Companion docs: `DEPLOYMENT.md` (config and go-live), `Quadis-Audit-1.md`.
 
