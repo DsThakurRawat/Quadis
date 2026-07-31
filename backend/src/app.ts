@@ -21,6 +21,25 @@ export { requireAdmin }
 export function createApp(): Express {
   const app = express()
 
+  // 0. Trust exactly one proxy hop — nginx, on this same box.
+  //
+  // Without this every request appears to come from 127.0.0.1, because nginx
+  // proxies to 127.0.0.1:3001. Express then hands the rate limiters below a
+  // single key for the entire internet: one shared 100-per-15-min bucket.
+  //
+  // That breaks checkout specifically. awaitServerConfirmation polls up to 36
+  // times per checkout (90s / 2.5s) against /api/bookings, so a handful of
+  // simultaneous guests exhaust the shared bucket and start 429ing each other
+  // *after* their money has left — the payment succeeds and the confirmation
+  // never lands.
+  //
+  // `1`, not `true`. Blanket-trusting lets a caller spoof X-Forwarded-For and
+  // walk straight past the 10-attempt limiter on /api/admin/auth; trusting one
+  // hop means only nginx's appended value is believed. Off outside production
+  // because there is no proxy in front of the dev server or the test suite,
+  // and trusting a header nobody is setting is the same spoofing hole.
+  app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false)
+
   // 1. Security Headers
   app.use(helmet())
 

@@ -29,12 +29,34 @@ export class RazorpayService {
     this.keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_simulated'
     const keySecret = process.env.RAZORPAY_KEY_SECRET || 'secret_simulated'
 
+    // In production the key must be a LIVE key, not merely a non-placeholder.
+    //
+    // The checks below only reject the literals 'mock' and 'rzp_test_simulated',
+    // so a genuine Razorpay *test* key (rzp_test_abc…) would pass them and flip
+    // the app into "live" mode against Razorpay's test environment. Checkout
+    // then looks completely normal to the guest, issues a real-looking order,
+    // and takes no real money — a silent revenue hole that no error surfaces.
+    // docs/razorpay-golive.md warns a human to check this by eye; this enforces
+    // it. Outside production a test key is exactly what you want, so it passes.
+    const keyIdEnv = process.env.RAZORPAY_KEY_ID
+    const liveKeyRequired = process.env.NODE_ENV === 'production'
+    const keyLooksLive = Boolean(keyIdEnv && keyIdEnv.startsWith('rzp_live_'))
+
+    if (liveKeyRequired && keyIdEnv && !keyLooksLive) {
+      console.error(
+        `[razorpay] Refusing to enable payments: RAZORPAY_KEY_ID does not begin with "rzp_live_" ` +
+        `(got "${keyIdEnv.slice(0, 9)}…"). Staying in simulated mode so checkout says so plainly ` +
+        `rather than appearing to charge guests while taking no money.`
+      )
+    }
+
     if (
       process.env.RAZORPAY_KEY_ID &&
       process.env.RAZORPAY_KEY_ID !== 'mock' &&
       process.env.RAZORPAY_KEY_ID !== 'rzp_test_simulated' &&
       process.env.RAZORPAY_KEY_SECRET &&
-      process.env.RAZORPAY_KEY_SECRET !== 'mock'
+      process.env.RAZORPAY_KEY_SECRET !== 'mock' &&
+      (!liveKeyRequired || keyLooksLive)
     ) {
       try {
         this.razorpayInstance = new Razorpay({
@@ -93,7 +115,30 @@ export class RazorpayService {
   }
 
   public verifyWebhookSignature(rawBody: string, signature: string, secret?: string): boolean {
-    const webhookSecret = secret || process.env.RAZORPAY_WEBHOOK_SECRET || 'secret_simulated_webhook'
+    // The 'secret_simulated_webhook' fallback is a DEVELOPMENT convenience and
+    // must never be reachable in production. It is a literal in this file, and
+    // this repository is public — anyone could HMAC a payload with it, post to
+    // /api/webhooks/razorpay, and have a booking marked CONFIRMED/PAID without
+    // paying. Exactly the shape of the 'quadis-dev-only-session-secret'
+    // fallback in lib/auth.ts, which fails closed for the same reason.
+    //
+    // install.sh only writes RAZORPAY_WEBHOOK_SECRET into the env file when the
+    // SSM parameter exists, so "absent" is a live possibility, not a theory —
+    // the old environment ran with it absent (docs/razorpay-golive.md).
+    // Fail closed: no secret in production means no webhook is ever trusted.
+    const webhookSecret =
+      secret ||
+      process.env.RAZORPAY_WEBHOOK_SECRET ||
+      (process.env.NODE_ENV === 'production' ? '' : 'secret_simulated_webhook')
+
+    if (!webhookSecret) {
+      console.error(
+        '[razorpay] RAZORPAY_WEBHOOK_SECRET is not set in production. ' +
+        'Rejecting every webhook — paid bookings will NOT auto-confirm until it is configured.'
+      )
+      return false
+    }
+
     try {
       const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex')
       return crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(signature))
