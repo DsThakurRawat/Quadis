@@ -133,6 +133,17 @@ cp "$HERE/nginx/quadis.conf"           /etc/nginx/conf.d/quadis.conf
 # missing, certbot fails at the one moment DNS has already moved.
 mkdir -p /var/www/certbot/.well-known/acme-challenge
 
+# Set the modes EXPLICITLY. This script runs under `umask 077` from the secrets
+# section above, so the mkdir alone produces 0700 root-owned directories and a
+# 0600 file — which nginx, running as the `nginx` user, cannot traverse. The
+# challenge then 404s even though the file is on disk, and certbot --webroot
+# writes its tokens into this same directory, so the certificate would fail on
+# cutover day. Caught on the 31 Jul deploy by the canary below; do not remove
+# these chmods or make them depend on umask state set by another section.
+chmod 755 /var/www/certbot \
+          /var/www/certbot/.well-known \
+          /var/www/certbot/.well-known/acme-challenge
+
 # A canary, so "is the challenge path reachable" is answerable BEFORE DNS moves
 # rather than discovered during cutover. Both failure modes this guards against
 # return 404 — the dotfile deny rule swallowing /.well-known, and an empty
@@ -140,6 +151,7 @@ mkdir -p /var/www/certbot/.well-known/acme-challenge
 # deploy/cutover.sh --check fetches this on both hostnames. Harmless to leave:
 # it is a static string, and Let's Encrypt only ever fetches its own tokens.
 echo "acme-ok" > /var/www/certbot/.well-known/acme-challenge/ping
+chmod 644 /var/www/certbot/.well-known/acme-challenge/ping
 
 # bootstrap.sh wrote a stub with the same server_name; two default_server
 # blocks is a hard nginx error.
