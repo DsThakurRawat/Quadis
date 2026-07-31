@@ -1,5 +1,24 @@
 # Migrating to the client's AWS account
 
+> **READ THIS FIRST — 31 Jul 2026. Parts of this file are history, not a plan.**
+>
+> **The build is DONE.** Her account `266877689020` runs one **`t3.medium`** EC2
+> box in `ap-south-1` with an Elastic IP, Postgres on the instance, and S3 for
+> photos. The app is deployed and serving. See AGENTS.md §3b.
+>
+> So: **"Decisions to make before building anything" below is decided**, and the
+> Order-of-work steps that describe standing up **Beanstalk, a fresh RDS, or a
+> CloudFront distribution are superseded** — AGENTS.md §4 rejected that shape.
+> Following them now would build a second, parallel stack on a paid account.
+>
+> **Still binding, and the reason to keep this file:** the CLI-access section,
+> everything about **DNS, the mail records and the DKIM/DMARC warning**, the
+> environment-variable table, and the Razorpay notes. The zone itself is now
+> captured record-by-record in `docs/dns-zone-live-capture.txt`.
+>
+> Deploy procedure today: `deploy/build-artifact.sh` → `deploy/push.sh`, and
+> `deploy/cutover.sh` on the day DNS moves.
+
 Written 29 Jul 2026 so this can be picked up cold. Everything below was read off
 the live account, not assumed.
 
@@ -41,8 +60,14 @@ the API for 30 minutes on 29 Jul (AGENTS.md incident 6). On the client's account
 there is no Free Tier reason to accept it. `backend/.ebextensions/02_swap.config`
 adds swap and should still ship, but it is a safety net, not a substitute.
 
-**3. Does her account still have Free Tier?** Twelve months from account
-creation. Changes the cost conversation, not the architecture.
+**3. ~~Does her account still have Free Tier?~~ ANSWERED 31 Jul — and it was
+not a cost detail, it was a hard blocker.** Her account was on the AWS **Free
+plan**, which (a) refuses `ModifyInstanceAttribute` with
+`FreeTierRestrictionError`, so the box could not be resized past `t3.small`,
+(b) blocks Reserved Instances, and (c) **closes the account automatically** when
+the plan ends — hers was dated **29 Jan 2027**, which would have deleted the
+site and its database. It is now on the **Paid** plan; the upgrade is one-way
+and her **$99.47 of credits survived it**. Full detail in AGENTS.md §3b.
 
 ---
 
@@ -52,6 +77,31 @@ creation. Changes the cost conversation, not the architecture.
 aws configure --profile quadis-client      # her keys, prompted, not stored here
 aws sts get-caller-identity --profile quadis-client
 ```
+
+**Already done — verified 30 Jul.** The `quadis-client` profile is configured and
+works:
+
+| | |
+|---|---|
+| Her account | `266877689020` |
+| IAM user | `Quadishotels` |
+| Permissions | `AdministratorAccess` + `IAMUserChangePassword` |
+| Contents | **empty** — 0 EC2, 0 RDS in both `us-east-1` and `ap-south-1`, no S3 buckets |
+| `ap-south-1` | enabled and reachable |
+
+So **nothing further is needed from her to start building on AWS.** Access is
+not the blocker; the hosting-shape decision is. Two things we cannot see from
+the CLI and should confirm with her before spending:
+
+1. **Whose card is on the account**, and that it is valid. It must be the
+   company's, not the builder's — §2 of AGENTS.md, same reasoning as Razorpay.
+2. ~~**Whether the account is still inside its 12-month free tier.**~~
+   **Answered 31 Jul — it was on the Free plan, which is now upgraded to Paid.
+   See decision 3 above; it blocked the instance size and would have closed the
+   account in January.**
+
+Also: our key is an IAM user with full admin on her account. It has to be
+deleted when the engagement ends, and she should have MFA on root.
 
 Then every command takes `--profile quadis-client`. Keep the default profile
 pointed at the builder account so the two are never confused — the whole
@@ -119,7 +169,34 @@ TXT  v=spf1 a mx include:websitewelcome.com include:_spf.google.com
      include:Yellow.theserverindia.com ~all
 TXT  google-site-verification=tx0Bc_a9v1k8qT6UHjQ716HZvDHpLwFt5VFYZjA0u3Y
 TXT  google-site-verification=c8NaV2tMxsnJt69f5Wto3bILWNlsYcz1NMDpUcewLP4
+
+TXT  default._domainkey  v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A…
+TXT  _dmarc              v=DMARC1; p=quarantine; adkim=r; aspf=r
 ```
+
+**The DKIM and DMARC lines were added 30 Jul** — this list was wrong until then,
+and wrong in the worst direction. DMARC is `p=quarantine`: recreate the zone
+without DKIM and her mail keeps *delivering*, into spam, with no bounce to tell
+anyone. That is harder to notice than mail simply stopping, and it decays her
+sending reputation while it happens.
+
+`default` was found by guessing common selector names. Other selectors may
+exist. **This is not a substitute for the zone export.**
+
+Two more things read off the live host on 30 Jul, both of which contradict what
+is written below:
+
+- **`www` is canonical, not the apex.** `quadishotels.com` 301s to
+  `www.quadishotels.com` on both HTTP and HTTPS. The plan below points the apex
+  at CloudFront and CNAMEs `www` to it, which inverts her current setup.
+  Whatever we cut over to has to serve `www` as primary.
+- **The zone was edited 23 Jul 2026** (SOA serial `2026072302`) and her homepage
+  was modified 22 Jul. The old host is actively maintained, not abandoned. The
+  SOA contact is `websolvo5@gmail.com` — that is the zone administrator, and we
+  have been chasing "the old designer" without a name.
+
+**Before any of this runs, read AGENTS.md §3a.** 63 of her 74 indexed URLs 404
+against the current routes. DNS is not the only thing that has to be ready.
 
 That list is what a public resolver can see. **Get the real zone export from
 theserverindia and diff it** — DKIM selectors under `_domainkey`, autodiscover
@@ -138,8 +215,13 @@ Names only. Values come from the password manager, not from here.
 
 ```
 DATABASE_URL           new RDS endpoint
-CORS_ORIGIN            MUST become https://quadishotels.com at cutover
-                       — wrong value here is incident 5 all over again
+CORS_ORIGIN            MUST become https://www.quadishotels.com at cutover
+                       — WITH the www. Her canonical host is www and the apex
+                       301s to it, so every browser request carries
+                       Origin: https://www.quadishotels.com. Setting the bare
+                       apex here is incident 5 exactly: reads fine, checkout
+                       dead, and curl cannot see it because it sends no Origin.
+                       Safest is to allow both hosts.
 RAZORPAY_KEY_ID        rzp_live_… (must start rzp_live_, see below)
 RAZORPAY_KEY_SECRET
 RAZORPAY_WEBHOOK_SECRET

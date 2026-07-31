@@ -64,11 +64,22 @@ scripts/rewrite*.js
 scripts/archive/
 
 # Catch-alls for anything new dropped in the project root. Client material
-# belongs in client-assets/briefs/ — these are the safety net for the window
-# between a file being saved here and being filed.
+# belongs in client-assets/briefs/, working screenshots in
+# client-assets/screenshots/, unplaced photography in client-assets/UNPROCESSED/.
+# These are the safety net for the window between a file being saved here and
+# being filed — they are NOT the filing system. The root was carrying 22 loose
+# images and an 8.7 MB client PDF on 31 Jul; all of it is now filed.
+#
+# .pdf/.jpg/.png/.docx were added 31 Jul: the original three patterns did not
+# cover PDFs, and "Website Changes.pdf" — the client's own change-request
+# document — sat tracked in the repo root for five days as a result.
 /image*.png
 /*.zip
 /*.jpeg
+/*.jpg
+/*.png
+/*.pdf
+/*.docx
 
 # Agents
 ..agents/
@@ -77,3 +88,4 @@ scripts/archive/
 # and it IS committed. Two private context files existed, they disagreed about
 # what was done, and the disagreement cost a database outage and 27 broken
 # image paths. A shared contract only works if everyone can see it.
+dist-artifact/

@@ -53,7 +53,12 @@ server just fails:
    ```
    Both are required — without `CORS_ORIGIN` the browser blocks the response
    even though the server answered.
-4. `npm run build` and re-upload `dist/` (`scripts/aws-deploy.sh` does this).
+4. `npm run build` and re-upload `dist/`.
+
+   > **Not `scripts/aws-deploy.sh`** — that is retired as of 31 Jul and refuses
+   > to run. It targeted a bucket that has since been deleted, in `us-east-1`.
+   > Production is one EC2 box in `ap-south-1`:
+   > `./deploy/build-artifact.sh && ./deploy/push.sh`. See AGENTS.md §3b.
 
 ### Option B — proxy `/api` on the same domain (no CORS needed)
 
@@ -202,19 +207,27 @@ The rule, in the client's own words (WhatsApp, 26 Jul 2026):
 > "And agar teesra person adult hain only then"
 > "If it's child then no"
 
-As implemented:
+**SUPERSEDED 27 Jul 2026.** The quotes above are the client's *first* answer and
+the rule below is what actually ships. She revised it on 27 Jul into three age
+bands, and AGENTS.md §2 rule 3 records that revision as binding. Do not price
+anything off the quotes above.
+
+As implemented — verified against `backend/src/lib/pricing.ts:50-74`,
+`backend/src/db/schema.sql:30-35`, every row of `backend/src/data/seed.ts`, and
+the live API:
 
 - Every advertised rate covers **2 adults per room**.
-- A third **adult** adds **+40% of that night's room rate** (`extra_adult_percent`,
-  editable per hotel). Two extra adults add +80%, and so on.
-- A **child adds nothing**, at any age. `child_free_under_age` defaults to **18**
-  so "if it's child then no" holds out of the box; lower it for a hotel that
-  wants to charge older children as adults.
+- A third **adult** adds **+30% of that night's room rate**
+  (`extra_adult_percent`, editable per hotel). Two extra adults add +60%.
+- Children are **three bands**, not free-at-any-age:
+  - **under 8** — free (`child_free_under_age` = 8)
+  - **8 to 12** — **+20%** of the room rate (`child_percent` = 20)
+  - **13 and over** — charged as an adult (`adult_from_age` = 13)
 - It is a percentage, not a flat sum, so it tracks the room rate and the weekend
   surcharge automatically: a triple on a surcharged Friday is 40% above *that
   Friday's* double, not above a weekday rate.
-- The uplift is rounded to **whole rupees per night** — 40% of ₹1,599 is ₹639.60
-  and the guest is quoted ₹640, so totals never show fractional rupees.
+- The uplift is rounded to **whole rupees per night** — 30% of ₹1,599 is ₹479.70
+  and the guest is quoted ₹480, so totals never show fractional rupees.
 - Charged **once per extra adult**, not per room: one extra person occupies one
   extra bed however many rooms the booking spans.
 - Occupancy counts across the whole booking, so 3 adults in 2 rooms are inside
@@ -225,13 +238,17 @@ Worked example — Deluxe at ₹1,599, one night:
 | Party | Total |
 |---|---|
 | 2 adults | ₹1,599 |
-| 2 adults + 1 child (any age) | ₹1,599 |
-| 3 adults | ₹2,239 &nbsp;(1,599 + 640) |
-| 4 adults | ₹2,879 &nbsp;(1,599 + 1,280) |
+| 2 adults + 1 child **under 8** | ₹1,599 |
+| 2 adults + 1 child **aged 8–12** | ₹1,919 &nbsp;(1,599 + 320) |
+| 2 adults + 1 child **aged 13+** | ₹2,079 &nbsp;(priced as an adult) |
+| 3 adults | ₹2,079 &nbsp;(1,599 + 480) |
+| 4 adults | ₹2,559 &nbsp;(1,599 + 960) |
 
-Stored on `properties.extra_adult_percent` and `properties.child_free_under_age`,
-defaulting to 40% and 18. The constants in `backend/src/lib/pricing.ts` and
-`src/lib/pricing.ts` are only those fallbacks — not the live figures.
+Stored on `properties.extra_adult_percent`, `child_free_under_age`,
+`child_percent` and `adult_from_age` — all four editable per hotel from the
+admin panel, defaulting to **30 / 8 / 20 / 13**. The constants in
+`backend/src/lib/pricing.ts` and `src/lib/pricing.ts` are only those fallbacks
+— not the live figures.
 
 **The uplift is frozen onto each booking** (`bookings.extra_adult_percent` and
 `extra_adult_charge`). Repricing a property affects future bookings only; it

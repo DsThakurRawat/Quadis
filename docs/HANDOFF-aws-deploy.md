@@ -22,8 +22,8 @@ burns time trying.
 | RDS | `quadis-db-live`, Postgres 18.3, db.t3.micro — migrated and seeded, 9 properties / 20 room types / 197 keys |
 | Frontend bucket | `quadis-hotels-test-co3` → `http://quadis-hotels-test-co3.s3-website-us-east-1.amazonaws.com` |
 | Photo bucket | `quadis-hotel-images` — public-read, uploads verified working |
-| EB instance SG | `sg-0f03fb094dfbada9c` |
-| RDS SG | `sg-03e1c65d4487ac04a` |
+| EB instance SG | **`sg-07e7ba582065ed9e8`** — corrected 31 Jul. This row previously said `sg-0f03fb094dfbada9c`, which is the **load balancer**, and applying it is what caused incident 3. See AGENTS.md §3. |
+| RDS SG | `sg-03e1c65d4487ac04a` — this one is correct |
 
 Already set on the environment, do not re-send: `SESSION_SECRET`,
 `ADMIN_PASSWORD`, `DATABASE_URL`, `CORS_ORIGIN`, `IMAGE_BUCKET`, `AWS_REGION`,
@@ -147,14 +147,35 @@ occur in a browser — requests without an `Origin` header pass regardless.
 connection from an ordinary laptop succeeds. The only thing protecting guest
 names, phone numbers and booking records is the password.
 
+> **DO NOT RUN THIS — it is already applied, and one value in it was wrong.**
+> AGENTS.md §3 records RDS 5432 as already restricted to the instance SG, so
+> re-running the revoke fails with `InvalidPermission.NotFound` and the
+> authorize just adds a redundant rule.
+>
+> The original block passed `--source-group sg-0f03fb094dfbada9c`. **That is
+> the load balancer, not the instances.** Granting RDS access to the LB cuts
+> the app off from its own database while health checks keep passing and every
+> data call hangs for forty seconds — incident 3, verbatim. Corrected below,
+> kept for the record.
+
 ```bash
-# Allow only the Beanstalk instances.
+# Allow only the Beanstalk INSTANCES. Note the source group: sg-07e7ba58…,
+# not sg-0f03fb09… — the latter is the load balancer and is the trap.
 aws ec2 authorize-security-group-ingress --group-id sg-03e1c65d4487ac04a \
-  --protocol tcp --port 5432 --source-group sg-0f03fb094dfbada9c
+  --protocol tcp --port 5432 --source-group sg-07e7ba582065ed9e8
 
 # Then remove the world.
 aws ec2 revoke-security-group-ingress --group-id sg-03e1c65d4487ac04a \
   --protocol tcp --port 5432 --cidr 0.0.0.0/0
+```
+
+Better still, resolve it rather than copy it — the literal ID is what goes
+stale:
+
+```bash
+aws ec2 describe-instances \
+  --filters "Name=tag:elasticbeanstalk:environment-name,Values=quadis-backend-live" \
+  --query 'Reservations[].Instances[].SecurityGroups[].GroupId' --output text
 ```
 
 Order matters — add the replacement before removing the old rule, or the running
@@ -238,9 +259,12 @@ Listed so no one wastes time.
 - **Razorpay is `rzp_test_simulated`.** No real payment can be taken. Live keys
   must come from the client's own account, via team access rather than a shared
   password.
-- **The third-person charge is unconfirmed.** The client has stated it three
-  ways — 40%, a flat ₹500, and 30%. The code uses 30% with children free.
-  Do not change it without a written answer; it decides what guests are billed.
+- ~~**The third-person charge is unconfirmed.**~~ **RESOLVED 27 Jul 2026.**
+  She confirmed **30%** for an extra adult, and children are **not** free —
+  three bands: under 8 free, 8–12 at **20%**, 13+ charged as an adult. The
+  "children free" half of this bullet was wrong and under-billed every child
+  aged 8 or over. AGENTS.md §2 rule 3 is binding; it still decides what guests
+  are billed, so it still needs a written answer before it changes again.
 - **Photo storage.** The client is choosing between Cloudinary and S3.
   `ImageStore` is an interface with `S3ImageStore` behind it, so switching is
   two methods and an env var. Do not hard-wire either.
