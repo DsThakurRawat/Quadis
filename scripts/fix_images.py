@@ -1,3 +1,30 @@
+"""
+RETIRED 31 Jul 2026 — DO NOT RUN. Superseded by scripts/fix_images_v2.py, which
+is also retired. Kept as the record of how the image tree was first assembled.
+
+Three reasons running this now does damage:
+
+  1. It encodes the slug `hotel-amar-in`. That was OUR TYPO and was renamed to
+     `hotel-amar-inn` on 31 Jul, together with the image directory. Running this
+     recreates `public/images/hotels/hotel-amar-in/` — an orphan directory that
+     `src/data/images.ts`'s build-time glob will happily pick up while the site
+     resolves photos under the corrected name.
+  2. It writes `.png`/`.jpeg` heroes into a tree that is now entirely `.webp`.
+  3. It calls os.remove/shutil on files BEFORE checking the destination is
+     right. Incident 4 in AGENTS.md is an image script that deleted originals.
+
+If you need to reorganise images, do it by hand against
+`public/images/hotels/<slug>/` and check `src/data/images.ts` first — the glob
+is keyed on directory name, so a directory rename silently changes what renders.
+"""
+import sys
+
+sys.exit(
+    "REFUSING TO RUN — scripts/fix_images.py is retired.\n"
+    "It targets the pre-rename slug 'hotel-amar-in' and deletes files.\n"
+    "Read the docstring at the top of this file, or AGENTS.md."
+)
+
 import os
 import shutil
 import hashlib

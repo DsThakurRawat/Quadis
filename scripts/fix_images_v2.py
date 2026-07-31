@@ -1,3 +1,25 @@
+"""
+RETIRED 31 Jul 2026 — DO NOT RUN. Near-duplicate of scripts/fix_images.py; both
+are retired for the same reasons, and the reasons are destructive ones.
+
+  1. Encodes the slug `hotel-amar-in`, which was our typo and was renamed to
+     `hotel-amar-inn` on 31 Jul along with its image directory. Running this
+     recreates the orphaned old directory.
+  2. Writes `.png`/`.jpeg` into a tree that is now entirely `.webp`.
+  3. Removes files before verifying the destination — the shape of incident 4.
+
+`src/data/images.ts` resolves photos through a build-time glob keyed on the
+directory name. Any script that renames or deletes under `public/images/` can
+change what the site renders without producing a single error. Do it by hand.
+"""
+import sys
+
+sys.exit(
+    "REFUSING TO RUN — scripts/fix_images_v2.py is retired.\n"
+    "It targets the pre-rename slug 'hotel-amar-in' and deletes files.\n"
+    "Read the docstring at the top of this file, or AGENTS.md."
+)
+
 import os
 import shutil
 import hashlib

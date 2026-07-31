@@ -89,9 +89,459 @@ Rules:
 
 ---
 
+## 3b. The client's own account — built 30 Jul 2026
+
+> **Which deployment doc is current.** Four of them describe four different
+> architectures, so read them in this order and no other:
+>
+> | File | Status |
+> |---|---|
+> | **AGENTS.md §3b + §4 (here)** | **Production. The only current description.** |
+> | `deploy/` | The actual scripts. `build-artifact.sh` → `push.sh` → `cutover.sh` |
+> | `docs/dns-zone-live-capture.txt` | Her complete zone, record by record |
+> | `docs/aws-account-migration.md` | **DNS, mail and env-vars only** — its build steps are superseded |
+> | `docs/DEPLOYMENT.md` | Keep for env-var and occupancy-pricing reference |
+> | `docs/HANDOFF-aws-deploy.md` | History. Had a wrong security-group ID; corrected in place |
+> | `docs/AWS_DEPLOYMENT_GUIDE.md` | History, and local-only (gitignored) |
+
+Her account, `266877689020`, `ap-south-1`. Everything below is live and was
+verified, not assumed. **Nothing here touches DNS** — `quadishotels.com` still
+resolves to `115.124.108.190` and the MX is still Google, confirmed after the
+build.
+
+| Thing | Value |
+|---|---|
+| Instance | `i-0d126c49ffdfe1668` — **`t3.medium`**, resized 31 Jul (see below) |
+| Account plan | **PAID** since 31 Jul. Was `FREE`, which is what blocked the resize |
+| **Elastic IP** | **`13.234.85.127`** — the address that goes in her A record at cutover |
+| Security group | `sg-0b19531290e391e17` — **80 and 443 only, no port 22** |
+| Shell | SSM Session Manager: `aws ssm start-session --target i-0d126c49ffdfe1668` |
+| IAM role | `quadis-app-ec2` — SSM core, plus write scoped to one bucket and `/quadis/*` |
+| Photo bucket | `quadis-hotel-photos` — private, public access blocked, AES256 |
+| DB password | SSM Parameter Store `/quadis/db-password`, SecureString. **Not in this repo, not in the EB-style config trap.** |
+| Health | `curl http://13.234.85.127/healthz` → `ok` |
+| **App** | **DEPLOYED 31 Jul.** Frontend + API + Postgres all live on the box. `http://13.234.85.127/` serves the site; `/api/properties` returns 9 seeded properties out of local Postgres |
+| Deploy | `./deploy/build-artifact.sh && ./deploy/push.sh` — artifact to S3, installed via SSM. **No port 22, so no scp/rsync from a laptop, by design** |
+
+### The deploy, and the four things it had to get right — 31 Jul
+
+`deploy/` now contains the whole path: `build-artifact.sh` (assembles),
+`push.sh` (S3 + SSM), `install.sh` (runs on the box), `quadis-api.service`,
+and `nginx/quadis.conf`. Four traps, all hit for real and all now fixed in the
+scripts rather than only on the box:
+
+1. **`NODE_ENV=production` is set by the systemd unit, and it is load-bearing.**
+   `backend/src/routes/webhooks.ts:17` gates the Razorpay simulation bypass on
+   `NODE_ENV !== 'production'` — without it, anyone can confirm any booking
+   with a plain POST and no payment. `backend/src/lib/auth.ts` separately falls
+   back to the literal `'quadis-dev-only-session-secret'`, which is in the
+   public repo. Nothing in `bootstrap.sh` set `NODE_ENV`. Do not start this app
+   any other way.
+2. **`pg_hba.conf` is first-match-wins.** `bootstrap.sh` *appended*
+   `host quadis quadis … scram-sha-256`, which lands **below** Amazon Linux's
+   stock `host all all 127.0.0.1/32 ident` and is never evaluated. Result:
+   `Ident authentication failed for user "quadis"`, migrations refuse to run,
+   the API dies on boot — while nginx serves the frontend perfectly. The rule
+   is now *inserted above* the stock line.
+3. **`node` is v18 on this box, not v20.** `bootstrap.sh` installs `nodejs20`,
+   but AL2023 registers node-18 and node-20 in `alternatives` at equal
+   priority and bare `node` resolves to **18.20.8**. The unit pins
+   `/usr/bin/node-20` explicitly.
+4. **`node_modules` is built on the box, never shipped.** `sharp` is
+   ABI-specific (§9) and the build host runs a different Node major. `install.sh`
+   runs `npm-20 ci --omit=dev` on the target. This also cut the artifact from
+   91 MB to 62 MB.
+
+**What ships, and what must never.** The artifact is *assembled*, never synced:
+`www/` (built frontend), `api/` (compiled backend + package.json), `nginx/`,
+`systemd/`. `build-artifact.sh` hard-fails if `docs/`, `.agents/`,
+`client-assets/`, `.git/`, `src/` or any `.env`/`.pem` is staged. As a second
+layer, `nginx/quadis.conf` denies dotfiles and `/(docs|.agents|client-assets|
+backend|src|scripts|deploy|node_modules)/` outright — verified returning 404
+for `/.env`, `/backend/.env`, `/docs/client-comms/README.md` and
+`/.agents/AGENTS.md`. **The repo is a public GitHub repo and stays public by
+the owner's decision (31 Jul); the web root is the boundary that matters.**
+
+Verified on the box, not assumed: `/` 200, `/api/health` healthy,
+`/api/properties` → 9 properties from Postgres, `/hotel-amar-inn/deluxe-room`
+→ 301 `/hotels/hotel-amar-inn`, `/contactus` → 301 `/contact`,
+`/banquets/we-offers` → 301 `/banquets`, all 16 redirect rules installed.
+
+**DNS is untouched.** `quadishotels.com` still resolves to `115.124.108.190`.
+Nothing here is visible to her guests yet — §2 rule 2 still applies and the
+cutover is still blocked on the hosting panel. **That blocker has moved since
+this was written — read §5 "The hosting panel" for the current state**, not
+this line and not §3a: the ask is now a support request to `host.co.in`, not a
+login from the old designer.
+
+Postgres listens on **loopback only**. There is no database port on the
+network, which retires the whole class of problem behind incidents 1 and 3 —
+no RDS security group to point at the wrong thing, no TLS CA bundle to ship.
+
+Nightly `pg_dump` at 02:15 UTC to `s3://quadis-hotel-photos/backups/`, 30-day
+expiry. This exists because the cost message promises "roz ka backup".
+
+### RESOLVED 31 Jul — she approved `t3.medium`, the account is on the Paid plan
+
+The box is `t3.medium` and running. Verified after the resize, not assumed:
+4 GiB (`free -m` → 3839 MB), `nginx` and `postgresql` both `enabled` **and**
+`active` after the reboot, Postgres still bound to `127.0.0.1:5432` only
+(`listen_addresses = localhost`), EIP `13.234.85.127` still associated, CPU
+credits still `standard`, `/etc/cron.d/quadis-backup` intact, `/healthz` → 200.
+
+**The Free plan was the blocker, and upgrading was never optional.** The
+earlier note here said `t3.medium` was "rejected as not eligible for Free
+Tier". The real error on the resize is `FreeTierRestrictionError`: *"This
+operation is not available for free plan accounts."* Upgrading fixed it:
+
+```
+aws freetier upgrade-account-plan --account-plan-type PAID
+```
+
+**Three things about the Free plan that were not in this file and change the
+decision entirely:**
+
+1. **A Free-plan account CLOSES ITSELF.** The plan ends after six months or
+   when credits run out, whichever comes first, and then *"your account closes
+   automatically, and you lose access to your resources and data"* — AWS holds
+   the content 90 days, then deletes it. Her `accountPlanExpirationDate` was
+   **29 Jan 2027**. Hosting production on that plan meant the site and its
+   database disappearing in January. The field is gone from
+   `get-account-plan-state` now that the plan is `PAID`.
+2. **She has $99.47 of credits and they SURVIVED the upgrade** — confirmed in
+   the API response after the flip. AWS applies leftover free-plan credits to
+   future bills; they are only forfeited if the account closes *without*
+   upgrading. That is roughly **2.4 months of the ₹3,550 bill already paid
+   for**, and it expires whether or not she uses it. Tell her.
+3. **Reserved Instances are Free-plan-blocked** — the plan excludes "features
+   that could possibly deplete your credits… Savings Plans, Reserved
+   Instances". So the 1-year RI option in §4 also needed this upgrade.
+
+Treat the upgrade as **one-way**; AWS documents no downgrade path.
+
+> **A dry-run is not a permission check — this cost an hour.** Before the
+> resize, `run-instances --instance-type t3.medium --dry-run` returned
+> *"Request would have succeeded"*. It was wrong: `DryRun` validated
+> parameters and IAM, and did **not** evaluate the free-plan restriction,
+> which only fired on the real `modify-instance-attribute`. Same shape as
+> incident 6 and the IMDSv2 bug above — the check was green and the thing was
+> blocked. Do not accept a dry-run as proof that a plan- or quota-level
+> restriction is absent.
+
+### Three bugs this build produced, all fixed — do not reintroduce them
+
+1. **IMDSv2 vs an IMDSv1 metadata call.** The instance is launched with
+   `HttpTokens=required`, and a tokenless `curl` to the metadata service
+   returns an **empty string rather than failing**. That produced
+   `--region ""`, `Invalid endpoint: https://ssm..amazonaws.com`, and under
+   `set -e` killed the bootstrap before nginx was ever installed — a box that
+   was `running`/`ok` on every EC2 check while serving nothing. Same shape as
+   incident 6: green everywhere, dead in fact. The region is now pinned.
+2. **`set -x` printed the generated DB password into
+   `/var/log/cloud-init-output.log`**, which is world-readable and survives
+   reboots. The password has been rotated, Parameter Store updated, and both
+   logs scrubbed (verified: 0 occurrences). `bootstrap.sh` now wraps the secret
+   in `set +x` / `set -x`.
+3. **Our own nginx blocked the Let's Encrypt challenge, on both hostnames and
+   for two different reasons.** Found 31 Jul while checking cutover readiness;
+   it would have fired on cutover day, with DNS already moved and her domain
+   on our box serving no HTTPS. Both were verified against the live box with a
+   `Host:` header before DNS moved — the failure was real, not theoretical:
+   - **apex → 301.** The apex→www redirect was a *server-level* `if`, and
+     nginx evaluates those in the SERVER_REWRITE phase, **before it selects a
+     location**. So it pre-empted every location in the block — including
+     anything `certbot --nginx` inserts at runtime. Let's Encrypt would have
+     followed the 301 to `https://www…` and hit a **closed port 443**, because
+     443 does not exist until the certificate being requested is issued.
+   - **www → 404.** `/.well-known/acme-challenge/…` contains `/.`, so the
+     `location ~ /\.` dotfile deny matched it and returned 404.
+
+   Fixes, all three needed together: a `map`-computed ACME exception on the
+   redirect (nginx `if` cannot AND two conditions); a
+   `location ^~ /.well-known/acme-challenge/` declared **before** the deny —
+   `^~` is what makes a prefix location beat a regex one, a plain prefix would
+   still lose; and `cutover.sh` now authenticates with
+   **`-a webroot -w /var/www/certbot -i nginx`** instead of `--nginx`, so
+   validation does not depend on certbot rewriting our config at the one
+   moment it must not fail. `-i nginx` still installs the cert and the 443
+   blocks.
+
+   **The lesson is the check, not the fix.** Both states return 404 once the
+   webroot is empty, so a status code cannot distinguish "reachable" from
+   "denied". `install.sh` now writes a canary at
+   `/.well-known/acme-challenge/ping` containing `acme-ok`, and
+   `cutover.sh --check` asserts that **body** on both hostnames via `Host:`
+   headers — which works before DNS moves. Verified end to end by running the
+   real config in an nginx container: apex and www both return `acme-ok`, the
+   apex still 301s real traffic to www, the Elastic-IP catch-all still serves
+   without redirecting, and `/.env`, `/.agents/…`, `/docs/…` still 404.
+
+   ⚠️ **This fix is in the repo and NOT yet on the box.** The deployed config
+   is still the broken one. `./deploy/build-artifact.sh && ./deploy/push.sh`
+   has to run before cutover — and `cutover.sh --check` will keep failing the
+   acme line until it does, which is the intended behaviour, not a bug.
+
+---
+
+## 3a. The domain we are moving onto — read off the live host 30 Jul 2026
+
+Everything here was resolved or fetched on 30 Jul, not copied from an earlier
+doc. `docs/aws-account-migration.md` has the cutover procedure; this is the
+current state of the thing we are cutting over to.
+
+| Fact | Value |
+|---|---|
+| Canonical host | **`https://www.quadishotels.com/`** — the apex 301s to `www`, both HTTP and HTTPS |
+| Apex A | `115.124.108.190` · `www` is a CNAME to the apex |
+| Stack | Microsoft-IIS/10.0, ASP.NET, **PleskWin** — Windows, not the Linux shared hosting `docs/dns-cutover.md` assumed |
+| Nameservers | `yellow1/yellow2.theserverindia.com` |
+| Zone serial | `2026072302` — **the zone was edited 23 Jul 2026** |
+| Site last modified | 22 Jul 2026 |
+| Cert (apex + www) | Let's Encrypt wildcard `*.quadishotels.com`, 24 Jun → 22 Sep 2026 |
+| Registrar | GoDaddy — created 18 Jan 2017, **expires 18 Jan 2027** |
+| Registrar locks | `clientTransferProhibited`, `clientUpdateProhibited`, `clientDeleteProhibited`, `clientRenewProhibited` |
+
+The registrar locks are GoDaddy's defaults and do not block a nameserver change
+made from inside her own GoDaddy account — but they do block one made any other
+way. Only she can lift them. Do not discover this on cutover day.
+
+**`www` is the canonical host, not the apex.** Both our docs describe the
+opposite (`@` at CloudFront, `www CNAME` to it). Whatever we cut over to has to
+keep `www` working as the primary, because that is what her backlinks, her
+sitemap and Razorpay's approved domain all point at.
+
+**Someone is still actively maintaining the old site.** Zone edited 23 Jul,
+homepage modified 22 Jul. Do not plan around the old host being abandoned or the
+old designer being unreachable.
+
+**The SOA contact is `websolvo5@gmail.com`** — read straight off the zone. We
+have been waiting on "the old designer" for the theserverindia panel login
+without having a name; that is the zone administrator's address.
+
+### Mail records, and two the migration doc does not list
+
+```
+MX     1 smtp.google.com                        (Google Workspace)
+SPF    v=spf1 a mx include:websitewelcome.com include:_spf.google.com
+       include:Yellow.theserverindia.com ~all
+DKIM   default._domainkey  v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0…
+DMARC  v=DMARC1; p=quarantine; adkim=r; aspf=r
+```
+
+`docs/aws-account-migration.md` lists MX, SPF and the two Google verification
+TXTs — it does **not** list DKIM or DMARC, and it says DKIM selectors "will not
+show from outside". The `default` selector does resolve; it was found by
+guessing common selector names.
+
+This matters more than a missing record usually would: **DMARC is
+`p=quarantine`.** Recreate the zone from that doc's list and you lose DKIM, so
+her mail still delivers — into spam — and it fails quietly rather than bouncing.
+Get the zone export and diff it; guessing selectors is not a substitute.
+
+### Subdomains — all eight on `115.124.108.190`
+
+`www` `adminweb` `booking` `mail` `webmail` `blog` `api` `ftp`. Every one must
+survive the cutover; only the apex/`www` moves.
+
+- **`blog.` is a live WordPress** (`wp-json` link header, `/index.php/`) on
+  IIS/Plesk. Nobody has mentioned it. It is content the client may care about
+  and an attack surface nobody is patching — ask before assuming it can go.
+- `adminweb.` 200s, modified 22 Jul, cert renewed 18 Jul → maintained. §5.
+- `booking.` 301s to `www.booking.…` and its cert expired 18 Apr 2026 → dead.
+- `api.` returns 404. It exists in DNS and serves nothing.
+
+### The cutover breaks 63 of her 74 indexed URLs
+
+Her `sitemap.xml` lists 74 URLs. Checked against the routes in `src/App.tsx`,
+**11 still resolve and 63 would 404** the moment DNS points at us:
+
+| Count | What | Why |
+|---|---|---|
+| 52 | `/<hotel-slug>/<room-slug>` room pages | We have **no route at this shape at all** — they are top-level paths, not under `/hotels/`, so they hit `*` |
+| 4 | `/banquets/banquet-hall-at-…` | Ours are `banquets-at-…`; hers are `banquet-hall-at-…`, and we have no Cladis 15 venue |
+| 2 | `/hotels/hotel-amar-inn`, `/hotels/hotel-amby-inn` | Slug mismatch — see below |
+| 5 | `/privacy-policy` `/terms-and-conditions` `/career-at-quadis` `/contactus` `/banquets/we-offers` | No route. Note hers is `/contactus`, ours is `/contact` |
+
+The 52 room pages are one page per room **per meal plan** — `…-deluxe-room`,
+`…-with-breakfast`, `…-with-breakfast-lunch-dinner`. That is her SEO surface and
+it is most of the site.
+
+Nobody has scoped redirects. Until someone does, "go live" means her Google
+results lead to 404s. This is not a DNS problem and it will not be caught by any
+check in §6.
+
+**Seven of her eight hotel slugs now match ours exactly.** One does not:
+
+| Hers (live) | Ours (seeded) |
+|---|---|
+| ~~`hotel-amar-inn`~~ | ~~`hotel-amar-in`~~ — **fixed 31 Jul**, our slug is now `hotel-amar-inn` |
+| `hotel-amby-inn` | `hotel-amby-inn-lajpat-nagar-ii` ← still ours, still redirected |
+
+Fixing the remaining one makes another dead URL live for the cost of a rename.
+Her site is the authority on her own slugs.
+
+We also seed a ninth hotel, `hotel-quadis-central-sector-27-noida`, which is
+**not on her live site at all**. Worth asking whether it is open.
+
+### `/hotel-amby-inn/amby-inn-executive-room` is a live, indexed page
+
+The open question in §4 — "is Amby Inn's Executive the Super Deluxe?" — has a
+partial answer. Her own site sells **Deluxe and Executive** at Amby Inn, with
+no Super Deluxe anywhere, across six indexed URLs. Our seed says deluxe 20 /
+super 3. So it is likelier that the *category name* is wrong in our seed than
+that her photo was mislabelled. Still ask — this changes what a guest is sold —
+but ask the sharper question: is "Super Deluxe" a name we invented for Amby Inn?
+
+Also indexed: `/hotel-amar-inn/Test-Hotel-Slug`, a test page leaked into her
+public sitemap. Not ours to fix, worth mentioning to her.
+
+---
+
 ## 4. Task board
 
 ### Open
+
+- [x] **DONE 30 Jul — all 74 of her indexed URLs now resolve, 0 broken.**
+      Mapping lives in `src/data/legacyRoutes.ts`, which is the single source of
+      truth. Two consumers, and they must agree:
+      `deploy/nginx/legacy-redirects.conf` (real 301s, authoritative for SEO)
+      and `src/components/LegacyRedirect.tsx` (React fallback, which works on
+      the current S3/CloudFront deploy where there is no nginx). A rule present
+      in one and missing from the other is invisible in testing, because the
+      React half silently covers for nginx.
+      - 52 room pages → the hotel page. Deliberately **not** deep-linked to a
+        room: her room slugs do not map onto our room ids and a wrong guess
+        sells a guest the wrong class.
+      - `/privacy-policy` and `/terms-and-conditions` are real pages now, ported
+        from her live site, and linked in the footer. They were the two we did
+        not have.
+      - Verified in a browser on the production build, not just typechecked:
+        the redirect lands on the right hotel, `/restaurant/outdoor-catering-service`
+        still beats the `/:a/:b` wildcard, and a nonsense two-segment path 404s
+        instead of being redirected somewhere plausible.
+      - Sitemap now emits **`https://www.quadishotels.com`**, not the apex —
+        her canonical host is `www` and the apex 301s to it, so apex URLs would
+        have pointed every entry at a redirect.
+
+- [x] **DONE 31 Jul — the chatbot was quoting the retired "children are free"
+      rule to guests.** Not a stale comment: `backend/src/services/AIService.ts`
+      builds the live LLM system prompt, and it said *"A CHILD adds nothing at
+      all"* and *"NEVER add a charge for a child"*, while `pricing.ts` charges
+      20% for ages 8–12. A guest asking the assistant got one number and would
+      have been billed another. `policyFor()` already returned `childPercent`
+      and `adultFromAge` — the prompt simply never used them. Both the POLICIES
+      block and the per-property line now state all three bands, and the prompt
+      instructs the model to **ask the child's age before quoting**.
+      Swept at the same time: `src/lib/pricing.ts` and `backend/src/db/schema.sql`
+      both carried comments contradicting the code directly beneath them
+      (schema.sql said `child_free_under_age` "defaults to 18" above a column
+      declaring `DEFAULT 8`). `docs/DEPLOYMENT.md` §6 and `docs/change-order-3.md`
+      are corrected/bannered. Verified: 108 tests pass, both typechecks clean,
+      and no live file under `src/` or `backend/src/` still claims children are
+      free.
+- [ ] **Two things in her own legal copy need her answer** — found while
+      porting the pages:
+      1. **Her T&C and her cancellation policy contradict each other.** The
+         T&C says advance deposits are "non-refundable unless otherwise
+         stated"; the policy she sent on 27 Jul gives free cancellation up to
+         24 hours before check-in. Both cannot hold, and the gap is a real
+         refund to a real guest. `TermsAndConditions.tsx` currently resolves it
+         with a precedence line pointing at the cancellation policy — the more
+         specific and more recent document, and the one Razorpay requires
+         visible. **That is a change to her legal text and she has to confirm
+         it.**
+      2. **Her privacy policy gives the contact address as
+         `info.quadishotels.com` and `wecare.quadishotels.com`** — a dot where
+         the `@` belongs, on both. We ship `info@quadishotels.com`, which is
+         confirmed. `wecare@` is unconfirmed so it is omitted rather than
+         guessed. Ask whether that mailbox exists.
+- [x] **DONE 31 Jul — `hotel-amar-in` → `hotel-amar-inn`.** Our typo; her live
+      site is the authority on her own hotel's name. Seven touchpoints moved
+      together, because incident 4 is exactly the half-done version of this:
+      `src/data/hotels.ts` (3), `src/components/Footer.tsx`,
+      `backend/src/data/seed.ts` (2), and `git mv` on
+      `public/images/hotels/hotel-amar-in/`. The image directory had to move
+      with the slug — `src/data/images.ts` resolves photos through a build-time
+      glob keyed on the directory name, so a renamed slug with an unrenamed
+      directory is a hotel page with no photos and no error.
+      The redirect entries were **deleted**, not repointed, in both consumers
+      (`src/data/legacyRoutes.ts`, `deploy/nginx/legacy-redirects.conf`) —
+      our slug is hers now, so the old rule would have redirected
+      `/hotels/hotel-amar-inn` to itself. The room-page rule stays and now
+      targets the corrected slug. Sitemap regenerated.
+      Verified: typecheck clean, production build clean, all 15 images emitted
+      as assets, and the bundle contains `hotel-amar-inn` with zero occurrences
+      of the old typo. **Not** verified in a browser — the Bash sandbox has its
+      own network namespace, so a preview server on localhost is unreachable
+      from Chrome on the host. §6 still wants a browser pass on the next deploy.
+      **`backend/src/data/seed.ts` changed, so the live RDS still holds the old
+      slug until it is re-seeded.** Harmless today (the new box gets a fresh
+      seed, §3b) but it means the current CloudFront deploy and the seed file
+      disagree — do not read one as evidence for the other.
+- [ ] **Decide `hotel-amby-inn-lajpat-nagar-ii` → `hotel-amby-inn`.** The other
+      half of the slug task, deliberately left open: unlike the Amar Inn typo
+      this is not a mistake, it is us having appended the locality to a slug she
+      publishes without it. Renaming makes her indexed URL resolve natively and
+      lets the last hotel-page redirect go; keeping it means one permanent 301.
+      Same seven-touchpoint shape as above if it goes ahead, plus the image
+      directory `public/images/hotels/hotel-amby-inn-lajpat-nagar-ii/`.
+- [ ] **Ask about `blog.quadishotels.com`** — a live WordPress nobody has
+      mentioned, unpatched, on the host we are migrating off.
+- [ ] **Get the zone export and diff it against §3a**, specifically DKIM and
+      DMARC. `docs/aws-account-migration.md` omits both and DMARC is
+      `p=quarantine`.
+- [x] **DONE 30 Jul — daily `pg_dump` cron is built.** `deploy/bootstrap.sh`
+      installs `/usr/local/bin/quadis-backup.sh` and `/etc/cron.d/quadis-backup`
+      at 02:15 UTC nightly, gzipped to `s3://quadis-hotel-photos/backups/`, with
+      a 30-day prune so the bucket does not grow forever. This existed as a task
+      because the cost message promises "roz ka backup" — it is now built rather
+      than assumed. (The Hostinger weekly-vs-daily framing that used to be here
+      is moot; we are on her own AWS account, §3b.)
+- [ ] **Production shape is decided: one EC2 box, not Beanstalk.**
+      **`t3.medium`** in `ap-south-1` on her account, **Elastic IP**, Postgres
+      installed on the instance, S3 for photos. No load balancer, no RDS, no
+      CloudFront.
+
+      **Size: `t3.medium` (4 GiB), chosen 30 Jul over `t3.small`.** All t3 sizes
+      here are 2 vCPU — this is a RAM decision only. `t3.small` looked adequate
+      until you account for Postgres moving onto the same box: incident 6 was
+      1 GiB running Node *alone*, with the database on a separate RDS. On
+      `t3.small` the real headroom for Node is ~1.5 GiB, not 2, and `sharp`
+      spikes hard per image on upload — the same shape of failure. 4 GiB is
+      deliberate headroom, not luxury.
+
+      Verified off the AWS pricing API, `ap-south-1`, 30 Jul:
+
+      | | EC2 | + EBS/IP/S3 | Total |
+      |---|---|---|---|
+      | on-demand | ₹2,845 | ₹706 | **~₹3,550/mo** |
+      | 1-yr RI, All Upfront | ₹1,675 | ₹706 | **~₹2,380/mo** |
+
+      1-yr All Upfront is $231 vs $392 on-demand — **41% off**. Standard Linux
+      RIs are size-flexible within the family, so a reservation is not wasted
+      if the size changes later.
+
+      **Do not buy the RI on day one.** Run on-demand a month, confirm the
+      shape under real traffic, then commit. It is the same price whenever you
+      buy it, and ₹20,097 up front on her card is its own decision.
+
+      **Set the instance to `standard` CPU-credit mode, not `unlimited`.**
+      Unlimited is the default and silently bills per vCPU-hour when credits
+      run out, which on a box doing image processing is how an unpredicted
+      bill happens.
+
+      **Why, because this was argued in circles once already:** the reason to
+      leave AWS was never AWS. It was CloudFront, which has no static IP, so
+      an apex A record cannot point at it and the whole zone has to relocate —
+      taking her Google MX, DKIM and DMARC with it. An **Elastic IP is a static
+      IP**, so the apex is one A record, the nameservers stay at
+      theserverindia, and her email is never in the blast radius. That is the
+      entire advantage the Hostinger detour was chasing, and her own account
+      already has it.
+
+      Do not reopen this by comparing a VPS against *Beanstalk + ELB + RDS +
+      CloudFront* — that is a managed multi-service shape at ₹3,600-5,400 and
+      it is not the only way to use AWS. Compare like with like.
 
 - [ ] **Migrating to the client's own AWS account — see
       `docs/aws-account-migration.md`.** Builder has her account details as of
@@ -134,6 +584,62 @@ Rules:
       Vite emits one asset and two buckets both point at it. Includes
       `upcoming/noida.webp` = `hotels/hotel-cladis-sector-15-noida/hero.webp`,
       which is the "Noida photo is a building" complaint.
+
+      > **DO NOT "fix" this by deleting the duplicate files.** An audit on
+      > 31 Jul recommended deleting the four intra-directory pairs to save
+      > "~0.5 MB shipped twice". Both halves of that are wrong, verified:
+      >
+      > - **Nothing ships twice.** Vite already emits ONE asset per set of
+      >   identical bytes — `hotel-quadis-sector-51-noida/hero.webp` collapses
+      >   into `facade-2-Ds3nriSc.webp` in `dist/assets`. The 488 KB is source
+      >   only; the shipped cost of the duplication is **zero bytes**.
+      > - **The dedupe is already deliberate.** `src/data/images.ts:50`
+      >   `uniq()` collapses them on URL, and its comment says plainly that
+      >   this was chosen over deletion so as not to remove a file something
+      >   else resolves by name.
+      >
+      > The only real symptom is that `vite dev` serves real paths, so the
+      > URLs differ and the doubles still show **in dev mode only**. Production
+      > is correct. This item is about asking the client which photo belongs
+      > where — it is not a file-deletion task.
+- [x] **DONE 31 Jul — the repo root is no longer a dumping ground.** It was
+      carrying **22 loose images** (`image copy 2..17.png`, four stray `.jpeg`)
+      plus the client's own 8.7 MB `Website Changes.pdf`, which was **tracked**
+      and therefore public. All filed, nothing deleted, all 22 checksums
+      verified present at the destination:
+
+      | Kind | Home |
+      |---|---|
+      | Client WhatsApp / brief material | `client-assets/briefs/` |
+      | Working screenshots (dashboards, UI) | `client-assets/screenshots/` |
+      | Photography not yet placed | `client-assets/UNPROCESSED/` |
+
+      Filed names are date-stamped from the file's own mtime
+      (`2026-07-29-image-copy-10.png`) because two root files collided by name
+      with files already in `screenshots/` while having **different** contents —
+      a plain `mv` would have silently destroyed one of each pair.
+
+      The root catch-alls in `.gitignore` did not cover `.pdf`, which is why the
+      client's document sat tracked for five days. Now `/*.pdf`, `/*.png`,
+      `/*.jpg`, `/*.docx` are covered too. They are root-anchored, so
+      `public/**` is unaffected — verified.
+
+      **The catch-alls are a safety net, not the filing system.** Anything
+      landing at the root still has to be filed by hand into one of the three
+      directories above.
+- [x] **`public/logo/` and `public/logos/` are two different things — do not
+      merge or rename them.** Checked 31 Jul because the names look like a
+      typo for each other. They are not:
+      - `public/logo/` — **our** brand kit, 13 Quadis SVGs (wordmarks,
+        monograms, favicon, app icon). 80 KB. Only 4 are referenced; the rest
+        are a deliberate complete mark set, not clutter.
+      - `public/logos/partners/` — **third-party** partner and client logos,
+        referenced from `src/data/logos.ts`. 17 references.
+
+      Renaming either is a bad trade: both are referenced as **absolute URL
+      strings**, so a missed one produces a broken image at runtime with no
+      build error and no test failure. The confusion costs a moment; a silent
+      broken logo on the live site costs more.
 - [ ] **`dist` is now 64 MB** (was 48 MB) — 30 MB in `dist/images`, 29 MB in
       `dist/assets`, because every image still ships twice. See "Known, not
       urgent"; the workaround there still stands, but the number is growing.
@@ -258,7 +764,7 @@ have exactly one image in `public/images/hotels/<slug>/`:
 
 | Hotel | Files |
 |---|---|
-| `hotel-amar-in` | 15 |
+| `hotel-amar-inn` | 15 |
 | `hotel-quadis-central-sector-27-noida` | 8 |
 | `hotel-quadis-sector-51-noida` | 8 |
 | `hotel-downtown-sector-51-noida` | 6 |
@@ -336,6 +842,48 @@ Keep the glob as the fallback and let uploads override it, which is what
 
 ---
 
+## 4a. Claims we have made to the client, and what backs them
+
+Re-verified 30 Jul before sending the cost message. Three claims that had been
+sitting in drafts were wrong. Check this list before writing her another one.
+
+| Claim | Status |
+|---|---|
+| "Pehle 3-8 hazaar bola tha" | ✅ `round-1-sent.txt` message 1 item 4, exactly that |
+| She asked for the cheapest option | ✅ her words, 27 Jul: *"AWS hosting k liye sir ne kaha jo sbse km price ka hoga vhi lgana"* |
+| `info@quadishotels.com` is on Google | ✅ MX = `smtp.google.com`, and her own *"Mail id gmail pr chlti h"* |
+| Old host cannot run the new site | ✅ but **only for the stated reason** — see below |
+| Monthly billing, no lock-in | ✅ **true on AWS** — on-demand is billed monthly by usage with no commitment. It was *false* on the Hostinger plan this message used to describe, whose own page says "all plans are paid upfront". The claim survived only because the platform changed under it |
+| ~~₹1,500-2,000/mo~~ | ❌ **WAS SENT TO HER, AND WAS WRONG.** Priced on `t3.small`. Superseded — see the row below. The three comms files that still *instructed* sending this number were corrected 31 Jul |
+| **~₹3,550/mo on `t3.medium`** | ✅ **she agreed 31 Jul**, and the account was upgraded to the Paid plan on the strength of it. ⚠️ Provenance: relayed to us in-session, not read off a message thread — if you need her words, get them before quoting her back to herself. Her $99.47 credit covers ~2.4 months of it and **she has not been told that yet — the line is now written into `message-a-server-cost-SEND.txt`, which is drafted and waiting to send** |
+| "AWS pe hi rahega" | ✅ and it is what she asked for by name — *"AWS hosting k liye sir ne kaha…"* |
+| Mumbai | ✅ `ap-south-1`, verified enabled on her account |
+| Card is the company's | ⚠️ **asked, not verified.** Not visible from the CLI. Rule is non-negotiable — §2, same as Razorpay |
+| "Roz ka backup" | ⚠️ **now a promise we owe.** Their page says **"Free weekly backups"** and daily is an enable-it extra. Task board has the cron |
+| Email will not be touched | ⚠️ true **only on the VPS path** (static IP → one A record). False on CloudFront, which forces a nameserver move |
+
+**The claim that was outright wrong: "shared hosting can't run online booking
+because it has no database."** It was in the draft for a day. Her current host
+runs `adminweb.quadishotels.com` — hotels, bookings, coupons, occupancy — on
+that same IP, so it plainly has a database. She, her "sir", or the old designer
+could have said so in one line and we would have looked like we had not looked.
+
+The true reason is narrower and already in §5: her stack is **Windows /
+IIS / ASP.NET / Plesk** and ours is **Node + Postgres**. That box cannot run
+ours. Say that, not "shared hosting is weak".
+
+**"Sir ne kaha" — the cost decision is not hers alone.** Her 27 Jul message
+attributes the cheapest-option instruction to a senior. Expect the ₹1,500-2,000
+confirmation to go through him, and write anything about money so it survives
+being forwarded.
+
+Also from that same message: *"Login details purane designer se magi h"* — she
+had already asked for the theserverindia login on 27 Jul. **That chase produced
+nothing in four days and has now been routed around** — she is going to the host
+directly instead. §5 "The hosting panel".
+
+---
+
 ## 5. Blocked on the client
 
 Messages are drafted in `docs/client-comms/`. Send
@@ -392,11 +940,60 @@ Plesk for Windows**, not the Linux shared hosting `docs/dns-cutover.md` assumes.
 The existing stack cannot host the Node backend — long term this is
 replace-or-run-alongside, never merge.
 
-The 13–17 age band · the theserverindia hosting login · live Razorpay keys
-(still `rzp_test_simulated`, so no real payment can be taken) · photo storage
-choice, Cloudinary or S3 — `ImageStore` is an interface precisely so this stays
-open, do not hard-wire a vendor · AWS cost confirmation · **the PMS decision in
-§2.4, which decides the most.**
+### The hosting panel — the single go-live blocker, state as of 31 Jul
+
+The app is built, deployed and healthy on her own account (§3b). **The only
+thing left is one A record**, and it is behind a control panel we cannot reach.
+The thread has moved twice in one day, so do not re-litigate it from §3a alone:
+
+1. `message-b-dns-access-SEND.txt` **was sent**. It deliberately gave her a
+   route that does not depend on the old designer — she has been chasing him
+   since 27 Jul with nothing back, and she is theserverindia's customer while
+   he is a middleman.
+2. **She answered by drafting the support email herself, and it is right.** It
+   asks for a panel reset *or* the A record moved to `13.234.85.127`, and it
+   names MX, SPF, DKIM and DMARC as must-not-touch. Do not rewrite it — that
+   is the message we would have written. Screenshot:
+   `client-assets/briefs/2026-07-31-whatsapp-support-email-draft-and-addresses.png`.
+3. She asked only **where to send it**, forwarding two addresses.
+   `message-c-which-support-address-SEND.txt` answers that — **sent 31 Jul**.
+4. **She then appears to have mailed the host. Believed, not confirmed** — it
+   reached us as "ig she sent mail to them", with no sent copy, no reply and
+   no ticket number seen. Treat it as unverified: if the mail was never sent,
+   the symptom is identical to the host ignoring it, and both look like
+   silence. Ask her to forward it. Provenance discipline, §4a.
+
+**Do not wait on being told.** `./deploy/cutover.sh --check` answers "have they
+acted yet" with no client contact at all — it is read-only, safe to run any
+time, and the apex-A line flips the moment they touch the record. As of the
+last run the apex is still `115.124.108.190` and everything else is green.
+
+**`theserverindia` is now `host.co.in` (ESDS Ltd Group)** — the domain
+301-redirects there. Re-verified 31 Jul, and it is worth re-checking before
+quoting, because it is the address she will actually mail:
+
+| Check | Result |
+|---|---|
+| `theserverindia.com` | 301 → `https://www.host.co.in/` |
+| `yellow1.theserverindia.com` | `115.124.108.190` — **her site's exact IP**, which is how support locates her account with no customer ID |
+| `indianservers.com` | Cloudflare, a different network, unmentioned by `host.co.in`. Almost certainly an unrelated company — the other address she was given |
+
+Send to the **reseller first with the host CC'd**: if she bought through the
+Gurgaon agent, that agent holds the panel and `host.co.in` answers "you are not
+our customer". CC covers both cases without her needing to know which is true.
+Push the phone number (`+91 966 576 0700`) alongside the mail — this blocker has
+a third party's response time inside it, and Indian hosting support moves faster
+on a call than on a ticket.
+
+The 13–17 age band · ~~the theserverindia hosting login~~ **→ now the
+host.co.in support request above** · ~~live Razorpay keys~~ **→ not blocked on
+her at all: the live keys exist and authenticate, and the 31 Jul test failed on
+Razorpay's approved-domain check because checkout was running on a bare IP.
+Three SSM parameters plus DNS cutover finish it — `docs/razorpay-golive.md`** ·
+photo storage choice,
+Cloudinary or S3 — `ImageStore` is an interface precisely so this stays open, do
+not hard-wire a vendor · ~~AWS cost confirmation~~ **agreed 31 Jul at ~₹3,550,
+§4a** · **the PMS decision in §2.4, which decides the most.**
 
 ---
 

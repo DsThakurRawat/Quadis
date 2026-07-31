@@ -1,8 +1,40 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Quadis Hotels Platform — Automated AWS Deployment Script
+# RETIRED 31 Jul 2026 — DO NOT RUN. Kept as the record of the S3/CloudFront era.
 # ==============================================================================
+#
+# Three things in here are now wrong:
+#
+#   1. It targets `quadis-hotels-frontend-1784969986`, a bucket that was
+#      deliberately DELETED as stale around 27 Jul. Line 41 is `s3 mb ... || true`,
+#      so running this RECREATES the dead bucket and silently syncs the build
+#      into it — a deploy that reports success and changes nothing anyone sees.
+#   2. It is `us-east-1`. Production is `ap-south-1` on the client's own account.
+#   3. It never invalidates CloudFront, so even against a live bucket the old
+#      bundle keeps being served.
+#
+# Production deploy today is one EC2 box, and the artifact is assembled rather
+# than synced:
+#
+#     ./deploy/build-artifact.sh     # only www/ api/ nginx/ systemd/
+#     ./deploy/push.sh               # S3 + SSM; the box has no port 22
+#     ./deploy/cutover.sh            # on the day DNS moves
+#
+# See AGENTS.md §3b. This file is referenced from docs/DEPLOYMENT.md, which now
+# points at the above instead.
 set -e
+
+cat >&2 <<'RETIRED'
+REFUSING TO RUN — scripts/aws-deploy.sh is retired.
+
+It deploys to an S3 bucket that no longer exists, in the wrong region, for an
+architecture that was replaced. Use:
+
+    ./deploy/build-artifact.sh && ./deploy/push.sh
+
+Read the header of this file, or AGENTS.md 3b, for the full reason.
+RETIRED
+exit 1
 
 echo "=== Quadis AWS Deployment verification ==="
 echo "Checking AWS IAM identity and permissions..."

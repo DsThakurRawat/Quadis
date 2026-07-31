@@ -69,7 +69,23 @@ MESSAGE 3 - hosting aur database
    Usse hum sirf website ka record badlenge, email ko haath nahi lagayenge.
    Aapka mail Google pe hai, wo safe rahega.
 
-2. AWS pe testing ke liye maine sab laga diya hai aur chal raha hai. Ab jab
+2. SUPERSEDED 30 Jul - do not send this item. The cost answer now goes out as
+   message A of round 4, and the file to send is
+   docs/client-comms/message-a-server-cost-SEND.txt, at ~Rs 3,500 a month.
+
+   (NOT message-server-cost.txt, and NOT Rs 1,500-2,000. Both are superseded -
+   that figure was priced on t3.small and the box is t3.medium. AGENTS.md 4a.)
+
+   The 2,500-3,500 figure below was priced on the t3.micro shape that wedged
+   the API for 30 minutes on 29 Jul (AGENTS.md incident 6), and which
+   docs/aws-account-migration.md decision 2 rules out. Priced honestly off the
+   AWS pricing API for ap-south-1, the same architecture on t3.small is about
+   3,600 a month single-instance, or 5,400 with the load balancer Beanstalk
+   gives you by default. Quoting the old number would have been low by a third
+   or a half, discovered after she had already said yes.
+
+   -- original text, kept as the record --
+   AWS pe testing ke liye maine sab laga diya hai aur chal raha hai. Ab jab
    asli website live karni hai to uska kharcha lagbhag 2,500-3,500 rupaye
    mahina aayega (server + database + backup). Aapne "sabse kam price" kaha
    tha - ye usi hisab se sabse chhota setup hai. Confirm kar dijiye.
