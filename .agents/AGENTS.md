@@ -986,11 +986,13 @@ a third party's response time inside it, and Indian hosting support moves faster
 on a call than on a ticket.
 
 The 13–17 age band · ~~the theserverindia hosting login~~ **→ now the
-host.co.in support request above** · ~~live Razorpay keys~~ **→ not blocked on
-her at all: the live keys exist and authenticate, and the 31 Jul test failed on
-Razorpay's approved-domain check because checkout was running on a bare IP.
-Three SSM parameters plus DNS cutover finish it — `docs/razorpay-golive.md`** ·
-photo storage choice,
+host.co.in support request above** · ~~live Razorpay keys~~ **→ WIRED 31 Jul.
+All three secrets are in SSM as SecureString, the box is redeployed, and
+`/api/payments/create-order` returns `"isSimulated": false` against the live
+account. Two things remain and neither is hers: the webhook URL still points at
+the dead CloudFront endpoint, and checkout cannot be exercised until DNS moves,
+because Razorpay matches the origin against the approved website —
+`docs/razorpay-golive.md`** · photo storage choice,
 Cloudinary or S3 — `ImageStore` is an interface precisely so this stays open, do
 not hard-wire a vendor · ~~AWS cost confirmation~~ **agreed 31 Jul at ~₹3,550,
 §4a** · **the PMS decision in §2.4, which decides the most.**

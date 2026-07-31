@@ -71,7 +71,22 @@ not in `client-assets/`, and they stay that way.**
 
 ---
 
-## Our side — three SSM parameters, and that is all
+## Our side — DONE 31 Jul
+
+All three parameters are in SSM as SecureString on her account, the box has been
+redeployed, and `install.sh` printed `razorpay: live key + webhook secret
+present`. Verified end to end against the Elastic IP, not assumed:
+`POST /api/payments/create-order` returned **`"isSimulated": false`** with a
+real order id and `amount: 150000` — ₹1,500, the Quadis Sector 51 deluxe base
+rate. The API is taking live Razorpay orders.
+
+**What is still NOT done is the webhook URL** (below). Orders can be created;
+the confirmation that flips a paid booking to CONFIRMED still points at a dead
+CloudFront endpoint. Payments are not finished until that changes.
+
+Original instructions kept below, for a rotation or a rebuild.
+
+## Setting the three SSM parameters
 
 `install.sh` already reads them and writes `/etc/quadis/api.env`; nothing in the
 repo needs editing. Set them once, then redeploy:
