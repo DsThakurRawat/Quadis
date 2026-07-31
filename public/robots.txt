@@ -7,4 +7,4 @@ Disallow: /account
 Disallow: /login
 Disallow: /register
 
-Sitemap: https://quadishotels.com/sitemap.xml
+Sitemap: https://www.quadishotels.com/sitemap.xml

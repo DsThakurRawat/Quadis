@@ -13,7 +13,15 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const ORIGIN = 'https://quadishotels.com'
+/*
+ * www, not the bare apex. The client's live site is canonical on
+ * https://www.quadishotels.com — the apex 301s to it on both HTTP and HTTPS —
+ * and we cut over onto that same domain. Emitting apex URLs would point every
+ * entry in the sitemap at a redirect, and split signals between two hostnames
+ * for the URLs that already rank. Verified off the live host 30 Jul 2026; see
+ * AGENTS.md 3a.
+ */
+const ORIGIN = 'https://www.quadishotels.com'
 
 const hotelsSrc = readFileSync(join(root, 'src/data/hotels.ts'), 'utf8')
 
@@ -51,6 +59,16 @@ const STATIC_ROUTES = [
   ['/gallery', '0.5'],
   ['/virtual-tour', '0.5'],
   ['/contact', '0.6'],
+  /*
+   * The policy pages carry low priority but must be listed. Razorpay requires
+   * them reachable before it approves a merchant account, and the client's
+   * existing site has /privacy-policy and /terms-and-conditions indexed today —
+   * we move onto the same domain, so dropping them from the sitemap would
+   * retire two URLs that already rank.
+   */
+  ['/privacy-policy', '0.3'],
+  ['/terms-and-conditions', '0.3'],
+  ['/cancellation-policy', '0.3'],
 ]
 
 const urls = [

@@ -15,14 +15,23 @@ const SOCIAL_LINKS = [
 
 interface FooterLink { label: string; to: string }
 const HOTELS_LINKS: FooterLink[] = [
-  { label: 'Hotel Amar Inn', to: '/hotels/hotel-amar-in' },
+  { label: 'Hotel Amar Inn', to: '/hotels/hotel-amar-inn' },
   { label: 'Hotel Amby Inn', to: '/hotels/hotel-amby-inn-lajpat-nagar-ii' },
   { label: 'Hotel Downtown', to: '/hotels/hotel-downtown-east-of-kailash' },
   { label: 'Hotel Cladis', to: '/hotels/hotel-cladis-sector-15-noida' },
   { label: 'Hotel Quadis', to: '/hotels/hotel-quadis-sector-51-noida' },
 ]
+/*
+ * Mirrors the "Important Links" block on the client's existing site, minus
+ * Career and Blog, which have no page here. Privacy and Terms are not optional
+ * furniture: Razorpay requires both to be reachable from the site before it
+ * will approve a merchant account, and a page nothing links to is one a
+ * crawler will not find after the cutover.
+ */
 const IMPORTANT: FooterLink[] = [
   { label: 'Contact Us', to: '/contact' },
+  { label: 'Privacy Policy', to: '/privacy-policy' },
+  { label: 'Terms & Conditions', to: '/terms-and-conditions' },
   { label: 'Cancellation Policy', to: '/cancellation-policy' },
 ]
 

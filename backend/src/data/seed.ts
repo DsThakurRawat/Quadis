@@ -9,7 +9,7 @@ export const seedProperties: PropertyRecord[] = [
   { id: 'prop-7', slug: 'hotel-downtown-sector-51-noida', lat: 28.5815, lng: 77.375, name: 'Hotel Downtown Sector 51 Noida', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', map_link: 'https://share.google/Mwl1FiCVC8ucqXrd', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2500, rating: 4.5, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
   { id: 'prop-8', slug: 'hotel-downtown-east-of-kailash', lat: 28.555, lng: 77.245, name: 'Hotel Downtown EOK', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', map_link: 'https://share.google/3RsBzxkp8xV1e0AuY', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 3000, rating: 4.6, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
   { id: 'prop-9', slug: 'hotel-amby-inn-lajpat-nagar-ii', lat: 28.57, lng: 77.24, name: 'Hotel Amby Inn', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', map_link: 'https://share.google/pSTT03I5OWszpSj5c', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2500, rating: 4.5, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
-  { id: 'prop-10', slug: 'hotel-amar-in', lat: 28.571, lng: 77.2415, name: 'Hotel Amar Inn', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', map_link: 'https://share.google/IQLx35cfOmLf93S2o', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 3000, rating: 4.4, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-10', slug: 'hotel-amar-inn', lat: 28.571, lng: 77.2415, name: 'Hotel Amar Inn', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', map_link: 'https://share.google/IQLx35cfOmLf93S2o', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 3000, rating: 4.4, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
 ]
 
 type RoomTemplate = Omit<RoomTypeRecord, 'id' | 'property_id'>
@@ -93,7 +93,7 @@ const KEYS_BY_SLUG: Record<string, RoomPlan> = {
   // Delhi — sheet total 72.
   'hotel-downtown-east-of-kailash': { deluxe: 23, super: 6, royal: 1 }, // 30
   'hotel-amby-inn-lajpat-nagar-ii': { deluxe: 20, super: 3 },           // 23
-  'hotel-amar-in': { deluxe: 12, super: 6, royal: 1 },                  // 19
+  'hotel-amar-inn': { deluxe: 12, super: 6, royal: 1 },                  // 19
 }
 
 /**

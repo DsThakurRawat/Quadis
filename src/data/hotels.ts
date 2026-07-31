@@ -101,7 +101,7 @@ const ROOMS_BY_SLUG: Record<string, HotelRoom[]> = {
   'hotel-quadis-central-sector-27-noida': [DELUXE, SUPER],
   'hotel-downtown-east-of-kailash': [DELUXE, SUPER, ROYAL],
   'hotel-amby-inn-lajpat-nagar-ii': [DELUXE, SUPER],
-  'hotel-amar-in': [DELUXE, SUPER, ROYAL],
+  'hotel-amar-inn': [DELUXE, SUPER, ROYAL],
 }
 
 export const getHotelRooms = (hotel: Hotel): HotelRoom[] =>
@@ -120,7 +120,7 @@ export const STATIC_HOTELS: Hotel[] = [
   { slug: 'hotel-downtown-sector-51-noida', coords: { lat: 28.5815, lng: 77.375 }, transit: { metro: { name: 'Sector 52 Metro', value: '10 min walk' }, airport: { name: 'IGI Airport T3', value: '33 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '25 km' }, landmark: { name: 'Kendriya Vihar', note: 'neighbourhood' } }, name: 'Hotel Downtown Sector 51 Noida', area: 'Sector 51', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', price: 2500, rating: 4.5 },
   { slug: 'hotel-downtown-east-of-kailash', coords: { lat: 28.555, lng: 77.245 }, transit: { metro: { name: 'Kailash Colony Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '18 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '4 km' }, landmark: { name: 'ISKCON Temple', note: 'landmark' } }, name: 'Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', price: 3000, rating: 4.6 },
   { slug: 'hotel-amby-inn-lajpat-nagar-ii', coords: { lat: 28.57, lng: 77.24 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '3 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Central Market', note: 'dining & retail' } }, name: 'Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', price: 2500, rating: 4.5 },
-  { slug: 'hotel-amar-in', coords: { lat: 28.571, lng: 77.2415 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Jal Vihar', note: 'neighbourhood' } }, name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', price: 3000, rating: 4.4 },
+  { slug: 'hotel-amar-inn', coords: { lat: 28.571, lng: 77.2415 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Jal Vihar', note: 'neighbourhood' } }, name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', price: 3000, rating: 4.4 },
 ]
 
 /**
@@ -129,7 +129,7 @@ export const STATIC_HOTELS: Hotel[] = [
  * only one of them makes the grid re-shuffle the moment the fetch lands.
  */
 export const HOTEL_DISPLAY_ORDER: readonly string[] = [
-  'hotel-amar-in',                        // Hotel Amar Inn
+  'hotel-amar-inn',                        // Hotel Amar Inn
   'hotel-downtown-east-of-kailash',       // Hotel Downtown EOK
   'hotel-downtown-sector-51-noida',       // Hotel Downtown Sec 51
   'hotel-downtown-sector-15-noida',       // Hotel Downtown Sec 15
