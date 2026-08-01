@@ -72,8 +72,22 @@ if [ "$ST" != "Success" ]; then
 fi
 
 echo
-echo "==> Public check on the Elastic IP (NOT the client domain)"
-curl -fsS -m 8 "http://13.234.85.127/healthz" && echo "    healthz ok"
+echo "==> Public check"
+# Health check must follow the certbot restructure.
+#
+# certbot --redirect rewrites the port-80 server block to redirect only the two
+# real hostnames and end with `return 404` for everything else — so once the
+# certificate is installed, http://13.234.85.127/healthz returns 404, not 200.
+# This check used `curl -fsS` on exactly that URL, so post-cutover every deploy
+# would fail its own health check for a reason that has nothing to do with the
+# deploy. Ask over HTTPS with the real hostname when the domain is live here,
+# and fall back to the raw IP over HTTP before cutover.
+if [ "$(dig @1.1.1.1 +short A quadishotels.com +time=5 2>/dev/null | tail -1)" = "13.234.85.127" ]; then
+  curl -fsS -m 10 --resolve www.quadishotels.com:443:13.234.85.127 \
+    "https://www.quadishotels.com/healthz" >/dev/null && echo "    healthz ok (https)"
+else
+  curl -fsS -m 8 "http://13.234.85.127/healthz" >/dev/null && echo "    healthz ok (http, pre-cutover)"
+fi
 
 # HTTPS check, once the domain is live on this box.
 #
