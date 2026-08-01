@@ -173,6 +173,21 @@ if [ "$RULES" -lt 10 ]; then
 fi
 echo "    legacy redirect rules: $RULES"
 
+# Certificate auto-renewal.
+#
+# On Amazon Linux 2023 the certbot package ships `certbot-renew.timer`
+# DISABLED. Issuing a certificate does not enable it, and `certbot renew
+# --dry-run` passes happily either way — so every check looks green while
+# nothing is scheduled to actually renew. Found on 1 Aug 2026, hours after
+# go-live: the certificate was valid until 30 Oct and the site would simply
+# have stopped answering HTTPS that day with no warning.
+#
+# Enabled here rather than by hand so a rebuilt box cannot lose it. Harmless
+# before a certificate exists — renew is a no-op with nothing to renew.
+systemctl enable --now certbot-renew.timer 2>/dev/null \
+  && echo "    certbot renewal timer: enabled" \
+  || echo "    WARNING: could not enable certbot-renew.timer — renewal is NOT scheduled" >&2
+
 nginx -t
 
 # --- services -------------------------------------------------------------
