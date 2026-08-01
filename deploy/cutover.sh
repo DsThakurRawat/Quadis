@@ -37,12 +37,32 @@ say() { printf "  %-46s %s\n" "$1" "$2"; }
 echo "==> Pre-flight"
 
 # --- 1. does DNS point at us yet -----------------------------------------
-APEX="$(dig +short A "$DOMAIN" | tail -1)"
-if [ "$APEX" = "$EIP" ]; then
-  say "apex A -> $EIP" "OK"
+# Ask the AUTHORITATIVE nameserver and a public resolver — never the local one.
+#
+# A stale local cache reports "not moved" for up to the old TTL (21600s here)
+# AFTER the change is live and the rest of the internet has already switched.
+# That is exactly backwards for deciding whether to cut over: it blocks the
+# certificate at the one moment the domain is pointed at us with no HTTPS.
+# Verified 1 Aug 2026 — the local resolver still said 115.124.108.190 while
+# 8.8.8.8, 1.1.1.1, 9.9.9.9 and OpenDNS all already said 13.234.85.127.
+#
+# The authoritative answer is the one that governs: Let's Encrypt resolves
+# against the authoritative nameservers, so that is what decides whether
+# HTTP-01 validation lands on us or on the old host.
+APEX_AUTH="$(dig @yellow1.theserverindia.com +short A "$DOMAIN" +time=5 2>/dev/null | tail -1)"
+APEX_PUB="$(dig @1.1.1.1 +short A "$DOMAIN" +time=5 2>/dev/null | tail -1)"
+
+if [ "$APEX_AUTH" = "$EIP" ]; then
+  say "apex A (authoritative) -> $EIP" "OK"
 else
-  say "apex A" "NOT YET ($APEX) — DNS has not moved"
+  say "apex A (authoritative)" "NOT YET ($APEX_AUTH) — DNS has not moved"
   fail=1
+fi
+
+if [ "$APEX_PUB" = "$EIP" ]; then
+  say "apex A (public resolver)" "OK — propagated"
+else
+  say "apex A (public resolver)" "still $APEX_PUB — propagating, not a blocker"
 fi
 
 # --- 2. the records that must NOT have changed ---------------------------
@@ -113,11 +133,33 @@ echo "==> Pre-flight clean."
 [ "$CHECK_ONLY" -eq 1 ] && { echo "    (--check: stopping here, nothing changed)"; exit 0; }
 
 # --- 4. CORS before HTTPS -------------------------------------------------
-echo "==> Setting CORS_ORIGIN"
+#
+# THIS SCRIPT NO LONGER APPLIES CORS_ORIGIN TO THE BOX, AND MUST NOT PRETEND TO.
+#
+# It used to run `bash /tmp/quadis-deploy/install.sh 2>/dev/null || true` here.
+# push.sh deletes /tmp/quadis-deploy on its last line, so that file never
+# existed by the time this ran, and `2>/dev/null || true` swallowed the failure
+# completely. The parameter landed in SSM, /etc/quadis/api.env never gained
+# CORS_ORIGIN, and the result was verified live on 1 Aug 2026: a POST to
+# /api/bookings/initiate carrying `Origin: https://www.quadishotels.com`
+# returned 500, while the identical POST with no Origin header returned 201.
+# Working HTTPS and a checkout that 500s for every real browser.
+#
+# install.sh is the ONLY writer of /etc/quadis/api.env — one source of truth.
+# So the order is: set the parameter, redeploy, THEN cut over. The SSM command
+# below hard-fails if CORS_ORIGIN is not already in the env file, so this can
+# never silently proceed again.
+echo "==> Setting CORS_ORIGIN in SSM"
 aws ssm put-parameter --name /quadis/cors-origin --type String \
-  --value "https://www.$DOMAIN" --overwrite \
+  --value "https://www.$DOMAIN,https://$DOMAIN" --overwrite \
   --profile "$PROFILE" --region "$REGION" >/dev/null
-echo "    https://www.$DOMAIN"
+echo "    https://www.$DOMAIN,https://$DOMAIN"
+echo "    (both hosts: the apex 301s to www, but a request that arrives on the"
+echo "     apex still carries an apex Origin and must not be rejected)"
+echo
+echo "    If you have not redeployed since setting this, STOP and run:"
+echo "      ./deploy/build-artifact.sh && ./deploy/push.sh"
+echo "    The certificate step below will refuse if CORS_ORIGIN is not on the box."
 
 # --- 5. certificate -------------------------------------------------------
 # AUTHENTICATOR IS `webroot`, NOT `--nginx`, AND THAT IS DELIBERATE.
@@ -139,7 +181,7 @@ CMD=$(aws ssm send-command --profile "$PROFILE" --region "$REGION" \
     'mkdir -p /var/www/certbot/.well-known/acme-challenge',
     'certbot run -a webroot -w /var/www/certbot -i nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos --register-unsafely-without-email --redirect',
     'systemctl reload nginx',
-    'bash /tmp/quadis-deploy/install.sh 2>/dev/null || true',
+    'test -f /etc/quadis/api.env && grep -q "^CORS_ORIGIN=" /etc/quadis/api.env || { echo "FATAL: CORS_ORIGIN missing from /etc/quadis/api.env"; exit 1; }',
     'systemctl restart quadis-api',
     'sleep 4',
     'curl -fsS -m 5 http://127.0.0.1:3001/api/health >/dev/null && echo API-OK'
