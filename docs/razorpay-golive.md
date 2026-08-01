@@ -71,6 +71,36 @@ not in `client-assets/`, and they stay that way.**
 
 ---
 
+## Status 1 Aug 2026 — everything configured, one thing unproven
+
+| Piece | State |
+|---|---|
+| Live `rzp_live_` keys in SSM | ✅ |
+| Webhook URL `https://www.quadishotels.com/api/webhooks/razorpay` | ✅ Enabled |
+| Subscribed events | `payment.authorized`, `payment.failed`, `payment.captured`, `order.paid` |
+| **Automatic Capture** | ✅ on — captures within 12 min of bank authorisation |
+| Signature verification | ✅ proven, see below |
+| `create-order` on live site | ✅ `isSimulated: false` |
+
+**`payment.authorized` is subscribed but NOT handled by our code** —
+`routes/webhooks.ts` acts only on `order.paid`, `payment.captured` and
+`payment.failed`. Harmless, but it is not a substitute for Automatic Capture;
+if capture were Manual the booking would never confirm no matter what is
+subscribed.
+
+**Signature verification was proven without a real payment**, by signing a
+payload with the secret from SSM and posting it at the live endpoint:
+
+- correctly signed, nonexistent booking code → **404 "Target booking not
+  found"** — the HMAC passed and the request reached the booking lookup
+- deliberately wrong signature → **401 "Invalid Razorpay webhook signature"**
+
+⚠️ **What that does NOT prove:** it signs with *our* copy of the secret, so it
+cannot tell you whether *Razorpay's* stored copy is the same string. If they
+differ, real deliveries 401 and paid bookings never confirm. Only a real
+payment settles it — check the delivery log. This is the single remaining
+unknown in the payment path.
+
 ## Our side — DONE 31 Jul
 
 All three parameters are in SSM as SecureString on her account, the box has been
