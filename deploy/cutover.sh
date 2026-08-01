@@ -101,8 +101,28 @@ code() { curl -s -o /dev/null -w '%{http_code}' -m 8 "$1" 2>/dev/null || echo 00
 [ "$(code http://$EIP/api/health)"  = "200" ] && say "box serves /api"     "OK" || { say "box /api" "FAIL"; fail=1; }
 [ "$(code http://$EIP/hotel-amar-inn/deluxe-room)" = "301" ] \
   && say "legacy 301s live" "OK" || { say "legacy 301s" "FAIL"; fail=1; }
+# "Unreachable" and "served" are NOT the same finding and must not print the
+# same alarm. `code()` collapses a timeout to 000, so on 1 Aug a slow response
+# right after a deploy reported `LEAK /.env SERVED — STOP` while the path was
+# in fact returning a clean 404. A false STOP at cutover time is its own
+# hazard: it teaches whoever is running this to distrust the check, or to
+# abort a cutover that was fine. Retry, then name what actually happened.
+leak_code() {
+  local c
+  for _ in 1 2 3; do
+    c="$(curl -s -o /dev/null -w '%{http_code}' -m 8 "$1" 2>/dev/null)"
+    [ -n "$c" ] && [ "$c" != "000" ] && { echo "$c"; return; }
+    sleep 2
+  done
+  echo 000
+}
 for leak in /.env /docs/client-comms/README.md /.agents/AGENTS.md; do
-  [ "$(code http://$EIP$leak)" = "404" ] || { say "LEAK $leak" "SERVED — STOP"; fail=1; }
+  c="$(leak_code "http://$EIP$leak")"
+  case "$c" in
+    403|404) : ;;
+    000)     say "LEAK $leak" "UNREACHABLE after 3 tries — re-run; NOT proof of a leak"; fail=1 ;;
+    *)       say "LEAK $leak" "SERVED ($c) — STOP, this is a real leak"; fail=1 ;;
+  esac
 done
 say "private paths denied" "OK"
 
