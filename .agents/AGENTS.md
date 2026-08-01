@@ -167,12 +167,43 @@ Verified on the box, not assumed: `/` 200, `/api/health` healthy,
 → 301 `/hotels/hotel-amar-inn`, `/contactus` → 301 `/contact`,
 `/banquets/we-offers` → 301 `/banquets`, all 16 redirect rules installed.
 
-**DNS is untouched.** `quadishotels.com` still resolves to `115.124.108.190`.
-Nothing here is visible to her guests yet — §2 rule 2 still applies and the
-cutover is still blocked on the hosting panel. **That blocker has moved since
-this was written — read §5 "The hosting panel" for the current state**, not
-this line and not §3a: the ask is now a support request to `host.co.in`, not a
-login from the old designer.
+### 🟢 LIVE — cutover completed 1 Aug 2026
+
+`quadishotels.com` now resolves to `13.234.85.127`. **This site is in front of
+real guests. §2 rule 2 now means the opposite of what it used to: changes here
+are visible immediately, so nothing goes out untested.**
+
+The host made the change on 1 Aug; SOA serial went `2026072302` → `2026080101`.
+Verified after the cert was issued, not assumed:
+
+| Check | Result |
+|---|---|
+| `https://www.quadishotels.com/` | 200 |
+| apex → www | 301 |
+| `http://` → `https://` | 301 |
+| Certificate | Let's Encrypt, `CN=quadishotels.com`, SAN covers apex + www, **expires 30 Oct 2026** |
+| `/api/properties` | 9 properties from local Postgres |
+| Legacy 301s | `/hotel-amar-inn/deluxe-room`, `/contactus`, `/banquets/we-offers` all correct |
+| CORS | her two origins 201, `evil.example.com` rejected |
+| **Payments** | `create-order` → **`isSimulated: false`** over HTTPS |
+| `/.env`, `/.agents/`, `/docs/` | 404 |
+| **Mail** | **MX Google, SPF, DKIM 417b, DMARC `p=quarantine` — ALL UNCHANGED** |
+| `adminweb` `blog` `webmail` `mail` `booking` `api` | still `115.124.108.190`, untouched |
+| Old host | still up and serving; nothing was destroyed |
+
+**The certificate renews via certbot's systemd timer. It was issued with
+`-a webroot -w /var/www/certbot`, so renewal depends on that webroot staying
+readable by nginx and on the `location ^~ /.well-known/acme-challenge/` block
+surviving. Do not remove either — renewal fails silently and the site goes
+dark ~30 Oct.**
+
+**`ftp.quadishotels.com` followed the apex** onto our box, which runs no FTP.
+It was a CNAME to the apex, so this was unavoidable without a separate record.
+Nobody has said whether it is used; ask before assuming it is dead.
+
+Still outstanding: the **Razorpay webhook URL** still points at the retired
+CloudFront distribution, so a paid booking will not auto-confirm until it is
+changed to `https://www.quadishotels.com/api/webhooks/razorpay`.
 
 Postgres listens on **loopback only**. There is no database port on the
 network, which retires the whole class of problem behind incidents 1 and 3 —
