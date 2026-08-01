@@ -74,5 +74,27 @@ fi
 echo
 echo "==> Public check on the Elastic IP (NOT the client domain)"
 curl -fsS -m 8 "http://13.234.85.127/healthz" && echo "    healthz ok"
+
+# HTTPS check, once the domain is live on this box.
+#
+# This exists because "Deploy complete" used to print over a site that had just
+# lost HTTPS: the deploy overwrites the nginx config certbot wrote its TLS into,
+# and every check here only ever spoke HTTP, so nothing noticed. Checked against
+# the real hostname with --resolve so a stale local DNS cache cannot mask it.
+if [ "$(dig @1.1.1.1 +short A quadishotels.com +time=5 2>/dev/null | tail -1)" = "13.234.85.127" ]; then
+  HTTPS_CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 15 \
+    --resolve www.quadishotels.com:443:13.234.85.127 \
+    https://www.quadishotels.com/ 2>/dev/null || echo 000)"
+  if [ "$HTTPS_CODE" = "200" ]; then
+    echo "    https   ok (live site)"
+  else
+    echo >&2
+    echo "FATAL: the domain points here but https://www.quadishotels.com returned $HTTPS_CODE." >&2
+    echo "       The live site is DOWN over HTTPS. Most likely this deploy overwrote" >&2
+    echo "       the TLS config; re-apply it with:" >&2
+    echo "         certbot install --nginx --cert-name quadishotels.com --non-interactive --redirect" >&2
+    exit 1
+  fi
+fi
 echo "    site:      http://13.234.85.127/"
 echo "    a redirect: curl -sI http://13.234.85.127/hotel-amar-inn/deluxe-room | head -2"

@@ -173,6 +173,31 @@ if [ "$RULES" -lt 10 ]; then
 fi
 echo "    legacy redirect rules: $RULES"
 
+# Re-apply TLS, because the copy above just deleted it.
+#
+# This script copies our quadis.conf over /etc/nginx/conf.d/quadis.conf on every
+# deploy. certbot --nginx writes its `listen 443 ssl` and ssl_certificate lines
+# INTO THAT SAME FILE at cutover — so every deploy after go-live silently
+# removed them. nginx came back healthy, /healthz returned 200 over HTTP, the
+# API was fine, push.sh printed "Deploy complete", and HTTPS was simply gone.
+# Verified 1 Aug 2026: a routine deploy took the live site off HTTPS entirely
+# while every check stayed green. The file's own header says do not hand-edit
+# on the box because the next deploy overwrites it — nobody accounted for
+# certbot being the thing doing the editing.
+#
+# `certbot install` re-deploys an EXISTING certificate into the config. It makes
+# no ACME request, so it cannot fail validation or spend a rate limit, and it is
+# skipped entirely before the first certificate exists.
+if [ -d /etc/letsencrypt/live/quadishotels.com ]; then
+  if certbot install --nginx --cert-name quadishotels.com \
+       --non-interactive --redirect >/dev/null 2>&1; then
+    echo "    TLS re-applied to nginx config"
+  else
+    echo "FATAL: certificate exists but could not be re-applied — HTTPS would be DOWN." >&2
+    exit 1
+  fi
+fi
+
 # Certificate auto-renewal.
 #
 # On Amazon Linux 2023 the certbot package ships `certbot-renew.timer`
