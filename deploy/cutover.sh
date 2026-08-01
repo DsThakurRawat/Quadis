@@ -192,16 +192,31 @@ echo "    The certificate step below will refuse if CORS_ORIGIN is not on the bo
 # `location ^~ /.well-known/acme-challenge/` block in quadis.conf, which is
 # checked in pre-flight above. `-i nginx` still installs the cert and adds
 # the 443 blocks — only the challenge half changed.
+# NO DOUBLE QUOTES ANYWHERE INSIDE THE commands=[ ... ] BLOCK BELOW.
+#
+# The whole thing is one double-quoted shell string, so a `"` inside it closes
+# that string early and the AWS CLI receives fragments as stray options. That
+# happened on 1 Aug 2026 — a check written with "^CORS_ORIGIN=" produced
+# `aws: [ERROR]: Unknown options: missing, from, /etc/quadis/api.env; exit 1; }'`
+# and the cutover aborted at the certificate step. It failed safely, because
+# send-command never parsed and so nothing ran on the box and no Let's Encrypt
+# attempt was spent — but it aborts the cutover with the domain already
+# pointing at us and no HTTPS, which is the worst moment to be debugging shell
+# quoting. Use bare words, or single-quoted fragments that do not nest.
+#
+# The CORS_ORIGIN assertion is deliberately the FIRST command, before certbot.
+# Checking after the rate-limited step tells you the deploy is wrong only once
+# the certificate has already been requested.
 echo "==> Issuing certificate (this is the irreversible-ish step; rate limits apply)"
 CMD=$(aws ssm send-command --profile "$PROFILE" --region "$REGION" \
   --instance-ids "$INSTANCE" --document-name "AWS-RunShellScript" \
   --comment "quadis cutover: certbot + restart" \
   --parameters "commands=[
     'set -e',
+    'grep -q ^CORS_ORIGIN= /etc/quadis/api.env || { echo FATAL-CORS_ORIGIN-missing-from-api-env; exit 1; }',
     'mkdir -p /var/www/certbot/.well-known/acme-challenge',
     'certbot run -a webroot -w /var/www/certbot -i nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos --register-unsafely-without-email --redirect',
     'systemctl reload nginx',
-    'test -f /etc/quadis/api.env && grep -q "^CORS_ORIGIN=" /etc/quadis/api.env || { echo "FATAL: CORS_ORIGIN missing from /etc/quadis/api.env"; exit 1; }',
     'systemctl restart quadis-api',
     'sleep 4',
     'curl -fsS -m 5 http://127.0.0.1:3001/api/health >/dev/null && echo API-OK'
