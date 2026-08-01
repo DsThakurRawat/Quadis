@@ -27,7 +27,11 @@ ART="$(ls -t dist-artifact/quadis-*.tar.gz 2>/dev/null | head -1)"
 KEY="deploys/$(basename "$ART")"
 
 echo "==> Uploading $(basename "$ART") ($(du -h "$ART" | cut -f1))"
-aws s3 cp "$ART" "s3://$BUCKET/$KEY" --profile "$PROFILE" --region "$REGION" --only-show-errors
+# --no-progress as well as --only-show-errors: the latter does not suppress the
+# per-chunk "Completed 29.2 MiB/61.7 MiB" lines in AWS CLI v2, which bury the
+# rest of the deploy output in thousands of lines of transfer noise.
+aws s3 cp "$ART" "s3://$BUCKET/$KEY" --profile "$PROFILE" --region "$REGION" \
+  --only-show-errors --no-progress
 
 echo "==> Instructing $INSTANCE to install"
 CMD=$(aws ssm send-command \
