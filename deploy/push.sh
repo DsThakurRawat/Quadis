@@ -42,7 +42,7 @@ CMD=$(aws ssm send-command \
   --parameters "commands=[
     'set -euo pipefail',
     'rm -rf /tmp/quadis-deploy && mkdir -p /tmp/quadis-deploy',
-    'aws s3 cp s3://$BUCKET/$KEY /tmp/quadis-deploy/a.tar.gz --region $REGION',
+    'aws s3 cp s3://$BUCKET/$KEY /tmp/quadis-deploy/a.tar.gz --region $REGION --only-show-errors --no-progress',
     'tar -xzf /tmp/quadis-deploy/a.tar.gz -C /tmp/quadis-deploy',
     'chmod +x /tmp/quadis-deploy/install.sh',
     'bash /tmp/quadis-deploy/install.sh',
