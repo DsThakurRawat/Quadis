@@ -61,14 +61,19 @@ export default function QuadisAssistChat() {
         body: JSON.stringify({ message: text, history: messages })
       })
 
-      const data = await res.json()
-      
+      // The API answers with an envelope — { success, data: { reply, ... } } —
+      // so the reply is one level down. Reading `body.reply` yields undefined and
+      // silently falls through to the offline copy below, which made the widget
+      // look dead no matter how healthy the backend was.
+      const body = await res.json()
+      const payload = body?.data ?? body
+
       const assistMsg: ChatMessage = {
         id: `a_${Date.now()}`,
         role: 'assistant',
-        content: data.reply || 'I am currently offline. Please connect via WhatsApp or Call.',
-        toolsInvoked: data.toolsInvoked,
-        handoffTriggered: data.handoffTriggered,
+        content: payload?.reply || 'I am currently offline. Please connect via WhatsApp or Call.',
+        toolsInvoked: payload?.toolsInvoked,
+        handoffTriggered: payload?.handoffTriggered,
       }
 
       setMessages((prev) => [...prev, assistMsg])
