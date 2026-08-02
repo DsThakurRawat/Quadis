@@ -85,6 +85,14 @@ function sslFor(connectionString: string): { rejectUnauthorized: boolean; ca?: s
 // DatabaseEngine abstraction layer providing seamless support for real PostgreSQL via pg Pool
 // or structured in-memory ACID store when DATABASE_URL is not set (for zero-config local dev/tests).
 
+/**
+ * Guards lookups against UUID primary keys. Postgres raises
+ * "invalid input syntax for type uuid" for a malformed comparison value instead
+ * of returning zero rows, so callers that mean "find or 404" must screen first.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const isUuid = (value: string): boolean => UUID_RE.test(value)
+
 export class DatabaseEngine {
   /** Public so the migration runner and webhook lookups can reach it directly. */
   public pool: Pool | null = null
@@ -1130,6 +1138,31 @@ export class DatabaseEngine {
   }
 
   public async createEnquiry(payload: Omit<EnquiryRecord, 'id' | 'status' | 'created_at'>): Promise<EnquiryRecord> {
+    // `enquiries.id` is `UUID PRIMARY KEY DEFAULT gen_random_uuid()`, so the id
+    // is the database's to mint. Passing our own `enq_<ts>_<rand>` made Postgres
+    // reject every insert with "invalid input syntax for type uuid", which 500'd
+    // every contact/banquet/corporate/room-hold submission on the live site.
+    // Same shape as `INSERT INTO users` above: omit the column, let the default fire.
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `INSERT INTO enquiries (enquiry_type, property_id, guest_name, guest_phone, guest_email, event_date, guest_count, message, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [
+          payload.enquiry_type,
+          payload.property_id || null,
+          payload.guest_name,
+          payload.guest_phone,
+          payload.guest_email || null,
+          payload.event_date || null,
+          payload.guest_count || null,
+          payload.message || null,
+          'NEW',
+        ]
+      )
+      return res.rows[0]
+    }
+
+    // In-memory store keys off a plain string, so it mints its own id.
     const id = `enq_${Date.now()}_${Math.floor(Math.random() * 1000)}`
     const record: EnquiryRecord = {
       id,
@@ -1144,27 +1177,6 @@ export class DatabaseEngine {
       status: 'NEW',
       created_at: new Date(),
     }
-
-    if (!this.useInMemory && this.pool) {
-      const res = await this.pool.query(
-        `INSERT INTO enquiries (id, enquiry_type, property_id, guest_name, guest_phone, guest_email, event_date, guest_count, message, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-        [
-          record.id,
-          record.enquiry_type,
-          record.property_id || null,
-          record.guest_name,
-          record.guest_phone,
-          record.guest_email || null,
-          record.event_date || null,
-          record.guest_count || null,
-          record.message || null,
-          record.status,
-        ]
-      )
-      return res.rows[0]
-    }
-
     this.memoryEnquiries.set(id, record)
     return record
   }
@@ -1185,6 +1197,10 @@ export class DatabaseEngine {
 
   public async getEnquiryById(id: string): Promise<EnquiryRecord | null> {
     if (!this.useInMemory && this.pool) {
+      // Comparing a non-UUID string against a UUID column is a Postgres *error*,
+      // not a miss, so a stale link or a typo'd id would surface as a 500 rather
+      // than the 404 the routes already handle. Treat unparseable as "not found".
+      if (!isUuid(id)) return null
       const res = await this.pool.query('SELECT * FROM enquiries WHERE id = $1', [id])
       return res.rows[0] || null
     }
@@ -1193,6 +1209,7 @@ export class DatabaseEngine {
 
   public async updateEnquiryStatus(id: string, status: EnquiryRecord['status'], razorpayPaymentLinkId?: string): Promise<EnquiryRecord | null> {
     if (!this.useInMemory && this.pool) {
+      if (!isUuid(id)) return null
       const res = await this.pool.query(
         `UPDATE enquiries SET status = $1, razorpay_payment_link_id = COALESCE($2, razorpay_payment_link_id) WHERE id = $3 RETURNING *`,
         [status, razorpayPaymentLinkId || null, id]
@@ -1208,6 +1225,25 @@ export class DatabaseEngine {
   }
 
   public async createChatLog(payload: Omit<ChatLogRecord, 'id' | 'created_at'>): Promise<ChatLogRecord> {
+    // `chat_logs.id` is a UUID with a `gen_random_uuid()` default, same as
+    // enquiries. Supplying `chat_${ts}_${rand}` threw on every insert — invisibly,
+    // because routes/ai.ts wraps this call in try/catch, so the chat kept replying
+    // 200 while every log row was silently lost.
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(
+        `INSERT INTO chat_logs (session_id, user_message, bot_response, tools_invoked, handoff_triggered)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [
+          payload.session_id,
+          payload.user_message,
+          payload.bot_response,
+          JSON.stringify(payload.tools_invoked || []),
+          Boolean(payload.handoff_triggered),
+        ]
+      )
+      return res.rows[0]
+    }
+
     const id = `chat_${Date.now()}_${Math.floor(Math.random() * 1000)}`
     const record: ChatLogRecord = {
       id,
@@ -1218,23 +1254,6 @@ export class DatabaseEngine {
       handoff_triggered: Boolean(payload.handoff_triggered),
       created_at: new Date(),
     }
-
-    if (!this.useInMemory && this.pool) {
-      const res = await this.pool.query(
-        `INSERT INTO chat_logs (id, session_id, user_message, bot_response, tools_invoked, handoff_triggered)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [
-          record.id,
-          record.session_id,
-          record.user_message,
-          record.bot_response,
-          JSON.stringify(record.tools_invoked),
-          record.handoff_triggered,
-        ]
-      )
-      return res.rows[0]
-    }
-
     this.memoryChatLogs.set(id, record)
     return record
   }
