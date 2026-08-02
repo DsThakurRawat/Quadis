@@ -191,7 +191,9 @@ describe('Master End-to-End Acceptance Suite: All 5 Phases of Quadis Hotels Plat
       expect(res.body.data.reply).toContain('CONFIRMED')
     })
 
-    it('4.2 POST /api/ai/chat handles banquet RFP creation via create_banquet_enquiry tool', async () => {
+    it('4.2 POST /api/ai/chat routes a banquet RFP without inventing an enquiry', async () => {
+      const before = Array.from(db.memoryEnquiries.values()).length
+
       const res = await request(app)
         .post('/api/ai/chat')
         .send({
@@ -201,7 +203,12 @@ describe('Master End-to-End Acceptance Suite: All 5 Phases of Quadis Hotels Plat
 
       expect(res.status).toBe(200)
       expect(res.body.success).toBe(true)
-      expect(res.body.data.toolsInvoked).toContain('create_banquet_enquiry')
+      // Keyword matching cannot know the guest's name, phone or date, so the
+      // fallback points them at the banquet form rather than filing a lead
+      // under placeholder details and paging management about it.
+      expect(res.body.data.toolsInvoked).not.toContain('create_banquet_enquiry')
+      expect(res.body.data.reply).toMatch(/Banquets/i)
+      expect(Array.from(db.memoryEnquiries.values()).length).toBe(before)
     })
 
     it('4.3 GET /api/ai/logs retrieves audit trail of AI conversation turns', async () => {

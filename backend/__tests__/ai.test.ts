@@ -26,7 +26,16 @@ describe('Phase 4: Agentic GenAI Chatbot (`Quadis Assist`) Suite', () => {
     expect(res.body.data.toolsInvoked).toContain('search_hotels')
   })
 
-  it('POST /api/ai/chat initiates a 15-minute soft reservation hold via initiate_soft_hold tool', async () => {
+  // The two tests below used to assert the opposite: that a keyword match was
+  // enough for the chatbot to place a real inventory hold and file a real
+  // banquet lead. The fallback engine cannot read the conversation, so every
+  // such record was invented — "Chatbot Guest" on hardcoded November dates,
+  // and "Valued Guest" on 9876543210 for 150 people — and each one paged
+  // management on WhatsApp. They now assert that no write happens.
+
+  it('POST /api/ai/chat does NOT place a booking hold off a keyword match', async () => {
+    const before = Array.from(db.memoryBookings.values()).length
+
     const res = await request(app)
       .post('/api/ai/chat')
       .send({
@@ -36,17 +45,18 @@ describe('Phase 4: Agentic GenAI Chatbot (`Quadis Assist`) Suite', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
-    expect(res.body.data.toolsInvoked).toContain('initiate_soft_hold')
-    expect(res.body.data.reply).toContain('15-Minute Reservation Hold Created!')
+    expect(res.body.data.toolsInvoked).not.toContain('initiate_soft_hold')
+    // Routes the guest instead of guessing dates on their behalf.
+    expect(res.body.data.reply).toMatch(/Check availability/i)
 
-    // Verify hold exists in DB
-    const bookings = Array.from(db.memoryBookings.values())
-    const hold = bookings.find((b) => b.guest_name === 'Chatbot Guest')
-    expect(hold).toBeDefined()
-    expect(hold?.booking_status).toBe('PENDING_PAYMENT')
+    const after = Array.from(db.memoryBookings.values())
+    expect(after.length).toBe(before)
+    expect(after.find((b) => b.guest_name === 'Chatbot Guest')).toBeUndefined()
   })
 
-  it('POST /api/ai/chat creates a banquet RFP enquiry and alerts manager via create_banquet_enquiry tool', async () => {
+  it('POST /api/ai/chat does NOT file a banquet enquiry off a keyword match', async () => {
+    const before = Array.from(db.memoryEnquiries.values()).length
+
     const res = await request(app)
       .post('/api/ai/chat')
       .send({
@@ -56,19 +66,41 @@ describe('Phase 4: Agentic GenAI Chatbot (`Quadis Assist`) Suite', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
-    expect(res.body.data.toolsInvoked).toContain('create_banquet_enquiry')
-    expect(res.body.data.reply).toContain('event director')
+    expect(res.body.data.toolsInvoked).not.toContain('create_banquet_enquiry')
+    expect(res.body.data.reply).toMatch(/Banquets/i)
 
-    // Verify enquiry in DB
-    const enquiries = Array.from(db.memoryEnquiries.values())
-    const rfp = enquiries.find((e) => e.enquiry_type === 'BANQUET' && e.message?.includes('conference'))
-    expect(rfp).toBeDefined()
+    const after = Array.from(db.memoryEnquiries.values())
+    expect(after.length).toBe(before)
+    expect(after.find((e) => e.guest_phone === '9876543210')).toBeUndefined()
+  })
+
+  it('POST /api/ai/chat answers a greeting without dumping the property list', async () => {
+    const res = await request(app)
+      .post('/api/ai/chat')
+      .send({ sessionId: testSessionId, message: 'hi' })
+
+    expect(res.status).toBe(200)
+    expect(res.body.data.toolsInvoked).toEqual([])
+    // Used to answer "hi" with three hotels, addresses and every room rate.
+    expect(res.body.data.reply.length).toBeLessThan(300)
+    expect(res.body.data.reply).not.toMatch(/₹/)
   })
 
   it('POST /api/ai/chat checks real-time booking status via check_booking_status tool', async () => {
-    // First get a known booking code from seed or our previous test
-    const allBookings = Array.from(db.memoryBookings.values())
-    const targetBooking = allBookings[0]
+    // Created through the real booking path. This used to lean on the hold that
+    // the chatbot test above fabricated, so removing that write broke it.
+    const held = await db.initiateBookingHold({
+      propertySlug: 'hotel-quadis-sector-51-noida',
+      roomTypeSlug: 'deluxe-room',
+      checkIn: '2026-12-01',
+      checkOut: '2026-12-03',
+      roomsCount: 1,
+      guestsCount: 2,
+      guestName: 'Status Test Guest',
+      guestPhone: '9812345678',
+    })
+    expect(held.success).toBe(true)
+    const targetBooking = held.booking!
 
     const res = await request(app)
       .post('/api/ai/chat')

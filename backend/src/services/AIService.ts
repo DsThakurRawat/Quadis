@@ -62,39 +62,56 @@ export class AIService {
   private async buildSystemPromptWithContext(): Promise<string> {
     const properties = await db.getPropertiesWithRooms()
 
+    // This prompt is rebuilt and re-sent on EVERY request, and Groq's token
+    // budget is a shared daily pool, so it must carry only what the model
+    // cannot obtain from a tool. Room dimensions, bed types and live unit
+    // counts moved out to search_hotels, which already returns them on demand.
+    // The occupancy policy and the contact number are stated once rather than
+    // duplicated across all nine properties.
+    //
+    // Occupancy pricing is per-property configurable, so it cannot simply be
+    // hardcoded once: state the shared rule and then name any property that
+    // deviates. A divergent property must never inherit the common rate — the
+    // whole point of these bands is not under-quoting a guest with a child.
+    const policies = properties.map((item) => ({ p: item.property, policy: policyFor(item.property) }))
+    const shapeOf = (x: ReturnType<typeof policyFor>) =>
+      `${x.extraAdultPercent}/${x.childFreeUnderAge}/${x.childPercent}/${x.adultFromAge}`
+    const shapeCounts = new Map<string, number>()
+    policies.forEach(({ policy }) => shapeCounts.set(shapeOf(policy), (shapeCounts.get(shapeOf(policy)) || 0) + 1))
+    const commonShape = [...shapeCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+    const commonPolicy = policies.find(({ policy }) => shapeOf(policy) === commonShape)?.policy
+    const outliers = policies.filter(({ policy }) => shapeOf(policy) !== commonShape)
+
+    const occupancyRules = commonPolicy
+      ? `• Every rate covers 2 adults per room.
+• Each additional ADULT adds +${commonPolicy.extraAdultPercent}% of that night's room rate.
+• CHILDREN: under ${commonPolicy.childFreeUnderAge} free | ${commonPolicy.childFreeUnderAge}-${commonPolicy.adultFromAge - 1} adds +${commonPolicy.childPercent}% | ${commonPolicy.adultFromAge}+ charged as a full adult.
+• ALWAYS ask a child's age before quoting. NEVER say children are free without it, and NEVER quote a 3-adult room at the 2-adult rate.${
+          outliers.length
+            ? `\n• EXCEPTIONS — these properties differ, use their numbers instead:\n${outliers
+                .map(({ p, policy }) => `    ${p.name}: extra adult +${policy.extraAdultPercent}%, child free under ${policy.childFreeUnderAge}, ${policy.childFreeUnderAge}-${policy.adultFromAge - 1} +${policy.childPercent}%, adult from ${policy.adultFromAge}`)
+                .join('\n')}`
+            : ''
+        }`
+      : ''
+
     const hotelKnowledge = properties
       .map((item) => {
         const p = item.property
-        const roomList = item.rooms
+        const rooms = item.rooms
           .map((r) => {
             const pricePerNight = p.base_price + r.price_offset
-            const weekend = p.weekend_surcharge_percent > 0 ? ` (+${p.weekend_surcharge_percent}% weekends)` : ''
-            const avail = r.is_available ? `✅ ${r.available_units}/${r.total_units} units available` : '❌ Currently sold out'
-            return `    • ${r.name} (slug: ${r.slug})\n` +
-                   `      Size: ${r.size_sqft} | Bed: ${r.bed_type} | Max Guests: ${r.max_guests}\n` +
-                   `      Price: ₹${pricePerNight.toLocaleString('en-IN')}/night${weekend}\n` +
-                   `      Availability: ${avail}`
+            return `${r.name} [${r.slug}] ₹${pricePerNight.toLocaleString('en-IN')}${r.is_available ? '' : ' SOLD OUT'}`
           })
-          .join('\n')
-
-        const policy = policyFor(p)
-
-        return `PROPERTY: ${p.name}
-  Slug: ${p.slug}
-  City: ${p.city}
-  Address: ${p.address}
-  Base Price: ₹${p.base_price.toLocaleString('en-IN')}/night (covers 2 adults per room)
-  Triple occupancy: +${policy.extraAdultPercent}% of the room rate per additional ADULT
-    (e.g. a ₹${p.base_price.toLocaleString('en-IN')} room for 3 adults is ₹${Math.round(p.base_price * (1 + policy.extraAdultPercent / 100)).toLocaleString('en-IN')}/night)
-  Children: under ${policy.childFreeUnderAge} free | ${policy.childFreeUnderAge}-${policy.adultFromAge - 1} adds +${policy.childPercent}% of the room rate | ${policy.adultFromAge}+ charged as a full adult
-  Rating: ${p.rating}/5
-  Phone/WhatsApp: ${p.whatsapp}
-  Email: ${p.email}
-  Status: ${p.is_active ? 'Active' : 'Inactive'}
-  Rooms:
-${roomList}`
+          .join('; ')
+        const weekend = p.weekend_surcharge_percent > 0 ? ` +${p.weekend_surcharge_percent}% weekends.` : ''
+        const inactive = p.is_active ? '' : ' [INACTIVE — do not offer]'
+        return `${p.name} [${p.slug}] — ${p.city}, ⭐${p.rating}${inactive}. ${p.address}. From ₹${p.base_price.toLocaleString('en-IN')}/night.${weekend} Rooms: ${rooms}`
       })
-      .join('\n\n')
+      .join('\n')
+
+    const contact = properties[0]?.property?.whatsapp || '+91 92173 73532'
+    const email = properties[0]?.property?.email || 'stay@quadishotels.com'
 
     return `You are Quadis Assist, the official AI Concierge for Quadis Hotels — a premium hotel group across Noida and New Delhi.
 
@@ -108,38 +125,26 @@ TOOLS AT YOUR DISPOSAL:
 5. human_handoff — Alert hotel management on WhatsApp for live human assistance
 
 POLICIES (answer these without tools):
-• Check-in: 2:00 PM | Check-out: 11:00 AM
-• Early check-in / late check-out: subject to availability, contact property
-• Occupancy: every rate shown covers 2 adults per room. A third ADULT adds a
-  percentage of that night's room rate — the exact percentage is listed against each
-  property below, because it is set per hotel.
-  CHILDREN are priced in THREE AGE BANDS, also listed per property. A child is
-  only free below the free-age; between the free-age and the adult-age a child
-  adds a smaller percentage; at the adult-age and above a child is charged as a
-  full adult.
-  So "2 adults + 1 child" costs the same as "2 adults" ONLY if that child is
-  below the free-age. ALWAYS ask the child's age before quoting.
-  NEVER quote a 3-adult room at the 2-adult rate.
-  NEVER say children are free without knowing the age — that under-quotes every
-  child at or above the free-age, and the booking will be billed the higher
-  amount the guest was not told about.
-• GST: 12% for rooms under ₹7,500/night; 18% for ₹7,500+/night (SAC 996311)
-• Cancellation: Contact hotel directly; 24-hour cancellation for no charge
-• Payment: Razorpay instant checkout (UPI, cards, net banking) or walk-in cash
-• Pets: Not allowed in standard rooms
-• Booking codes start with QD- followed by 8 letters/digits
+• Check-in 2:00 PM | Check-out 11:00 AM. Early/late subject to availability.
+${occupancyRules}
+• GST: 12% under ₹7,500/night; 18% at ₹7,500+ (SAC 996311)
+• Cancellation: free up to 24 hours before check-in
+• Payment: UPI/card/net banking via secure checkout, or cash at the property
+• Pets: not allowed in standard rooms
+• Booking codes are QD- followed by 8 characters
+• Contact: ${contact} | ${email}
 
-LIVE HOTEL KNOWLEDGE (as of right now):
+HOTELS (name [slug] — city, rating, address, from-price, rooms with rates):
 ${hotelKnowledge}
 
 INSTRUCTIONS:
-- If a guest asks about a specific hotel or room, use the knowledge above to answer directly — no tool needed.
-- Use search_hotels only when you need to filter by date-based availability or multi-criteria search.
-- If a guest wants to book/reserve, collect their name, phone, check-in/out dates, then use initiate_soft_hold.
-- If a guest asks about banquet, wedding, conference — use create_banquet_enquiry.
-- If a guest provides a booking code like QD-5JY4ZB7E, use check_booking_status immediately.
-- If a guest is upset, confused, or explicitly wants a human — use human_handoff.
-- Always confirm booking codes in bold when mentioning them.`
+- Answer from the hotel list above where you can — no tool needed for names, cities, addresses or rates.
+- Call search_hotels for room size, bed type, live unit counts, or date-based availability. Those are deliberately not listed above; do not guess them.
+- Booking: collect name, phone and dates, then use initiate_soft_hold.
+- Banquet/wedding/conference enquiries: use create_banquet_enquiry.
+- A booking code like QD-5JY4ZB7E: use check_booking_status immediately.
+- Upset, confused, or asking for a person: use human_handoff.
+- Keep replies short — 2-4 sentences unless the guest asked for a list. Confirm booking codes in bold.`
   }
 
   // Execute actual database tool based on tool name and arguments
@@ -313,26 +318,31 @@ INSTRUCTIONS:
         type: 'function',
         function: {
           name: 'initiate_soft_hold',
-          description: 'Create a 15-minute soft reservation hold for a guest. Collect name, phone, property slug, room slug, check-in/out dates before calling.',
+          description: '15-minute reservation hold. Collect name, phone, slugs and dates first.',
           parameters: {
             type: 'object',
             required: ['propertySlug', 'roomTypeSlug', 'checkIn', 'checkOut', 'guestName', 'guestPhone'],
             properties: {
-              propertySlug: { type: 'string', description: 'Property slug from hotel knowledge e.g. hotel-quadis-sector-51-noida' },
-              roomTypeSlug: { type: 'string', description: 'Room slug e.g. deluxe-room, superior-room, royal-suite' },
-              checkIn: { type: 'string', description: 'Check-in date YYYY-MM-DD' },
-              checkOut: { type: 'string', description: 'Check-out date YYYY-MM-DD' },
-              roomsCount: { type: 'number', description: 'Number of rooms to hold' },
-              guestsCount: { type: 'number', description: 'Total number of guests (adults + children)' },
-              adultsCount: { type: 'number', description: 'Number of adults (18+). Adults beyond 2 per room incur an extra bed charge.' },
+              propertySlug: { type: 'string', description: 'Slug in [brackets] in the hotel list' },
+              roomTypeSlug: { type: 'string', description: 'Room slug in [brackets], e.g. deluxe-room' },
+              checkIn: { type: 'string', description: 'YYYY-MM-DD' },
+              checkOut: { type: 'string', description: 'YYYY-MM-DD' },
+              roomsCount: { type: 'number' },
+              guestsCount: { type: 'number', description: 'Adults + children' },
+              // These two used to state "18+" and "under 12 stay free", which
+              // contradicted the occupancy policy in the system prompt (adult
+              // from 13, free under 8) and is exactly how a guest gets quoted a
+              // child rate they will not be billed. Defer to the policy instead
+              // of restating thresholds that are per-property configurable.
+              adultsCount: { type: 'number', description: 'Adults, per the age threshold in the occupancy policy' },
               childAges: {
                 type: 'array',
                 items: { type: 'number' },
-                description: 'Age of each child under 18, one entry per child. Ages under 12 stay free.',
+                description: 'One entry per child. Charge follows the age bands in the occupancy policy — never assume free.',
               },
-              guestName: { type: 'string', description: 'Full name of guest' },
-              guestPhone: { type: 'string', description: '10-digit mobile number' },
-              guestEmail: { type: 'string', description: 'Email address (optional)' },
+              guestName: { type: 'string' },
+              guestPhone: { type: 'string', description: '10-digit mobile' },
+              guestEmail: { type: 'string' },
             },
           },
         },
@@ -410,7 +420,11 @@ INSTRUCTIONS:
 
         const messages: any[] = [
           { role: 'system', content: systemPrompt },
-          ...history.map((h) => ({ role: h.role, content: h.content })),
+          // Only the recent turns. The client posts its entire transcript, and
+          // an unbounded history means a long chat re-sends every prior message
+          // on every request — the cost grows quadratically against a shared
+          // daily token pool. Six turns is enough to follow a booking thread.
+          ...history.slice(-6).map((h) => ({ role: h.role, content: h.content })),
           { role: 'user', content: userMessage },
         ]
 
@@ -420,7 +434,10 @@ INSTRUCTIONS:
           tools: this.getGroqTools(),
           tool_choice: 'auto',
           temperature: 0.3,
-          max_tokens: 1024,
+          // Reserved against the daily token budget whether or not it is used,
+          // so this ceiling is a direct cost lever. Replies are meant to be a
+          // few sentences; 1024 was paying for headroom nothing needed.
+          max_tokens: 500,
         })
 
         const choice = completion.choices[0]
@@ -447,7 +464,7 @@ INSTRUCTIONS:
             model: 'llama-3.3-70b-versatile',
             messages,
             temperature: 0.3,
-            max_tokens: 1024,
+            max_tokens: 500,
           })
           reply = followUp.choices[0].message.content || 'I have completed your request.'
         } else {
@@ -497,65 +514,116 @@ INSTRUCTIONS:
       }
     }
 
+    // NOTHING BELOW THIS POINT MAY WRITE TO THE DATABASE.
+    //
+    // This engine cannot see what the guest actually said — it only matches
+    // keywords — so anything it stores is invented. It used to create a real
+    // enquiry for any message containing "wedding", filed under guest name
+    // "Valued Guest" with phone 9876543210 and a flat 150 guests, and to place
+    // a real 15-minute inventory hold on hardcoded November dates for anything
+    // containing "book a room". Both fired a WhatsApp alert to management, and
+    // the rows are indistinguishable from genuine leads. Collect and hand off;
+    // never invent a booking.
+    const contactNumber = (await db.getProperties())[0]?.whatsapp || '+91 92173 73532'
+
+    // Greetings and thanks. These previously fell through to the property dump
+    // at the bottom, so "hi" was answered with three hotels and a price list.
+    if (/^(hi|hii+|hey|hello|yo|namaste|hola|good\s+(morning|afternoon|evening))\b[\s!.,]*$/i.test(userMessage.trim())) {
+      reply = `Hello! 👋 I'm Quadis Assist.\n\nI can help you find a room, check availability, plan a banquet, or look up an existing booking. What are you after?`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    if (/^(thanks|thank you|thx|ty|ok|okay|cool|great|bye|goodbye)\b[\s!.,]*$/i.test(userMessage.trim())) {
+      reply = `Happy to help! 🙏 If you need anything else, just ask — or reach our team on ${contactNumber}.`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    // Policy questions the prompt already answers without any lookup.
+    if (lower.includes('check-in') || lower.includes('check in') || lower.includes('checkin') ||
+        lower.includes('check-out') || lower.includes('check out') || lower.includes('checkout')) {
+      reply = `Check-in is from *2:00 PM* and check-out is *11:00 AM*.\n\nEarly check-in and late check-out are subject to availability on the day — call ${contactNumber} and we'll try to arrange it.`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    if (lower.includes('pet') || lower.includes('dog') || lower.includes('cat')) {
+      reply = `Sorry — pets aren't allowed in our standard rooms. For anything specific, please call ${contactNumber}.`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    if (lower.includes('cancel') || lower.includes('refund')) {
+      reply = `Cancellations are free up to *24 hours* before check-in. To cancel or change a booking, call ${contactNumber} with your booking code (it starts with QD-).`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    if (lower.includes('gst') || lower.includes('invoice') || lower.includes('tax')) {
+      reply = `GST is *12%* on rooms under ₹7,500/night and *18%* at ₹7,500 and above (SAC 996311). A GST invoice is issued against your booking code — call ${contactNumber} if you need it re-sent.`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    if (lower.includes('pay') || lower.includes('upi') || lower.includes('card')) {
+      reply = `You can pay by UPI, card or net banking through our secure checkout, or in cash at the property on arrival.\n\nTo book, use *Check availability* on the site, or call ${contactNumber}.`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    // Banquets and events. Answer and route — do not file an enquiry the guest
+    // did not actually give us the details for.
     if (lower.includes('banquet') || lower.includes('wedding') || lower.includes('conference') || lower.includes('corporate') || lower.includes('rfp') || lower.includes('event')) {
-      toolsInvoked.push('create_banquet_enquiry')
-      const phoneMatch = userMessage.match(/\d{10}/) || ['9876543210']
-      const guestMatch = userMessage.match(/(?:I am|my name is|this is)\s+([A-Z][a-z]+ [A-Z][a-z]+)/i)
-      const { result } = await this.executeTool('create_banquet_enquiry', {
-        guestName: guestMatch ? guestMatch[1] : 'Valued Guest',
-        guestPhone: phoneMatch[0],
-        message: userMessage,
-        guestCount: 150,
-      })
-      reply = `🎉 ${result.message}\n\n*Enquiry ID: ${result.enquiryId}*\n\nOur event director has received an instant WhatsApp alert and will contact you shortly with a detailed proposal.`
+      reply = `We'd love to host your event. 🎉\n\nOur banquet spaces across Noida and New Delhi handle everything from small corporate meets to weddings.\n\nThe quickest way forward is our *Banquets* page — send the date, guest count and city there and our events team replies with a proposal. Or call ${contactNumber} to speak to them directly.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
-    if (lower.includes('hold') || lower.includes('reserve') || lower.includes('book a room') || lower.includes('book a hotel')) {
-      toolsInvoked.push('initiate_soft_hold')
-      // Resolve against live data — hardcoding a slug breaks whenever a property is retired.
-      const activeProperties = await db.getProperties()
-      const { result } = await this.executeTool('initiate_soft_hold', {
-        propertySlug: activeProperties[0]?.slug,
-        roomTypeSlug: 'deluxe-room',
-        checkIn: '2026-11-20',
-        checkOut: '2026-11-22',
-        roomsCount: 1,
-        guestsCount: 2,
-        guestName: 'Chatbot Guest',
-        guestPhone: '9876543210',
-      })
-      if (result.success) {
-        reply = `✅ *15-Minute Reservation Hold Created!*\n• Booking Code: **${result.bookingCode}**\n• Dates: ${result.checkIn} → ${result.checkOut}\n• Amount: ${result.totalAmount}\n\n💡 ${result.note}\n\n📞 To personalize your booking, please share your name, phone, preferred hotel, and check-in/out dates.`
-      } else {
-        reply = `⚠️ ${result.error}`
+    if (lower.includes('hold') || lower.includes('reserve') || lower.includes('book a room') || lower.includes('book a hotel') || lower.includes('booking')) {
+      reply = `Happy to get you booked. 🛎️\n\nI can't complete a reservation myself right now, and I'd rather not hold the wrong room on your behalf.\n\nUse *Check availability* on the site to pick your dates and confirm instantly, or call ${contactNumber} and our reservations team will do it with you.`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    // Rooms, rates and availability. Only search when the guest actually asked
+    // about staying somewhere — the old code ran this for EVERY unmatched
+    // message, so "hi" was answered with a full inventory listing.
+    const asksAboutRooms = ['room', 'rate', 'price', 'cost', 'tariff', 'availab', 'stay', 'night', 'hotel', 'noida', 'delhi', 'suite', 'deluxe']
+      .some((w) => lower.includes(w))
+
+    const properties = await db.getProperties()
+
+    if (asksAboutRooms) {
+      toolsInvoked.push('search_hotels')
+      const city = lower.includes('delhi') ? 'New Delhi' : lower.includes('noida') ? 'Noida' : undefined
+      const { result } = await this.executeTool('search_hotels', { city, search: userMessage })
+
+      if (Array.isArray(result) && result.length > 0) {
+        // One line per hotel with its lowest rate. The full room-by-room dump
+        // ran to a thousand characters and buried the answer.
+        const list = result
+          .slice(0, 4)
+          .map((h: any) => {
+            const cheapest = h.availableRooms
+              .map((r: any) => Number(String(r.pricePerNight).replace(/[^0-9]/g, '')))
+              .filter((n: number) => n > 0)
+              .sort((a: number, b: number) => a - b)[0]
+            return `• *${h.hotel}* — ${h.city}${cheapest ? ` · from ₹${cheapest.toLocaleString('en-IN')}/night` : ''}`
+          })
+          .join('\n')
+
+        const more = result.length > 4 ? `\n\n…and ${result.length - 4} more.` : ''
+        reply = `Here's what we have${result.length > 1 ? '' : ''}:\n\n${list}${more}\n\nTell me your city and dates and I'll narrow it down — or call ${contactNumber} to book.`
+        return { reply, toolsInvoked, handoffTriggered }
       }
+
+      reply = `I couldn't match that to a property. We're across Noida and New Delhi — tell me the area and your dates, or call ${contactNumber} and our team will find you something.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
-    // Default: answer from live hotel knowledge + search
-    // Derived, never hardcoded — the greeting used to claim 10 properties.
-    const propertyCount = (await db.getProperties()).length
-    toolsInvoked.push('search_hotels')
-    const city = lower.includes('delhi') ? 'New Delhi' : lower.includes('noida') ? 'Noida' : undefined
-    const { result } = await this.executeTool('search_hotels', { city, search: userMessage })
+    // Genuinely unrecognised. Say what we can do, briefly — the old version
+    // answered this with a five-item numbered menu and a "from ₹1,399/night"
+    // claim that no property's rate actually supported.
+    const cheapestOverall = properties
+      .map((p) => p.base_price)
+      .filter((n) => typeof n === 'number' && n > 0)
+      .sort((a, b) => a - b)[0]
 
-    if (Array.isArray(result) && result.length > 0) {
-      const topStr = result
-        .slice(0, 3)
-        .map(
-          (h: any) =>
-            `🏨 *${h.hotel}* — ${h.city} (⭐ ${h.rating})\n📍 ${h.address}\n` +
-            h.availableRooms
-              .map((r: any) => `  • ${r.roomName}: ${r.pricePerNight}/night (${r.availableUnits} rooms left, max ${r.maxGuests} guests, ${r.size})`)
-              .join('\n')
-        )
-        .join('\n\n')
-
-      reply = `✨ Here are available properties matching your request:\n\n${topStr}\n\n💬 Would you like me to hold a room, get more details, or connect you with our reservations team?`
-    } else {
-      reply = `👋 Welcome to *Quadis Hotels & Resorts*! We have **${propertyCount} premium properties** across Noida and New Delhi starting from ₹1,399/night.\n\nI can help you with:\n1. 🏨 **Check availability** — "Rooms in Sector 51 Noida for 2 nights"\n2. 📋 **Room hold** — "Hold a Deluxe Room at Hotel Cladis"\n3. 🎉 **Banquet RFP** — "Banquet hall for 200 guests in December"\n4. 🔍 **Booking status** — "Status of QD-5JY4ZB7E"\n5. 💬 **Speak to manager** — "Connect me with a human"\n\nWhat can I help you with today?`
-    }
+    reply = `I can help with rooms and availability across our ${properties.length} hotels in Noida and New Delhi` +
+      `${cheapestOverall ? ` (from ₹${cheapestOverall.toLocaleString('en-IN')}/night)` : ''}` +
+      `, banquet and event enquiries, or the status of an existing booking.\n\nWhat would you like to do? For anything urgent, call ${contactNumber}.`
 
     return { reply, toolsInvoked, handoffTriggered }
   }
