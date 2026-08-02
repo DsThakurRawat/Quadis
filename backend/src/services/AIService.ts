@@ -748,11 +748,15 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
         lower.includes('map')) {
       const all = await db.getProperties()
       const wanted = lower.includes('delhi') ? 'new delhi' : lower.includes('noida') ? 'noida' : null
-      const shown = (wanted ? all.filter((p) => p.city.toLowerCase().includes(wanted)) : all).slice(0, 5)
+      const pool = wanted ? all.filter((p) => p.city.toLowerCase().includes(wanted)) : all
+      const shown = pool.slice(0, 3)
       if (shown.length > 0) {
-        const list = shown.map((p) => `• *${p.name}*\n  ${p.address}${p.map_link ? `\n  ${p.map_link}` : ''}`).join('\n\n')
-        reply = `${wanted ? `Our ${shown[0].city} properties` : 'Where we are'}:\n\n${list}\n\n` +
-          `I can't measure distance from a landmark, but the map links above will — or call ${contactNumber} and we'll tell you which is closest.`
+        const list = shown
+          .map((p) => `• *${p.name.replace(/^Hotel\s+/i, '')}* — ${p.address}${p.map_link ? `\n  ${p.map_link}` : ''}`)
+          .join('\n')
+        const more = pool.length > 3 ? ` (+${pool.length - 3} more)` : ''
+        reply = `${wanted ? `In ${shown[0].city}` : 'Where we are'}${more}:\n\n${list}\n\n` +
+          `I can't measure distance from a landmark — the map links will, or call ${contactNumber}.`
         return { reply, toolsInvoked, handoffTriggered }
       }
     }
@@ -789,8 +793,17 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
     // Rooms, rates and availability. Only search when the guest actually asked
     // about staying somewhere — the old code ran this for EVERY unmatched
     // message, so "hi" was answered with a full inventory listing.
-    const asksAboutRooms = ['room', 'rate', 'price', 'cost', 'tariff', 'availab', 'stay', 'night', 'hotel', 'noida', 'delhi', 'suite', 'deluxe']
-      .some((w) => lower.includes(w))
+    // "under 2k", "below ₹3000", "cheapest", "budget" — parsed here rather than
+    // inside the branch, because a budget question contains none of the keywords
+    // below. "best under 2k" matched nothing and fell through to the generic
+    // "here is what I can help with", which is a non-answer to a clear question.
+    const capMatch = lower.match(/(?:under|below|less than|upto|up to|within)\s*₹?\s*(\d+(?:\.\d+)?)\s*(k)?/)
+    const priceCap = capMatch ? Number(capMatch[1]) * (capMatch[2] ? 1000 : 1) : undefined
+
+    const asksAboutRooms =
+      priceCap !== undefined ||
+      ['room', 'rate', 'price', 'cost', 'tariff', 'availab', 'stay', 'night', 'hotel', 'noida',
+       'delhi', 'suite', 'deluxe', 'cheap', 'budget', 'affordab', 'best'].some((w) => lower.includes(w))
 
     const properties = await db.getProperties()
 
@@ -809,10 +822,6 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
         const words = p.name.toLowerCase().replace(/^hotel\s+/, '').split(/\s+/).filter((w) => w.length > 3)
         return words.length > 0 && words.every((w) => lower.includes(w))
       })
-
-      // "under 2k", "below ₹3000", "under 2500"
-      const capMatch = lower.match(/(?:under|below|less than|upto|up to|within)\s*₹?\s*(\d+(?:\.\d+)?)\s*(k)?/)
-      const priceCap = capMatch ? Number(capMatch[1]) * (capMatch[2] ? 1000 : 1) : undefined
 
       const { result } = await this.executeTool('search_hotels', { city, search: named?.name })
 
