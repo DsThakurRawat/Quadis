@@ -37,6 +37,16 @@ export class AIService {
 
     if (this.groqClients.length > 0) {
       console.log(`🤖 AIService initialized with ${this.groqClients.length} rotating Groq API key(s).`)
+    } else {
+      // With no clients the chat loop below never runs and every visitor gets the
+      // same canned rule-based greeting, at HTTP 200 — the assistant looks alive
+      // while answering nothing. That is indistinguishable from working unless we
+      // say so here. Keys must start with `gsk_`; a wrong-format key counts as none.
+      console.warn(
+        '[Quadis] AIService has NO usable Groq API key (GROQ_API_KEY / GROQ_API_KEYS / ' +
+        'GROQ_API_KEY_1..10, each must begin with "gsk_"). The chat assistant will ' +
+        'reply with static fallback text to every message.'
+      )
     }
   }
 
