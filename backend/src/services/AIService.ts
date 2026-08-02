@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk'
+import { GoogleGenAI } from '@google/genai'
 import { db } from '../db'
 import { notificationService } from './NotificationService'
 import { policyFor } from '../lib/pricing'
@@ -11,6 +12,8 @@ export interface ChatTurnResult {
 
 export class AIService {
   private groqClients: Groq[] = []
+  private geminiClients: GoogleGenAI[] = []
+  private currentGeminiKeyIndex = 0
   private currentKeyIndex = 0
 
   constructor() {
@@ -27,6 +30,31 @@ export class AIService {
       if (k && k.startsWith('gsk_')) keysSet.add(k.trim())
     }
 
+    
+    const geminiKeysSet = new Set<string>()
+    if (process.env.GEMINI_API_KEYS) {
+      process.env.GEMINI_API_KEYS.split(',').map(k => k.trim()).filter(k => k).forEach(k => geminiKeysSet.add(k))
+    }
+    if (process.env.GEMINI_API_KEY) {
+      geminiKeysSet.add(process.env.GEMINI_API_KEY.trim())
+    }
+    for (let i = 1; i <= 10; i++) {
+      const k = process.env[`GEMINI_API_KEY_${i}`]
+      if (k) geminiKeysSet.add(k.trim())
+    }
+
+    geminiKeysSet.forEach(apiKey => {
+      try {
+        this.geminiClients.push(new GoogleGenAI({ apiKey }))
+      } catch (err) {
+        console.warn('Failed to initialize Gemini client for key:', err)
+      }
+    })
+
+    if (this.geminiClients.length > 0) {
+      console.log(`🤖 AIService initialized with ${this.geminiClients.length} rotating Gemini API key(s).`)
+    }
+
     keysSet.forEach(apiKey => {
       try {
         this.groqClients.push(new Groq({ apiKey }))
@@ -37,17 +65,31 @@ export class AIService {
 
     if (this.groqClients.length > 0) {
       console.log(`🤖 AIService initialized with ${this.groqClients.length} rotating Groq API key(s).`)
-    } else {
-      // With no clients the chat loop below never runs and every visitor gets the
-      // same canned rule-based greeting, at HTTP 200 — the assistant looks alive
-      // while answering nothing. That is indistinguishable from working unless we
-      // say so here. Keys must start with `gsk_`; a wrong-format key counts as none.
+    }
+
+    // Warn only when BOTH pools are empty. This was tied to the Groq pool
+    // alone, so a Gemini-only deploy — the working configuration — booted
+    // announcing it had no usable key at all. A guard that fires while the
+    // thing it guards is healthy is how the real warning gets ignored.
+    if (this.geminiClients.length === 0 && this.groqClients.length === 0) {
+      // With no clients neither provider loop runs, and every visitor gets the
+      // deterministic engine at HTTP 200 — the assistant looks alive while
+      // answering from a keyword table. Nothing else makes that visible.
       console.warn(
-        '[Quadis] AIService has NO usable Groq API key (GROQ_API_KEY / GROQ_API_KEYS / ' +
-        'GROQ_API_KEY_1..10, each must begin with "gsk_"). The chat assistant will ' +
-        'reply with static fallback text to every message.'
+        '[Quadis] AIService has NO usable API key for either provider ' +
+        '(GEMINI_API_KEY / GEMINI_API_KEYS / GEMINI_API_KEY_1..10, or ' +
+        'GROQ_API_KEY / GROQ_API_KEYS / GROQ_API_KEY_1..10 which must begin ' +
+        'with "gsk_"). The chat assistant will reply with static fallback text.'
       )
     }
+  }
+
+  
+  private getNextGeminiClient(): GoogleGenAI | null {
+    if (this.geminiClients.length === 0) return null
+    const client = this.geminiClients[this.currentGeminiKeyIndex]
+    this.currentGeminiKeyIndex = (this.currentGeminiKeyIndex + 1) % this.geminiClients.length
+    return client
   }
 
   private getNextGroqClient(): Groq | null {
@@ -409,7 +451,90 @@ INSTRUCTIONS:
     let handoffTriggered = false
     let reply = ''
 
-    // 1. Try Groq API with full live context injection and multi-key rotation fallback
+    
+    // 0. Try Gemini API first
+    const totalGeminiClients = this.geminiClients.length
+    for (let attempt = 0; attempt < totalGeminiClients; attempt++) {
+      const geminiClient = this.getNextGeminiClient()
+      if (!geminiClient) break
+
+      try {
+        const systemPrompt = await this.buildSystemPromptWithContext()
+        const contents: any[] = history.slice(-6).map((h) => ({
+          role: h.role === 'user' ? 'user' : 'model',
+          parts: [{ text: h.content }]
+        }))
+        contents.push({ role: 'user', parts: [{ text: userMessage }] })
+
+        const tools = [{ functionDeclarations: this.getGroqTools().map((t: any) => t.function) }]
+
+        const response = await geminiClient.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents,
+          config: {
+            systemInstruction: systemPrompt,
+            tools,
+            temperature: 0.3,
+            maxOutputTokens: 500
+          }
+        })
+
+        if (response.functionCalls && response.functionCalls.length > 0) {
+          contents.push({
+            role: 'model',
+            parts: response.functionCalls.map(fc => ({ functionCall: fc }))
+          })
+
+          const functionResponses: any[] = []
+          for (const tc of response.functionCalls) {
+            toolsInvoked.push(tc.name!)
+            const { result, handoff } = await this.executeTool(tc.name!, tc.args as any)
+            if (handoff) handoffTriggered = true
+            functionResponses.push({
+              functionResponse: {
+                name: tc.name,
+                // Gemini types this as Record<string, unknown> and rejects
+                // anything that is not a JSON object. executeTool returns a
+                // bare ARRAY for search_hotels, which failed the follow-up call
+                // outright — and search_hotels is the tool most guests trigger,
+                // so every availability question fell through Gemini, then
+                // through a rate-limited Groq, to the canned engine. The plain
+                // chat path hid it: tools are attached to every request, so a
+                // greeting still worked and the provider looked healthy.
+                // "output" is the key the API documents for function results.
+                response: { output: result },
+              }
+            })
+          }
+
+          contents.push({
+            role: 'user',
+            parts: functionResponses
+          })
+
+          const followUp = await geminiClient.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents,
+            config: {
+              systemInstruction: systemPrompt,
+              tools,
+              temperature: 0.3,
+              maxOutputTokens: 500
+            }
+          })
+          reply = followUp.text || 'I have completed your request.'
+        } else {
+          reply = response.text || 'How can I assist you with your Quadis Hotels stay?'
+        }
+
+        return { reply, toolsInvoked, handoffTriggered }
+      } catch (geminiErr: any) {
+        const errMsg = geminiErr?.message || String(geminiErr)
+        console.warn(`Gemini API key attempt ${attempt + 1}/${totalGeminiClients} failed (${errMsg}). Rotating to next key...`)
+      }
+    }
+
+    // 1. Try Groq API as fallback
     const totalClients = this.groqClients.length
     for (let attempt = 0; attempt < totalClients; attempt++) {
       const groqClient = this.getNextGroqClient()

@@ -75,7 +75,7 @@ fi
   echo "IMAGE_BUCKET=quadis-hotel-photos"
   for p in SESSION_SECRET ADMIN_PIN ADMIN_PASSWORD \
            RAZORPAY_KEY_ID RAZORPAY_KEY_SECRET RAZORPAY_WEBHOOK_SECRET \
-           GROQ_API_KEY GROQ_API_KEYS META_WHATSAPP_TOKEN META_PHONE_NUMBER_ID \
+           GROQ_API_KEY GROQ_API_KEYS GEMINI_API_KEY GEMINI_API_KEYS META_WHATSAPP_TOKEN META_PHONE_NUMBER_ID \
            META_OWNER_PHONE OWNER_WHATSAPP_PHONE CORS_ORIGIN IMAGE_PUBLIC_URL; do
     v="$(get_param "/quadis/$(echo "$p" | tr 'A-Z_' 'a-z-')")"
     [ -n "$v" ] && echo "$p=$v"
@@ -121,18 +121,17 @@ if grep -q '^RAZORPAY_KEY_ID=' /etc/quadis/api.env; then
   fi
 fi
 
-# The Groq key is optional to the extent that the API still boots without it —
+# The Groq/Gemini key is optional to the extent that the API still boots without it —
 # but the chat assistant then answers every visitor with the same canned
 # greeting at HTTP 200, which reads as "working" from the outside. The loop
 # above drops absent parameters silently, so say something here.
-if grep -qE '^GROQ_API_KEY(S)?=gsk_' /etc/quadis/api.env; then
-  echo "    groq: key present — chat assistant is live"
+if grep -qE '^(GEMINI|GROQ)_API_KEY(S)?=' /etc/quadis/api.env; then
+  echo "    ai: key present — chat assistant is live"
 else
-  echo "    WARNING: /quadis/groq-api-key is missing or not a gsk_ key." >&2
-  echo "             The chat assistant will fall back to canned replies for" >&2
-  echo "             every message while still returning HTTP 200." >&2
-  echo "             aws ssm put-parameter --name /quadis/groq-api-key \\" >&2
-  echo "               --type SecureString --value '<gsk_...>' --region $REGION" >&2
+  echo "    WARNING: /quadis/gemini-api-key or groq-api-key is missing." >&2
+  echo "             The chat assistant will reply with canned text." >&2
+  echo "             aws ssm put-parameter --name /quadis/gemini-api-key \\" >&2
+  echo "               --type SecureString --value '<key>' --region $REGION" >&2
 fi
 
 # --- nginx ----------------------------------------------------------------
