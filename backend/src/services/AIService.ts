@@ -16,6 +16,24 @@ export class AIService {
   private currentGeminiKeyIndex = 0
   private currentKeyIndex = 0
 
+  /**
+   * Gemini models to try in order, best first.
+   *
+   * Free-tier quota is granted per project PER MODEL, so each entry here is a
+   * separate daily allowance rather than a share of one. gemini-2.5-flash alone
+   * is 20 requests/day, which a public site exhausts before lunch; the lighter
+   * models carry the overflow. Override with GEMINI_MODELS (comma separated) to
+   * retune without a code change — model names come and go.
+   */
+  private geminiModels: string[] =
+    (process.env.GEMINI_MODELS || 'gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash')
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean)
+
+  /** model -> epoch ms until which it is known-exhausted and worth skipping. */
+  private modelCooldownUntil = new Map<string, number>()
+
   constructor() {
     // Collect keys from GROQ_API_KEYS (comma separated), GROQ_API_KEY, and GROQ_API_KEY_1..10
     const keysSet = new Set<string>()
@@ -52,7 +70,13 @@ export class AIService {
     })
 
     if (this.geminiClients.length > 0) {
-      console.log(`🤖 AIService initialized with ${this.geminiClients.length} rotating Gemini API key(s).`)
+      // Log the model order too: free-tier quota is per project per model, so
+      // which models are in the cascade decides the daily ceiling, and that is
+      // the first thing worth knowing when the assistant goes quiet.
+      console.log(
+        `🤖 AIService initialized with ${this.geminiClients.length} rotating Gemini API key(s), ` +
+        `models: ${this.geminiModels.join(' -> ')}`
+      )
     }
 
     keysSet.forEach(apiKey => {
@@ -470,11 +494,28 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
     let reply = ''
 
     
-    // 0. Try Gemini API first
+    // 0. Gemini, cascading across MODELS and then keys.
+    //
+    // The free-tier quota id is GenerateRequestsPerDayPerProjectPerModel, and
+    // the observed value for gemini-2.5-flash is 20 requests per day. Two
+    // things follow from that name. Keys in one Google Cloud project share the
+    // bucket, so rotating five of them buys nothing — which is why the
+    // assistant kept dying after roughly twenty messages. And the bucket is
+    // per MODEL, so a different model is a different allowance: falling through
+    // to a lighter model on 429 multiplies capacity for free.
+    //
+    // Order matters — best model first, lighter ones as the overflow.
     const totalGeminiClients = this.geminiClients.length
-    for (let attempt = 0; attempt < totalGeminiClients; attempt++) {
+    outer: for (const model of this.geminiModels) {
+      // Skip a model we already know is exhausted. Without this every request
+      // re-burns a round trip per key against a bucket that is empty until
+      // tomorrow, adding seconds of latency before reaching a model that works.
+      const until = this.modelCooldownUntil.get(model) ?? 0
+      if (Date.now() < until) continue
+
+      for (let attempt = 0; attempt < totalGeminiClients; attempt++) {
       const geminiClient = this.getNextGeminiClient()
-      if (!geminiClient) break
+      if (!geminiClient) break outer
 
       try {
         const systemPrompt = await this.buildSystemPromptWithContext()
@@ -487,7 +528,7 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
         const tools = [{ functionDeclarations: this.getGroqTools().map((t: any) => t.function) }]
 
         const response = await geminiClient.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model,
           contents,
           config: {
             systemInstruction: systemPrompt,
@@ -531,7 +572,7 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
           })
 
           const followUp = await geminiClient.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model,
             contents,
             config: {
               systemInstruction: systemPrompt,
@@ -548,7 +589,23 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
         return { reply, toolsInvoked, handoffTriggered }
       } catch (geminiErr: any) {
         const errMsg = geminiErr?.message || String(geminiErr)
-        console.warn(`Gemini API key attempt ${attempt + 1}/${totalGeminiClients} failed (${errMsg}). Rotating to next key...`)
+        console.warn(`Gemini ${model} key ${attempt + 1}/${totalGeminiClients} failed (${errMsg}). Rotating...`)
+
+        // A quota refusal is about the model's daily bucket, not this key, so
+        // every remaining key in the same project will refuse identically.
+        // Park the model and move to the next one instead of paying a round
+        // trip per key to be told the same thing.
+        if (/RESOURCE_EXHAUSTED|rate_?limit|quota|\b429\b/i.test(errMsg)) {
+          // Google returns a retryDelay; when the bucket is daily that value is
+          // only the next polite moment to retry, not when it refills. Clamp so
+          // a bad parse can neither hammer the API nor sideline a model for
+          // hours, and let a later request discover it has recovered.
+          const secs = Number(errMsg.match(/"retryDelay":\s*"(\d+)s"/)?.[1] ?? 60)
+          const cooldown = Math.min(Math.max(secs, 30), 900) * 1000
+          this.modelCooldownUntil.set(model, Date.now() + cooldown)
+          continue outer
+        }
+      }
       }
     }
 
