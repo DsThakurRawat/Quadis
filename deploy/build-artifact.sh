@@ -45,7 +45,7 @@ rm -rf "$STAGE" && mkdir -p "$STAGE"/{www,api,nginx,systemd}
 # artifact is always regenerated from src/data/hotels.ts rather than whatever
 # stale copy happens to be in public/.
 echo "==> Building frontend"
-npm run build >/dev/null
+VITE_API_URL=/api npm run build >/dev/null
 cp -r "$ROOT/dist/." "$STAGE/www/"
 
 # Belt and braces: the internal design page was tracked under public/ once and
