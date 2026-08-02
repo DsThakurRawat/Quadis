@@ -73,6 +73,41 @@ export function createApp(): Express {
     }
   }))
 
+  // Browsers post CSP violation reports as application/csp-report (or
+  // application/reports+json), neither of which the JSON parser above accepts,
+  // so without this the body arrives empty and every report reads as blank.
+  app.use(express.json({ type: ['application/csp-report', 'application/reports+json'] }))
+
+  // POST /api/csp-report — collector for the Report-Only policy in
+  // deploy/nginx/security-headers.conf.
+  //
+  // The policy ships in report-only mode first because a wrong script-src
+  // silently blocks the Razorpay checkout script: the button does nothing, no
+  // error reaches the guest, and no error reaches us. This endpoint is how the
+  // allowlist gets verified against real traffic before anything is enforced.
+  //
+  // Tightly rate limited and truncated. It is unauthenticated by necessity —
+  // the browser sends it — so it is an open log-write for anyone who finds it.
+  const cspLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+  app.post('/api/csp-report', cspLimiter, (req: Request, res: Response) => {
+    const r = (req.body?.['csp-report'] ?? req.body?.body ?? req.body) as Record<string, unknown> | undefined
+    if (r) {
+      const at = (k: string) => String(r[k] ?? '').slice(0, 200)
+      console.warn(
+        `[CSP] blocked=${at('blocked-uri') || at('blockedURL')} ` +
+        `directive=${at('violated-directive') || at('effectiveDirective')} ` +
+        `on=${at('document-uri') || at('documentURL')}`
+      )
+    }
+    // 204: the browser wants nothing back, and a body here is pure waste.
+    res.status(204).end()
+  })
+
   // 4. Rate Limiting for public endpoints
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
