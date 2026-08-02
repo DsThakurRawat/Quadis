@@ -80,6 +80,7 @@ echo "==> Skipping node_modules (installed on the box — see install.sh)"
 # --- config ---------------------------------------------------------------
 cp "$ROOT/deploy/nginx/quadis.conf"            "$STAGE/nginx/"
 cp "$ROOT/deploy/nginx/legacy-redirects.conf"  "$STAGE/nginx/"
+cp "$ROOT/deploy/nginx/security-headers.conf"  "$STAGE/nginx/"
 cp "$ROOT/deploy/quadis-api.service"           "$STAGE/systemd/"
 cp "$ROOT/deploy/install.sh"                   "$STAGE/"
 chmod +x "$STAGE/install.sh"

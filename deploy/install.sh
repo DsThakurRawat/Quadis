@@ -138,6 +138,7 @@ fi
 # --- nginx ----------------------------------------------------------------
 mkdir -p /etc/nginx/snippets
 cp "$HERE/nginx/legacy-redirects.conf" /etc/nginx/snippets/legacy-redirects.conf
+cp "$HERE/nginx/security-headers.conf" /etc/nginx/snippets/security-headers.conf
 cp "$HERE/nginx/quadis.conf"           /etc/nginx/conf.d/quadis.conf
 
 # Webroot for the Let's Encrypt HTTP-01 challenge. quadis.conf serves
