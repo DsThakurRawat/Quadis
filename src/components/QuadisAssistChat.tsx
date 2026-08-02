@@ -87,15 +87,116 @@ export default function QuadisAssistChat() {
     }
   }
 
+  /**
+   * Renders one line: *bold* spans, with bare URLs turned into real links.
+   *
+   * Previously URLs were emitted as plain text, so a map link was a wall of
+   * characters the guest had to select and paste by hand. Map links get a short
+   * label because the raw Google URL is longer than the widget is wide.
+   */
+  const renderInline = (line: string, key: string) =>
+    line.split(/\*(.*?)\*/).map((part, j) =>
+      j % 2 === 1 ? (
+        <strong key={`${key}-b${j}`}>{part}</strong>
+      ) : (
+        part.split(/(https?:\/\/\S+)/).map((seg, k) => {
+          if (!/^https?:\/\//.test(seg)) return <span key={`${key}-t${j}-${k}`}>{seg}</span>
+          const isMap = /google\.[a-z.]+\/maps|share\.google|goo\.gl\/maps/.test(seg)
+          return (
+            <a
+              key={`${key}-a${j}-${k}`}
+              href={seg}
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: 'inherit', textDecoration: 'underline', wordBreak: 'break-word' }}
+            >
+              {isMap ? 'View on map' : seg}
+            </a>
+          )
+        })
+      )
+    )
+
+  const isTableRow = (l: string) => l.trim().startsWith('|') && l.trim().endsWith('|')
+  const cellsOf = (l: string) => l.trim().slice(1, -1).split('|').map((c) => c.trim())
+
+  /**
+   * Text plus pipe tables. A table conveys a rate list in a fraction of the
+   * characters a sentence needs, which matters twice over here: the bubble is
+   * narrow, and every token the model spends is charged against a shared daily
+   * budget. Rendered as a real <table> — as raw pipes in a proportional font
+   * the columns do not line up and it reads worse than prose.
+   */
   const formatText = (text: string) => {
-    return text.split('\n').map((line, i) => (
-      <span key={i}>
-        {line.split(/\*(.*?)\*/).map((part, j) => 
-          j % 2 === 1 ? <strong key={j}>{part}</strong> : part
-        )}
-        <br />
-      </span>
-    ))
+    const lines = text.split('\n')
+    const out: React.ReactNode[] = []
+
+    for (let i = 0; i < lines.length; ) {
+      const line = lines[i] ?? ''
+      if (isTableRow(line) && isTableRow(lines[i + 1] ?? '')) {
+        const rows: string[][] = []
+        for (let cur = lines[i] ?? ''; i < lines.length && isTableRow(cur); cur = lines[++i] ?? '') {
+          // |---|---| is markdown's header rule, not data.
+          if (!/^[\s|:-]+$/.test(cur)) rows.push(cellsOf(cur))
+        }
+        const [head = [], ...body] = rows
+        out.push(
+          <div key={`tbl-${i}`} style={{ overflowX: 'auto', margin: '6px 0' }}>
+            <table style={{ borderCollapse: 'collapse', fontSize: '0.85em', width: '100%' }}>
+              <thead>
+                <tr>
+                  {head.map((h, x) => (
+                    <th
+                      key={x}
+                      style={{
+                        textAlign: x === 0 ? 'left' : 'right',
+                        padding: '3px 8px 3px 0',
+                        borderBottom: '1px solid currentColor',
+                        opacity: 0.7,
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {body.map((r, y) => (
+                  <tr key={y}>
+                    {r.map((c, x) => (
+                      <td
+                        key={x}
+                        style={{
+                          textAlign: x === 0 ? 'left' : 'right',
+                          padding: '3px 8px 3px 0',
+                          verticalAlign: 'top',
+                          whiteSpace: x === 0 ? 'normal' : 'nowrap',
+                        }}
+                      >
+                        {renderInline(c, `c${y}-${x}`)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+        continue
+      }
+
+      out.push(
+        <span key={`ln-${i}`}>
+          {renderInline(line, `l${i}`)}
+          <br />
+        </span>
+      )
+      i++
+    }
+
+    return out
   }
 
   return (

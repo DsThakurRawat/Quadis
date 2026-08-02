@@ -124,31 +124,40 @@ export class AIService {
     const commonPolicy = policies.find(({ policy }) => shapeOf(policy) === commonShape)?.policy
     const outliers = policies.filter(({ policy }) => shapeOf(policy) !== commonShape)
 
+    // Tabular, because a header row names each field once instead of repeating
+    // the label on every row. Prose like "extra adult +30%, child free under 8,
+    // 8-12 +20%" spends the same words again for every property that deviates.
     const occupancyRules = commonPolicy
-      ? `• Every rate covers 2 adults per room.
-• Each additional ADULT adds +${commonPolicy.extraAdultPercent}% of that night's room rate.
-• CHILDREN: under ${commonPolicy.childFreeUnderAge} free | ${commonPolicy.childFreeUnderAge}-${commonPolicy.adultFromAge - 1} adds +${commonPolicy.childPercent}% | ${commonPolicy.adultFromAge}+ charged as a full adult.
-• ALWAYS ask a child's age before quoting. NEVER say children are free without it, and NEVER quote a 3-adult room at the 2-adult rate.${
+      ? `Rate covers 2 adults/room. Additions, as % of that night's rate:
+| Party | Charge |
+|---|---|
+| each adult beyond 2 | +${commonPolicy.extraAdultPercent}% |
+| child under ${commonPolicy.childFreeUnderAge} | free |
+| child ${commonPolicy.childFreeUnderAge}-${commonPolicy.adultFromAge - 1} | +${commonPolicy.childPercent}% |
+| child ${commonPolicy.adultFromAge}+ | full adult |
+ALWAYS ask a child's age before quoting. NEVER call a child free without it. NEVER quote 3 adults at the 2-adult rate.${
           outliers.length
-            ? `\n• EXCEPTIONS — these properties differ, use their numbers instead:\n${outliers
-                .map(({ p, policy }) => `    ${p.name}: extra adult +${policy.extraAdultPercent}%, child free under ${policy.childFreeUnderAge}, ${policy.childFreeUnderAge}-${policy.adultFromAge - 1} +${policy.childPercent}%, adult from ${policy.adultFromAge}`)
+            ? `\nEXCEPTIONS — use these instead of the table above:\n| Hotel | +adult | free under | mid-band | adult from |\n|---|---|---|---|---|\n${outliers
+                .map(({ p, policy }) => `| ${p.name} | +${policy.extraAdultPercent}% | ${policy.childFreeUnderAge} | +${policy.childPercent}% | ${policy.adultFromAge} |`)
                 .join('\n')}`
             : ''
         }`
       : ''
 
+    // Tabular for the same reason as the policy above: one header row instead
+    // of "— city, ⭐rating. address. From ₹x/night. Rooms:" restated nine times.
+    // Prices are bare integers in ₹ per night, declared once in the caption.
     const hotelKnowledge = properties
       .map((item) => {
         const p = item.property
         const rooms = item.rooms
-          .map((r) => {
-            const pricePerNight = p.base_price + r.price_offset
-            return `${r.name} [${r.slug}] ₹${pricePerNight.toLocaleString('en-IN')}${r.is_available ? '' : ' SOLD OUT'}`
-          })
+          .map((r) => `${r.name}[${r.slug}] ${p.base_price + r.price_offset}${r.is_available ? '' : ' SOLDOUT'}`)
           .join('; ')
-        const weekend = p.weekend_surcharge_percent > 0 ? ` +${p.weekend_surcharge_percent}% weekends.` : ''
-        const inactive = p.is_active ? '' : ' [INACTIVE — do not offer]'
-        return `${p.name} [${p.slug}] — ${p.city}, ⭐${p.rating}${inactive}. ${p.address}. From ₹${p.base_price.toLocaleString('en-IN')}/night.${weekend} Rooms: ${rooms}`
+        const flags = [
+          p.weekend_surcharge_percent > 0 ? `+${p.weekend_surcharge_percent}% wknd` : '',
+          p.is_active ? '' : 'INACTIVE-do-not-offer',
+        ].filter(Boolean).join(' ')
+        return `| ${p.name} | ${p.slug} | ${p.city} | ${p.rating} | ${p.base_price} | ${rooms} | ${p.address} | ${flags} |`
       })
       .join('\n')
 
@@ -176,17 +185,26 @@ ${occupancyRules}
 • Booking codes are QD- followed by 8 characters
 • Contact: ${contact} | ${email}
 
-HOTELS (name [slug] — city, rating, address, from-price, rooms with rates):
+HOTELS — all prices ₹ per night, room-only, covering 2 adults:
+| Hotel | slug | City | Rating | From | Rooms: name[slug] rate | Address | Notes |
+|---|---|---|---|---|---|---|---|
 ${hotelKnowledge}
 
 INSTRUCTIONS:
-- Answer from the hotel list above where you can — no tool needed for names, cities, addresses or rates.
-- Call search_hotels for room size, bed type, live unit counts, or date-based availability. Those are deliberately not listed above; do not guess them.
+- Answer from the table above where you can — no tool needed for names, cities, addresses or rates.
+- Call search_hotels for room size, bed type, live unit counts, or date-based availability. Those are deliberately absent above; do not guess them.
 - Booking: collect name, phone and dates, then use initiate_soft_hold.
 - Banquet/wedding/conference enquiries: use create_banquet_enquiry.
 - A booking code like QD-5JY4ZB7E: use check_booking_status immediately.
 - Upset, confused, or asking for a person: use human_handoff.
-- Keep replies short — 2-4 sentences unless the guest asked for a list. Confirm booking codes in bold.`
+
+REPLY FORMAT — match it to the question, do not pick one style and reuse it:
+- A single fact (check-in time, pets, GST): ONE short sentence. No preamble, no list.
+- Several hotels or rates: short "• Name — from ₹X" lines, at most 5. Write prose, NOT a table — this is a narrow chat bubble, not a spreadsheet.
+- Anything else: 2-3 sentences.
+- Never restate the question, never open with "Certainly" or "I'd be happy to".
+- End with one short question only when you genuinely need something (dates, city, a child's age).
+- Confirm booking codes in bold.`
   }
 
   // Execute actual database tool based on tool name and arguments
@@ -654,19 +672,19 @@ INSTRUCTIONS:
     // Greetings and thanks. These previously fell through to the property dump
     // at the bottom, so "hi" was answered with three hotels and a price list.
     if (/^(hi|hii+|hey|hello|yo|namaste|hola|good\s+(morning|afternoon|evening))\b[\s!.,]*$/i.test(userMessage.trim())) {
-      reply = `Hello! 👋 I'm Quadis Assist.\n\nI can help you find a room, check availability, plan a banquet, or look up an existing booking. What are you after?`
+      reply = `Hello! 👋 I'm Quadis Assist — rooms, banquets, or an existing booking. What do you need?`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
     if (/^(thanks|thank you|thx|ty|ok|okay|cool|great|bye|goodbye)\b[\s!.,]*$/i.test(userMessage.trim())) {
-      reply = `Happy to help! 🙏 If you need anything else, just ask — or reach our team on ${contactNumber}.`
+      reply = `Happy to help! 🙏 Anything else, just ask.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
     // Policy questions the prompt already answers without any lookup.
     if (lower.includes('check-in') || lower.includes('check in') || lower.includes('checkin') ||
         lower.includes('check-out') || lower.includes('check out') || lower.includes('checkout')) {
-      reply = `Check-in is from *2:00 PM* and check-out is *11:00 AM*.\n\nEarly check-in and late check-out are subject to availability on the day — call ${contactNumber} and we'll try to arrange it.`
+      reply = `Check-in *2:00 PM*, check-out *11:00 AM*. Early/late subject to availability — call ${contactNumber} and we'll try.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
@@ -676,17 +694,17 @@ INSTRUCTIONS:
     }
 
     if (lower.includes('cancel') || lower.includes('refund')) {
-      reply = `Cancellations are free up to *24 hours* before check-in. To cancel or change a booking, call ${contactNumber} with your booking code (it starts with QD-).`
+      reply = `Free cancellation up to *24 hours* before check-in. Call ${contactNumber} with your QD- booking code.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
     if (lower.includes('gst') || lower.includes('invoice') || lower.includes('tax')) {
-      reply = `GST is *12%* on rooms under ₹7,500/night and *18%* at ₹7,500 and above (SAC 996311). A GST invoice is issued against your booking code — call ${contactNumber} if you need it re-sent.`
+      reply = `GST is *12%* under ₹7,500/night, *18%* at ₹7,500+. Invoice is issued against your booking code.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
     if (lower.includes('pay') || lower.includes('upi') || lower.includes('card')) {
-      reply = `You can pay by UPI, card or net banking through our secure checkout, or in cash at the property on arrival.\n\nTo book, use *Check availability* on the site, or call ${contactNumber}.`
+      reply = `UPI, card or net banking at checkout — or cash at the property. Book via *Check availability*, or call ${contactNumber}.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
@@ -702,12 +720,9 @@ INSTRUCTIONS:
       const props = await db.getProperties()
       const pol = props[0] ? policyFor(props[0]) : null
       if (pol) {
-        reply = `Every rate covers *2 adults* per room.\n\n` +
-          `• A third adult adds *+${pol.extraAdultPercent}%* of the room rate that night.\n` +
-          `• Children under *${pol.childFreeUnderAge}* stay free.\n` +
-          `• Ages *${pol.childFreeUnderAge}–${pol.adultFromAge - 1}* add *+${pol.childPercent}%*.\n` +
-          `• Age *${pol.adultFromAge}+* is charged as a full adult.\n\n` +
-          `Tell me your children's ages and I'll be exact — or call ${contactNumber} for a firm quote.`
+        reply = `Rates cover *2 adults*. A 3rd adult adds *+${pol.extraAdultPercent}%*. ` +
+          `Children under *${pol.childFreeUnderAge}* are free, *${pol.childFreeUnderAge}–${pol.adultFromAge - 1}* adds *+${pol.childPercent}%*, and *${pol.adultFromAge}+* counts as a full adult.\n\n` +
+          `Ages? I'll quote exactly.`
         return { reply, toolsInvoked, handoffTriggered }
       }
     }
@@ -715,12 +730,59 @@ INSTRUCTIONS:
     // Banquets and events. Answer and route — do not file an enquiry the guest
     // did not actually give us the details for.
     if (lower.includes('banquet') || lower.includes('wedding') || lower.includes('conference') || lower.includes('corporate') || lower.includes('rfp') || lower.includes('event')) {
-      reply = `We'd love to host your event. 🎉\n\nOur banquet spaces across Noida and New Delhi handle everything from small corporate meets to weddings.\n\nThe quickest way forward is our *Banquets* page — send the date, guest count and city there and our events team replies with a proposal. Or call ${contactNumber} to speak to them directly.`
+      reply = `We'd love to host it. 🎉 Send your date, guest count and city via our *Banquets* page and the events team replies with a proposal — or call ${contactNumber}.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
     if (lower.includes('hold') || lower.includes('reserve') || lower.includes('book a room') || lower.includes('book a hotel') || lower.includes('booking')) {
-      reply = `Happy to get you booked. 🛎️\n\nI can't complete a reservation myself right now, and I'd rather not hold the wrong room on your behalf.\n\nUse *Check availability* on the site to pick your dates and confirm instantly, or call ${contactNumber} and our reservations team will do it with you.`
+      reply = `Happy to help. 🛎️ I'd rather not hold the wrong room — use *Check availability* to pick dates and confirm instantly, or call ${contactNumber}.`
+      return { reply, toolsInvoked, handoffTriggered }
+    }
+
+    // Where we are / how to get there. Checked BEFORE the room search because
+    // "nearest hotel to noida airport" contains "hotel" and would otherwise be
+    // treated as an inventory query and answered with a price list.
+    if (lower.includes('where') || lower.includes('location') || lower.includes('address') ||
+        lower.includes('direction') || lower.includes('airport') || lower.includes('metro') ||
+        lower.includes('station') || lower.includes('near') || lower.includes('reach') ||
+        lower.includes('map')) {
+      const all = await db.getProperties()
+      const wanted = lower.includes('delhi') ? 'new delhi' : lower.includes('noida') ? 'noida' : null
+      const shown = (wanted ? all.filter((p) => p.city.toLowerCase().includes(wanted)) : all).slice(0, 5)
+      if (shown.length > 0) {
+        const list = shown.map((p) => `• *${p.name}*\n  ${p.address}${p.map_link ? `\n  ${p.map_link}` : ''}`).join('\n\n')
+        reply = `${wanted ? `Our ${shown[0].city} properties` : 'Where we are'}:\n\n${list}\n\n` +
+          `I can't measure distance from a landmark, but the map links above will — or call ${contactNumber} and we'll tell you which is closest.`
+        return { reply, toolsInvoked, handoffTriggered }
+      }
+    }
+
+    // Meals. breakfast_offset and all_meals_offset are real per-room columns,
+    // so this is answerable from data rather than deferred.
+    if (lower.includes('breakfast') || lower.includes('meal') || lower.includes('food') ||
+        lower.includes('dinner') || lower.includes('lunch')) {
+      const withRooms = await db.getPropertiesWithRooms()
+      const bf = withRooms.flatMap((i) => i.rooms.map((r: any) => Number(r.breakfast_offset))).filter((n) => n > 0)
+      const am = withRooms.flatMap((i) => i.rooms.map((r: any) => Number(r.all_meals_offset))).filter((n) => n > 0)
+      if (bf.length > 0) {
+        const rng = (xs: number[]) => (Math.min(...xs) === Math.max(...xs)
+          ? `₹${Math.min(...xs).toLocaleString('en-IN')}`
+          : `₹${Math.min(...xs).toLocaleString('en-IN')}–₹${Math.max(...xs).toLocaleString('en-IN')}`)
+        reply = `Rooms are room-only. Breakfast adds *${rng(bf)}* per night` +
+          (am.length ? `, all meals *${rng(am)}*` : '') + `.\n\n` +
+          `Exact rate varies by room — pick dates on the site to see it.`
+        return { reply, toolsInvoked, handoffTriggered }
+      }
+    }
+
+    // Amenities we hold NO data for. Answering these from general knowledge of
+    // what hotels usually offer is how a guest arrives expecting parking we
+    // never promised. Say we'll check rather than guess.
+    if (lower.includes('wifi') || lower.includes('wi-fi') || lower.includes('internet') ||
+        lower.includes('parking') || lower.includes('pool') || lower.includes('gym') ||
+        lower.includes('laundry') || lower.includes('amenit') || lower.includes('facilit') ||
+        lower.includes('ac ') || lower.includes('lift') || lower.includes('elevator')) {
+      reply = `That varies by property and I'd rather not guess — WhatsApp ${contactNumber} and the team will confirm for the exact hotel.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
@@ -735,28 +797,66 @@ INSTRUCTIONS:
     if (asksAboutRooms) {
       toolsInvoked.push('search_hotels')
       const city = lower.includes('delhi') ? 'New Delhi' : lower.includes('noida') ? 'Noida' : undefined
-      const { result } = await this.executeTool('search_hotels', { city, search: userMessage })
 
-      if (Array.isArray(result) && result.length > 0) {
-        // One line per hotel with its lowest rate. The full room-by-room dump
-        // ran to a thousand characters and buried the answer.
-        const list = result
-          .slice(0, 4)
-          .map((h: any) => {
-            const cheapest = h.availableRooms
-              .map((r: any) => Number(String(r.pricePerNight).replace(/[^0-9]/g, '')))
-              .filter((n: number) => n > 0)
-              .sort((a: number, b: number) => a - b)[0]
-            return `• *${h.hotel}* — ${h.city}${cheapest ? ` · from ₹${cheapest.toLocaleString('en-IN')}/night` : ''}`
-          })
+      // NEVER pass the raw sentence as `search`. searchHotelsForChat substring-
+      // matches the whole string against name/slug/city, so "best property in
+      // noida" asks whether a hotel is literally called that and always returns
+      // nothing. Every natural-language room question therefore answered "I
+      // couldn't match that to a property" — the guest asked something
+      // perfectly reasonable and got a dead end. Match on a property name only
+      // when the guest actually named one.
+      const named = (await db.getProperties()).find((p) => {
+        const words = p.name.toLowerCase().replace(/^hotel\s+/, '').split(/\s+/).filter((w) => w.length > 3)
+        return words.length > 0 && words.every((w) => lower.includes(w))
+      })
+
+      // "under 2k", "below ₹3000", "under 2500"
+      const capMatch = lower.match(/(?:under|below|less than|upto|up to|within)\s*₹?\s*(\d+(?:\.\d+)?)\s*(k)?/)
+      const priceCap = capMatch ? Number(capMatch[1]) * (capMatch[2] ? 1000 : 1) : undefined
+
+      const { result } = await this.executeTool('search_hotels', { city, search: named?.name })
+
+      const cheapestOf = (h: any): number =>
+        h.availableRooms
+          .map((r: any) => Number(String(r.pricePerNight).replace(/[^0-9]/g, '')))
+          .filter((n: number) => n > 0)
+          .sort((a: number, b: number) => a - b)[0]
+
+      let matches: any[] = Array.isArray(result) ? result : []
+      const capped = priceCap ? matches.filter((h) => cheapestOf(h) <= priceCap) : matches
+
+      // A price cap that excludes everything is worth saying out loud rather
+      // than reporting as "nothing found", which reads as "we have no hotels".
+      if (priceCap && matches.length > 0 && capped.length === 0) {
+        const lowest = Math.min(...matches.map(cheapestOf))
+        reply = `Nothing under ₹${priceCap.toLocaleString('en-IN')}/night${city ? ` in ${city}` : ''} at the moment — our lowest there is *₹${lowest.toLocaleString('en-IN')}/night*.\n\nWant me to show what's closest to your budget, or call ${contactNumber} for current offers?`
+        return { reply, toolsInvoked, handoffTriggered }
+      }
+      matches = capped
+
+      if (matches.length > 0) {
+        // Cheapest first — "best under 2k" and "cheapest room" both want this
+        // order, and it was previously whatever the database returned.
+        const sorted = [...matches].sort((a, b) => cheapestOf(a) - cheapestOf(b))
+        // A table carries the same facts in a fraction of the characters, and
+        // the bubble is ~340px wide. "Hotel " prefixes every name and buys
+        // nothing, so it comes off.
+        const rows = sorted
+          .slice(0, 5)
+          .map((h: any) => `• ${String(h.hotel).replace(/^Hotel\s+/i, '')} — from ₹${cheapestOf(h).toLocaleString('en-IN')}`)
           .join('\n')
 
-        const more = result.length > 4 ? `\n\n…and ${result.length - 4} more.` : ''
-        reply = `Here's what we have${result.length > 1 ? '' : ''}:\n\n${list}${more}\n\nTell me your city and dates and I'll narrow it down — or call ${contactNumber} to book.`
+        const more = sorted.length > 5 ? `\n+${sorted.length - 5} more.` : ''
+        const head = priceCap
+          ? `Under ₹${priceCap.toLocaleString('en-IN')}${city ? ` in ${city}` : ''}:`
+          : city
+            ? `In ${city}:`
+            : `Our properties:`
+        reply = `${head}\n\n${rows}${more}\n\nWhich dates?`
         return { reply, toolsInvoked, handoffTriggered }
       }
 
-      reply = `I couldn't match that to a property. We're across Noida and New Delhi — tell me the area and your dates, or call ${contactNumber} and our team will find you something.`
+      reply = `I don't have anything matching that right now. We're across Noida and New Delhi — tell me the area and your dates, or call ${contactNumber} and our team will find you something.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
