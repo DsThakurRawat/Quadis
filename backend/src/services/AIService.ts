@@ -565,6 +565,28 @@ INSTRUCTIONS:
       return { reply, toolsInvoked, handoffTriggered }
     }
 
+    // Occupancy and child pricing. This is the costliest question to get wrong
+    // — answering "yes, children are free" to a parent of a 10-year-old
+    // under-quotes a booking they are then billed for at the counter. It used
+    // to fall through to a property search and answer "I couldn't match that to
+    // a property", so the guest got nothing. State the real bands instead,
+    // read from the property record rather than restated as literals here.
+    if (lower.includes('child') || lower.includes('kid') || lower.includes('infant') ||
+        lower.includes('extra adult') || lower.includes('extra bed') || lower.includes('occupancy') ||
+        (lower.includes('adult') && (lower.includes('free') || lower.includes('charge') || lower.includes('cost')))) {
+      const props = await db.getProperties()
+      const pol = props[0] ? policyFor(props[0]) : null
+      if (pol) {
+        reply = `Every rate covers *2 adults* per room.\n\n` +
+          `• A third adult adds *+${pol.extraAdultPercent}%* of the room rate that night.\n` +
+          `• Children under *${pol.childFreeUnderAge}* stay free.\n` +
+          `• Ages *${pol.childFreeUnderAge}–${pol.adultFromAge - 1}* add *+${pol.childPercent}%*.\n` +
+          `• Age *${pol.adultFromAge}+* is charged as a full adult.\n\n` +
+          `Tell me your children's ages and I'll be exact — or call ${contactNumber} for a firm quote.`
+        return { reply, toolsInvoked, handoffTriggered }
+      }
+    }
+
     // Banquets and events. Answer and route — do not file an enquiry the guest
     // did not actually give us the details for.
     if (lower.includes('banquet') || lower.includes('wedding') || lower.includes('conference') || lower.includes('corporate') || lower.includes('rfp') || lower.includes('event')) {
