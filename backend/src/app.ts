@@ -13,6 +13,7 @@ import { aiRouter } from './routes/ai'
 import { authRouter } from './routes/auth'
 import { contentRouter } from './routes/content'
 import { requireAdmin } from './middleware/auth'
+import { db } from './db'
 
 // Re-exported for existing importers; the implementation lives in middleware/auth
 // so routers can depend on it without importing this module back.
@@ -131,9 +132,49 @@ export function createApp(): Express {
   // Guest sign-in is equally brute-forceable; registration equally spammable.
   app.use('/api/auth', authLimiter)
 
-  // Health check endpoint
-  app.get('/api/health', (_req: Request, res: Response) => {
-    res.json({ success: true, service: 'Quadis Hotels API Server', version: '1.0.0', status: 'healthy' })
+  // Health check endpoint.
+  //
+  // This used to return a static `status: 'healthy'` without touching anything.
+  // That is the §7 failure mode exactly: both serious incidents on this project
+  // held every check green while production was down, and a health endpoint
+  // that reports on nothing is the purest form of it.
+  //
+  // Two distinct failures are worth reporting, and they are not the same:
+  //
+  //   1. Postgres is configured but not answering. Everything data-backed is
+  //      broken; the frontend still serves.
+  //   2. The process is running IN MEMORY on production. Nothing errors — it
+  //      serves the 9 seeded properties, accepts bookings, issues booking
+  //      codes, and silently loses every row on restart. `install.sh` hard
+  //      fails when /quadis/db-password is missing so a normal deploy cannot
+  //      reach this state, but nothing DETECTS it if one ever does.
+  //
+  // In-memory off production is ordinary — that is how the tests and local dev
+  // run — so it is only degraded when NODE_ENV=production.
+  app.get('/api/health', async (_req: Request, res: Response) => {
+    const probe = await db.ping()
+    const inMemoryOnProd = probe.storage === 'in-memory' && process.env.NODE_ENV === 'production'
+    const healthy = probe.reachable && !inMemoryOnProd
+
+    const body: Record<string, unknown> = {
+      success: healthy,
+      service: 'Quadis Hotels API Server',
+      version: '1.0.0',
+      status: healthy ? 'healthy' : 'degraded',
+      storage: probe.storage,
+      database: probe.reachable ? 'ok' : 'unreachable',
+    }
+
+    if (!probe.reachable) body.error = probe.error
+    if (inMemoryOnProd) {
+      body.error = 'Running in memory on production — DATABASE_URL is unset. Bookings will not survive a restart.'
+    }
+
+    // 503 so the deploy and cutover scripts fail loudly rather than printing
+    // "api ok" over a broken box. install.sh:246 and cutover.sh:101/222/240 all
+    // curl this with -f, which is the point: an install that leaves the app
+    // without its database must not report success.
+    res.status(healthy ? 200 : 503).json(body)
   })
 
   // Mount API route handlers

@@ -251,7 +251,18 @@ for i in $(seq 1 15); do
 done
 
 if [ "$ok" -ne 1 ]; then
-  echo "FAIL: API did not answer on 127.0.0.1:3001" >&2
+  # Distinguish "nothing is listening" from "it answered, and told us it is
+  # broken". /api/health returns 503 degraded when Postgres is unreachable or
+  # when the app fell back to in-memory on production — curl -f treats that as
+  # failure, correctly, but "did not answer" would send the next person after a
+  # dead process when the process is fine and its database is not.
+  BODY="$(curl -sS -m 5 http://127.0.0.1:3001/api/health 2>/dev/null || true)"
+  if [ -n "$BODY" ]; then
+    echo "FAIL: the API answered but reported itself unhealthy:" >&2
+    echo "      $BODY" >&2
+  else
+    echo "FAIL: API did not answer on 127.0.0.1:3001" >&2
+  fi
   systemctl --no-pager --lines=30 status quadis-api >&2 || true
   tail -30 /var/log/quadis-api.log >&2 || true
   exit 1
