@@ -44,6 +44,15 @@ export interface SessionPayload {
   sub: string // user id
   email: string
   exp: number // unix seconds
+  /**
+   * Only ever `'admin'`, and only on tokens minted by POST /api/admin/auth.
+   *
+   * Guest sessions must never carry it. `requireAdmin` accepts a session token
+   * solely on this claim, so a guest login that picked it up would be a
+   * privilege escalation from "signed up on the website" to "can re-price
+   * rooms and read every guest's phone number".
+   */
+  role?: 'admin'
 }
 
 /** Compact HMAC-signed token. Same shape as a JWT, without the dependency. */

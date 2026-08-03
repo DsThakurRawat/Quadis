@@ -4,6 +4,7 @@ import { db } from '../db'
 import { razorpayService } from '../services/RazorpayService'
 import { notificationService } from '../services/NotificationService'
 import { imageStore } from '../services/ImageStore'
+import { hashPassword, verifyPassword, signSession } from '../lib/auth'
 import multer from 'multer'
 
 export const adminRouter = Router()
@@ -15,27 +16,104 @@ export const adminRouter = Router()
  */
 export const adminAuthRouter = Router()
 
-// POST /api/admin/auth — exchange the staff PIN for the admin bearer token.
-adminAuthRouter.post('/auth', (req: Request, res: Response) => {
-  const expectedPin = process.env.ADMIN_PIN
+/** 12 hours: a front desk shift, so staff sign in once a day, not once an hour. */
+const ADMIN_SESSION_TTL = 60 * 60 * 12
+
+/**
+ * Six digits. Rejects the two shapes that make a PIN worthless — every digit
+ * the same (`000000`) and a straight run (`123456`, `987654`) — because those
+ * are the first guesses anyone makes and the client picking one silently is
+ * worse than her picking nothing.
+ */
+function pinProblem(pin: unknown): string | null {
+  if (typeof pin !== 'string' || !/^\d{6}$/.test(pin)) return 'PIN must be exactly 6 digits'
+  if (/^(\d)\1{5}$/.test(pin)) return 'PIN cannot be the same digit six times'
+  const digits = pin.split('').map(Number)
+  const run = (step: number) => digits.every((d, i) => i === 0 || d === digits[i - 1] + step)
+  if (run(1) || run(-1)) return 'PIN cannot be six digits in a row'
+  return null
+}
+
+// POST /api/admin/auth — exchange the staff PIN for a signed admin session.
+adminAuthRouter.post('/auth', async (req: Request, res: Response) => {
+  const bootstrapPin = process.env.ADMIN_PIN
   const adminToken = process.env.ADMIN_PASSWORD
 
   // Fail closed rather than shipping a guessable default PIN.
-  if (!expectedPin || !adminToken) {
+  if (!bootstrapPin || !adminToken) {
     console.error('ADMIN_PIN / ADMIN_PASSWORD are not set — refusing admin sign-in.')
     return res.status(503).json({ success: false, error: 'Admin access is not configured' })
   }
 
   const { pin } = req.body ?? {}
-  if (typeof pin !== 'string' || pin !== expectedPin) {
+  if (typeof pin !== 'string') {
     return res.status(401).json({ success: false, error: 'Invalid Admin PIN' })
+  }
+
+  // The stored PIN wins once it exists; ADMIN_PIN only ever bootstraps the
+  // first sign-in on a fresh database.
+  const storedHash = await db.getAdminPinHash()
+  const usingBootstrap = storedHash === null
+  const ok = usingBootstrap ? pin === bootstrapPin : await verifyPassword(pin, storedHash)
+
+  if (!ok) {
+    return res.status(401).json({ success: false, error: 'Invalid Admin PIN' })
+  }
+
+  const token = signSession({ sub: 'admin', email: '', role: 'admin' }, ADMIN_SESSION_TTL)
+  if (!token) {
+    // signSession returns null under NODE_ENV=production with no SESSION_SECRET.
+    console.error('SESSION_SECRET is not set — cannot mint an admin session.')
+    return res.status(503).json({ success: false, error: 'Admin access is not configured' })
   }
 
   res.json({
     success: true,
-    token: adminToken,
+    token,
+    expiresInSeconds: ADMIN_SESSION_TTL,
+    // Drives the "change your PIN" prompt: true means she is still on the PIN
+    // we generated and sent over WhatsApp, which is not a secret worth keeping.
+    mustChangePin: usingBootstrap,
     message: 'Authenticated successfully as Hotel Management',
   })
+})
+
+// POST /api/admin/change-pin — the client sets her own PIN, no redeploy needed.
+adminRouter.post('/change-pin', async (req: Request, res: Response) => {
+  try {
+    const { currentPin, newPin } = req.body ?? {}
+
+    const problem = pinProblem(newPin)
+    if (problem) return res.status(400).json({ success: false, error: problem })
+
+    const storedHash = await db.getAdminPinHash()
+    const bootstrapPin = process.env.ADMIN_PIN
+
+    // Re-check the current PIN even though the caller already holds a valid
+    // admin session: an unattended open dashboard must not be enough to lock
+    // the owner out of her own panel.
+    const currentOk =
+      storedHash === null
+        ? typeof currentPin === 'string' && !!bootstrapPin && currentPin === bootstrapPin
+        : typeof currentPin === 'string' && (await verifyPassword(currentPin, storedHash))
+
+    if (!currentOk) {
+      return res.status(401).json({ success: false, error: 'Current PIN is incorrect' })
+    }
+
+    if (newPin === currentPin) {
+      return res.status(400).json({ success: false, error: 'New PIN must be different from the current one' })
+    }
+
+    await db.setAdminPinHash(await hashPassword(newPin))
+
+    // Existing sessions stay valid — including this one, so she is not logged
+    // out mid-change. They expire on their own within ADMIN_SESSION_TTL.
+    res.json({ success: true, message: 'Admin PIN updated' })
+  } catch (err: any) {
+    console.error('Error changing admin PIN:', err)
+    res.status(500).json({ success: false, error: err.message || 'Failed to change PIN' })
+  }
 })
 
 // GET /api/admin/dashboard — retrieve daily glance metrics, inventory, bookings, and leads

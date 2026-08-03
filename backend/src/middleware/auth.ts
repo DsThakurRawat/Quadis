@@ -45,8 +45,23 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, error: 'Unauthorized' })
   }
-  if (!tokensMatch(authHeader.slice('Bearer '.length), expected)) {
-    return res.status(401).json({ success: false, error: 'Unauthorized' })
+  const presented = authHeader.slice('Bearer '.length)
+
+  // Preferred path: a signed, expiring session minted by POST /api/admin/auth.
+  //
+  // `role === 'admin'` is the whole check and it is not optional. verifySession
+  // also validates ordinary guest logins, so accepting any valid session here
+  // would promote every registered guest to full admin.
+  const session = verifySession(presented)
+  if (session?.role === 'admin') {
+    ;(req as any).session = session
+    return next()
   }
-  next()
+
+  // Break-glass: the raw ADMIN_PASSWORD still works, so a lost or un-migrated
+  // PIN never locks the client out of her own live site. It has no expiry,
+  // which is exactly why it is the fallback and not the front door.
+  if (tokensMatch(presented, expected)) return next()
+
+  return res.status(401).json({ success: false, error: 'Unauthorized' })
 }

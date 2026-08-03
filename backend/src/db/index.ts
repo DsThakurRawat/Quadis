@@ -111,6 +111,8 @@ export class DatabaseEngine {
   public memoryNightHolds: Map<string, Array<{ bookingId: string; units: number }>> = new Map()
   /** Admin-edited copy overrides, keyed the same way as the site_content table. */
   public memorySiteContent: Map<string, string> = new Map()
+  /** Mirror of admin_credentials. Null until the PIN is changed from the env default. */
+  public memoryAdminPinHash: string | null = null
 
   constructor() {
     const dbUrl = process.env.DATABASE_URL
@@ -120,6 +122,32 @@ export class DatabaseEngine {
     } else {
       this.useInMemory = true
       this.initializeInMemorySeed()
+    }
+  }
+
+  /**
+   * Does the storage this process is actually using answer a query?
+   *
+   * `useInMemory` is decided once in the constructor and never revisited, so
+   * every other method in this class trusts it. Nothing anywhere asks whether
+   * the Postgres behind it is still there — which is how the app can serve the
+   * 9 seeded properties, accept bookings and issue booking codes while its
+   * database is unreachable, or absent entirely. `/api/health` is the one
+   * caller that must not trust `useInMemory`; it has to ask.
+   */
+  public async ping(): Promise<{ storage: 'postgres' | 'in-memory'; reachable: boolean; error?: string }> {
+    if (this.useInMemory || !this.pool) {
+      // The maps are this process's own heap. If we are running at all, they
+      // are reachable — the question that matters for in-memory is not whether
+      // it responds but whether it should be in use at all, and that is the
+      // caller's to judge.
+      return { storage: 'in-memory', reachable: true }
+    }
+    try {
+      await this.pool.query('SELECT 1')
+      return { storage: 'postgres', reachable: true }
+    } catch (err: any) {
+      return { storage: 'postgres', reachable: false, error: err?.message || String(err) }
     }
   }
 
@@ -973,6 +1001,33 @@ export class DatabaseEngine {
     if (room.available_units > room.total_units) room.available_units = room.total_units
     this.memoryRoomTypes.set(room.id, room)
     return room
+  }
+
+  /* ---------- Admin PIN ---------- */
+
+  /**
+   * Null means "never changed" — the caller falls back to the ADMIN_PIN env
+   * var, which exists only to bootstrap the very first sign-in. Once the
+   * client sets her own PIN this row wins and the env var stops mattering.
+   */
+  public async getAdminPinHash(): Promise<string | null> {
+    if (!this.useInMemory && this.pool) {
+      const res = await this.pool.query(`SELECT pin_hash FROM admin_credentials WHERE id = 'primary'`)
+      return res.rows[0]?.pin_hash ?? null
+    }
+    return this.memoryAdminPinHash
+  }
+
+  public async setAdminPinHash(hash: string): Promise<void> {
+    if (!this.useInMemory && this.pool) {
+      await this.pool.query(
+        `INSERT INTO admin_credentials (id, pin_hash, updated_at) VALUES ('primary', $1, NOW())
+         ON CONFLICT (id) DO UPDATE SET pin_hash = EXCLUDED.pin_hash, updated_at = NOW()`,
+        [hash]
+      )
+      return
+    }
+    this.memoryAdminPinHash = hash
   }
 
   /* ---------- Editable site copy ---------- */

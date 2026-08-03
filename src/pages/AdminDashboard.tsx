@@ -37,6 +37,17 @@ export default function AdminDashboard() {
   const [generatedLink, setGeneratedLink] = useState<{ shortUrl: string; paymentLinkId: string } | null>(null)
   const [linkPending, setLinkPending] = useState(false)
 
+  // Change-PIN state. `mustChangePin` comes from the server and means the
+  // account is still on the bootstrap PIN that was sent over WhatsApp.
+  const [mustChangePin, setMustChangePin] = useState(false)
+  const [showPinForm, setShowPinForm] = useState(false)
+  const [currentPinInput, setCurrentPinInput] = useState('')
+  const [newPinInput, setNewPinInput] = useState('')
+  const [confirmPinInput, setConfirmPinInput] = useState('')
+  const [pinError, setPinError] = useState('')
+  const [pinNotice, setPinNotice] = useState('')
+  const [pinSaving, setPinSaving] = useState(false)
+
   const fetchDashboard = async () => {
     setLoading(true)
     try {
@@ -107,8 +118,46 @@ export default function AdminDashboard() {
       }
       sessionStorage.setItem('quadis_admin_token', json.token)
       setToken(json.token)
+      // Still on the PIN we generated and sent over WhatsApp — open the change
+      // form straight away rather than leaving it to be found in a menu.
+      setMustChangePin(Boolean(json.mustChangePin))
+      setShowPinForm(Boolean(json.mustChangePin))
+      setCurrentPinInput(json.mustChangePin ? pinInput : '')
     } catch (err) {
       setAuthError('Could not reach the authentication server.')
+    }
+  }
+
+  const changePin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPinError('')
+    setPinNotice('')
+    if (newPinInput !== confirmPinInput) {
+      setPinError('The two new PINs do not match.')
+      return
+    }
+    setPinSaving(true)
+    try {
+      const res = await fetch(getApiUrl('admin/change-pin'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ currentPin: currentPinInput, newPin: newPinInput }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        setPinError(json?.error || 'Could not change the PIN.')
+        return
+      }
+      setPinNotice('PIN changed. Use the new one next time you sign in.')
+      setMustChangePin(false)
+      setShowPinForm(false)
+      setCurrentPinInput('')
+      setNewPinInput('')
+      setConfirmPinInput('')
+    } catch {
+      setPinError('Could not reach the server.')
+    } finally {
+      setPinSaving(false)
     }
   }
 
@@ -116,6 +165,8 @@ export default function AdminDashboard() {
     sessionStorage.removeItem('quadis_admin_token')
     setToken(null)
     setPinInput('')
+    setMustChangePin(false)
+    setShowPinForm(false)
   }
 
   const toggleRoom = async (roomTypeId: string, currentStatus: boolean) => {
@@ -230,13 +281,81 @@ export default function AdminDashboard() {
             <span style={{ fontSize: '0.75rem', letterSpacing: '0.15em', color: '#d97706', fontWeight: '700' }}>MOBILE MANAGEMENT SWITCHBOARD</span>
             <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: '0' }}>Quadis Owner Dashboard</h1>
           </div>
-          <button
-            onClick={signOut}
-            style={{ background: '#292524', color: '#a8a29e', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
-          >
-            Sign Out
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => { setShowPinForm((v) => !v); setPinError(''); setPinNotice('') }}
+              style={{ background: '#292524', color: '#a8a29e', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Change PIN
+            </button>
+            <button
+              onClick={signOut}
+              style={{ background: '#292524', color: '#a8a29e', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
+
+        {mustChangePin && (
+          <div
+            role="alert"
+            style={{ background: 'rgba(217,119,6,.12)', border: '1px solid #b45309', color: '#fcd34d', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.85rem' }}
+          >
+            Aap abhi bhi wahi PIN use kar rahe hain jo hamne bheja tha. Apna khud
+            ka PIN set kar lijiye — neeche form me.
+          </div>
+        )}
+
+        {pinNotice && (
+          <div
+            role="status"
+            style={{ background: 'rgba(16,185,129,.12)', border: '1px solid #047857', color: '#6ee7b7', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.85rem' }}
+          >
+            {pinNotice}
+          </div>
+        )}
+
+        {showPinForm && (
+          <form
+            onSubmit={changePin}
+            style={{ background: '#1c1917', border: '1px solid #292524', padding: '1.25rem', borderRadius: '10px', marginBottom: '1.5rem' }}
+          >
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0 0 0.25rem' }}>🔑 Change Admin PIN</h3>
+            <p style={{ color: '#a8a29e', fontSize: '0.8rem', margin: '0 0 1rem' }}>
+              6 digits. Ek hi digit baar baar ya 123456 jaisa seedha number nahi chalega.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+              <input
+                type="password" inputMode="numeric" autoComplete="current-password"
+                placeholder="Current PIN" value={currentPinInput}
+                onChange={(e) => setCurrentPinInput(e.target.value)}
+                style={{ padding: '0.6rem', borderRadius: '6px', border: '1px solid #292524', background: '#0c0a09', color: '#fff' }}
+              />
+              <input
+                type="password" inputMode="numeric" autoComplete="new-password"
+                placeholder="New PIN" value={newPinInput}
+                onChange={(e) => setNewPinInput(e.target.value)}
+                style={{ padding: '0.6rem', borderRadius: '6px', border: '1px solid #292524', background: '#0c0a09', color: '#fff' }}
+              />
+              <input
+                type="password" inputMode="numeric" autoComplete="new-password"
+                placeholder="Confirm new PIN" value={confirmPinInput}
+                onChange={(e) => setConfirmPinInput(e.target.value)}
+                style={{ padding: '0.6rem', borderRadius: '6px', border: '1px solid #292524', background: '#0c0a09', color: '#fff' }}
+              />
+            </div>
+            {pinError && (
+              <div role="alert" style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.75rem' }}>{pinError}</div>
+            )}
+            <button
+              type="submit" disabled={pinSaving}
+              style={{ marginTop: '1rem', background: '#d97706', color: '#fff', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '6px', cursor: pinSaving ? 'default' : 'pointer', fontWeight: '700', opacity: pinSaving ? 0.6 : 1 }}
+            >
+              {pinSaving ? 'Saving…' : 'Save new PIN'}
+            </button>
+          </form>
+        )}
 
         {actionError && (
           <div

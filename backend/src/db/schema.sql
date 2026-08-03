@@ -98,6 +98,23 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- The staff PIN for /admin, so the client can change it herself.
+--
+-- It lives here and NOT in site_content, which is the obvious-looking home for
+-- a single key/value: GET /api/content is public and unauthenticated (verified
+-- 200 on production), so a hash parked there would be published to the world.
+-- PUT /api/admin/content also writes arbitrary keys, so it could be overwritten
+-- by anyone already inside the panel.
+--
+-- One row, id 'primary'. Multiple staff logins would be a separate table with
+-- names against them — the client has been asked how many people use the panel
+-- and has not answered, so this deliberately does not guess.
+CREATE TABLE IF NOT EXISTS admin_credentials (
+  id VARCHAR(32) PRIMARY KEY DEFAULT 'primary',
+  pin_hash TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_code VARCHAR(16) UNIQUE NOT NULL,
