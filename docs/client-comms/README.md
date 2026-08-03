@@ -17,13 +17,18 @@ message. Say the number, say what it buys, ask one closed question at the end.
 
 **Current queue, in order. Round 3 is superseded — do not send from it.**
 
+The letters are **identifiers, not priority** — a file keeps its letter for life
+so that references to it from AGENTS.md stay valid. Row order is the send order.
+That is why G sits at the top.
+
 | # | File | Status |
 |---|---|---|
+| **G — SEND FIRST** | `message-g-where-bookings-show-SEND.txt` | **She asked this twice on 3 Aug and is waiting.** Where bookings and form details show: `https://www.quadishotels.com/admin`, verified live. Two fill-ins before sending — our availability, and the **PIN, which goes in a separate message and never into a file under `docs/`** (this repo is public). It also carries the two-systems question that row **E** has been waiting since 27 Jul to ask — asking it *inside* an answer she requested beats raising it cold |
 | **B** | `message-b-dns-access-SEND.txt` | **SENT 31 Jul — and ANSWERED.** She drafted the support mail herself and it is correct as written; she only asked *which address* to send it to. Her reply: `client-assets/briefs/2026-07-31-whatsapp-support-email-draft-and-addresses.png` |
 | **C** | `message-c-which-support-address-SEND.txt` | **SENT 31 Jul.** Told her: mail `serverindiagurgaon@gmail.com`, CC `support@host.co.in`, call +91 966 576 0700. **She then appears to have mailed them — ⚠️ believed, not confirmed** (see below). Now waiting on the host |
 | **A — SEND NEXT** | `message-a-server-cost-SEND.txt` | The corrected server cost, **~₹3,500/mo**. **Rewritten 31 Jul** — it no longer re-asks a price she has already agreed to, no longer says work starts after she confirms (the server is built and running), and the **$99.47 ≈ ₹8,500 credit is now in the message text** instead of being a hand-edit note here. Nothing blocks this one; it only needs her |
 | D | `questions-round-4.txt` → Razorpay | Her money, possibly broken right now |
-| E | `questions-round-4.txt` → PMS / admin panel | Decides the most work; needs the revenue manager |
+| E | `questions-round-4.txt` → PMS / admin panel | Decides the most work; needs the revenue manager. **Its opening question is now folded into G**, because she asked it herself on 3 Aug. Do not ask it twice — read G before sending this |
 | F | `message-photo-storage.txt` | Read its warning header first — photo editing is **not** live |
 
 > ⚠️ **"She sent the mail" is an assumption, and it is the kind that costs

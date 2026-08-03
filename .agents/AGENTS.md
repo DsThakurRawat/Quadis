@@ -36,6 +36,33 @@ Rules:
 1. **Never commit or upload `client-assets/`.** It holds the client's live
    GoDaddy and Razorpay passwords in plaintext. The `client-assets/` line in
    `.gitignore` is the only thing preventing that. Do not narrow it.
+
+   > ⚠️ **`.gitignore` is not preventing it for one file.**
+   > `client-assets/property-data.md` was committed in `c4dbefb` *before* the
+   > ignore rule existed, and **git does not un-track a file just because a
+   > pattern later matches it** — it is on `origin/main` today, in a public
+   > repo. Checked 3 Aug: it is lat/lng, metro and landmark data with **no
+   > credentials**, so this is untidiness, not a leak. Left in place
+   > deliberately; purging it rewrites public history. **The lesson is the
+   > general one — `git ls-files | grep client-assets` before you trust the
+   > ignore rule.**
+
+1b. **Never put a real credential in a test file, a fixture or a doc.** This
+   repo is **public** (§3b). Verify with the parameter itself, not by eye:
+   ```
+   REAL=$(aws ssm get-parameter --profile quadis-client --region ap-south-1 \
+            --name /quadis/admin-pin --with-decryption \
+            --query 'Parameter.Value' --output text)
+   grep -rlF "$REAL" backend/ src/ docs/ .agents/ deploy/    # must print nothing
+   ```
+   > **This is not hypothetical. Caught 3 Aug, one command before the push:**
+   > `backend/__tests__/adminPin.test.ts` had `BOOTSTRAP_PIN` set to the **live
+   > production admin PIN** from `/quadis/admin-pin`. The test sets
+   > `process.env.ADMIN_PIN` to that constant itself, so *any* six digits work —
+   > the real one bought nothing and cost everything. Git history was checked
+   > and it had **never been committed**, so no rotation was needed; the file
+   > was untracked and the push would have been the exposure event. A test file
+   > is exactly where this hides, because nobody rereads a passing test.
 2. **Never touch DNS.** The domain is registered at GoDaddy but its nameservers
    are at theserverindia, so the zone — including the Google MX records — is
    served by the old web host. Repointing without recreating those records takes
@@ -56,12 +83,21 @@ Rules:
 
 ---
 
-## 3. Live state
+## 3. Our own account — the OLD stack. ⚠️ STILL RUNNING, and it is a hazard
+
+> **This is no longer where the site lives. §3b is.** Read this section as the
+> description of a *second, separate* deployment in **our** AWS account that
+> nobody turned off — verified answering on 3 Aug: it serves the whole site and
+> its `/api/properties` comes out of its own RDS in a different order from the
+> live box. Razorpay no longer points here. It is still a duplicate indexable
+> copy of the site and still billing, so it should be wound down deliberately —
+> but do **not** delete it as cleanup: its RDS is the only record of anything
+> before 1 Aug. See §4.
 
 | Thing | Value |
 |---|---|
 | AWS account / region | `093650262440` / `us-east-1` |
-| Site (live) | **`https://djqj43186y3yh.cloudfront.net`** — HTTPS, `/api/*` proxied, deep links fixed |
+| Site (**old, still up**) | `https://djqj43186y3yh.cloudfront.net` — HTTPS, `/api/*` proxied, deep links fixed. Guests do not reach it; **Razorpay may still be pointed at it** |
 | CloudFront distribution | `E1ZV1EQ1QRKH08` — invalidate `/index.html` and `/` after a frontend upload |
 | Deployed version | Frontend `4fa8b1c`, 28 Jul (bundle `index-DvPrWQGR.js`). Backend `co3-84a3e86` — unchanged since, no backend code in `b44ad78`/`4fa8b1c` |
 | EB app / environment | `quadis-backend` / `quadis-backend-live` |
@@ -120,7 +156,7 @@ build.
 | Photo bucket | `quadis-hotel-photos` — private, public access blocked, AES256 |
 | DB password | SSM Parameter Store `/quadis/db-password`, SecureString. **Not in this repo, not in the EB-style config trap.** |
 | Health | `curl http://13.234.85.127/healthz` → `ok` |
-| **App** | **DEPLOYED 31 Jul.** Frontend + API + Postgres all live on the box. `http://13.234.85.127/` serves the site; `/api/properties` returns 9 seeded properties out of local Postgres |
+| **App** | **DEPLOYED 31 Jul, last shipped 3 Aug** (`quadis-ebc78b6-dirty` — admin PIN work, §4). Frontend + API + Postgres all live on the box. `http://13.234.85.127/` serves the site; `/api/properties` returns 9 seeded properties out of local Postgres |
 | Deploy | `./deploy/build-artifact.sh && ./deploy/push.sh` — artifact to S3, installed via SSM. **No port 22, so no scp/rsync from a laptop, by design** |
 
 ### The deploy, and the four things it had to get right — 31 Jul
@@ -201,9 +237,13 @@ dark ~30 Oct.**
 It was a CNAME to the apex, so this was unavoidable without a separate record.
 Nobody has said whether it is used; ask before assuming it is dead.
 
-Still outstanding: the **Razorpay webhook URL** still points at the retired
-CloudFront distribution, so a paid booking will not auto-confirm until it is
-changed to `https://www.quadishotels.com/api/webhooks/razorpay`.
+✅ **The Razorpay webhook URL was repointed at
+`https://www.quadishotels.com/api/webhooks/razorpay`** (Divyansh; stated
+in-session, not verified from the dashboard). **This line previously said it was
+still outstanding and was left stale for two days** — long enough that a later
+pass re-derived a whole guest-loses-their-room incident from it and wrote it up
+as live. See the top of §4. **If you fix something described here, fix the line
+here too; a stale "outstanding" costs more than no note at all.**
 
 Postgres listens on **loopback only**. There is no database port on the
 network, which retires the whole class of problem behind incidents 1 and 3 —
@@ -431,6 +471,280 @@ public sitemap. Not ours to fix, worth mentioning to her.
 ## 4. Task board
 
 ### Open
+
+- [x] **RESOLVED — the Razorpay webhook URL was repointed at the live site.**
+      Done by Divyansh; **§3b's "still outstanding" line was simply never
+      updated**, which is what sent a later pass down the chain below.
+      ⚠️ **Provenance: stated in-session, not verified from our side** — it
+      needs the Razorpay dashboard, which is §2/§4a "the client's account".
+      Treat it as done; if you need proof, get it from the dashboard.
+
+      **Do not re-raise this from the old §3b wording alone.** That line is now
+      corrected. The reasoning below is kept because the *mechanism* is real and
+      would bite again if the URL were ever changed back or duplicated.
+
+      > **Why the logs cannot confirm it either way, checked 3 Aug.** nginx on
+      > the live box has **no Razorpay-originated POSTs** to
+      > `/api/webhooks/razorpay` — only `curl/8.5.0` probes from one IP. That is
+      > not evidence of a problem: `payments/create-order` appears **twice in
+      > total** across all four access logs, both manual checks. **No real guest
+      > has attempted a payment on the live site yet**, so no webhook would have
+      > fired regardless. Absence of deliveries proves nothing until money moves.
+      > The first real booking is the test that settles it — watch it.
+
+      **The mechanism, for whoever reads this later.** If the webhook ever points
+      anywhere but the live box: the guest books (row lands in Postgres on
+      `13.234.85.127`), pays, Razorpay captures and fires `order.paid` at the
+      wrong stack, which finds nothing in *its* database and returns
+      `404 Target booking not found` (`webhooks.ts:69`). On the live box nothing
+      arrives, `startHoldCleanupWorker` (`server.ts:21`) runs every minute, and
+      `cleanupExpiredHolds(15)` expires the hold — **room released and resold,
+      after the money was taken.** Nobody is told, because the WhatsApp alerts
+      below have no `META_WHATSAPP_TOKEN`.
+
+      > **The webhook handler is not the bug and must not be "fixed".** It is
+      > idempotent, it refuses to confirm an `EXPIRED` booking because that
+      > would oversell the room, and it records the payment and returns 409 for
+      > manual review. All correct — it just has to actually receive the event.
+
+- [ ] ⚠️ **The retired CloudFront stack is not retired — it is alive and
+      answering.** Verified directly 3 Aug, and independent of the webhook
+      question above. It is a second complete copy of the site on a *different
+      database*:
+
+      | Probe, 3 Aug | `djqj43186y3yh.cloudfront.net` (old) | `www.quadishotels.com` (live) |
+      |---|---|---|
+      | `/` | 200 — serves a whole site | 200 |
+      | `/api/properties` | 9, first ids `prop-3, prop-4, prop-5…` | 9, first ids `prop-2, prop-3, prop-4…` |
+      | `/api/webhooks/razorpay` | **401 `Missing Razorpay webhook signature`** — it accepts webhooks | 401, same |
+
+      Different id ordering off the same seed = **two different databases**. The
+      old EB app and its RDS are still running in account `093650262440`, billing.
+
+      Why it still matters now the webhook is repointed:
+      - It is a **second indexable copy of the whole site** — duplicate content
+        against `www.quadishotels.com`, competing for the same 74 URLs §4 spent
+        a day making resolve.
+      - Its `/api/webhooks/razorpay` **still accepts events**, so any stale or
+        duplicated webhook config lands somewhere that answers instead of
+        failing loudly.
+      - Its RDS holds real rows and is the only record of anything that happened
+        before 1 Aug. **Do not just delete it as cleanup.**
+
+      **PARKED 3 Aug — Divyansh, to discuss later. Do not act on it unasked.**
+      His read, and it holds: **no payment can complete there.** Nothing creates
+      an order on that stack (DNS sends every guest to the live box) and Razorpay
+      no longer posts to it, so both ends of the payment path are dead even
+      though the endpoint still answers. What is left is cost and duplicate
+      content, not a guest-facing risk.
+
+      When it is picked up: snapshot the RDS first, then disable the
+      distribution and the EB environment.
+
+- [x] **3 Aug — the client walked the live production site and signed it off.**
+      `client-assets/briefs/2026-08-03-whatsapp-post-live-signoff-and-admin-panel-question.png`.
+      Her list, in her words: forms and booking both working, internal linking
+      correct, registration and login working on every page, guest bookings
+      showing up, chatbot working, WhatsApp button working. **This is the §6
+      browser pass, done by the one person whose verdict actually settles it,
+      on the real site in front of real guests.** Record it as such — it is the
+      first end-to-end acceptance this project has had from outside the team.
+      It does **not** clear the §7 pattern: she checked what a guest can see,
+      which is exactly the half that stayed green through incidents 5 and 6.
+
+- [x] **SENT 3 Aug — answered: where bookings and form details show.**
+      `message-g-where-bookings-show-SEND.txt` went to her (Divyansh). **The
+      two-systems question in it is now asked, so this moves from "we owe her an
+      answer" to "we are waiting on hers" — see §5.** Detail below kept for what
+      was verified and claimed.
+      The answer is `https://www.quadishotels.com/admin` — verified live 3 Aug:
+      the page returns 200 and `POST /api/admin/auth` with a wrong PIN returns
+      `Invalid Admin PIN`, not `503 Admin access is not configured`, so
+      `ADMIN_PIN` and `ADMIN_PASSWORD` **are** set on the box from SSM
+      (`/quadis/admin-pin`, `/quadis/admin-password`, both present).
+      It shows today's check-ins / pending holds / pending enquiries / revenue,
+      the inventory switchboard, the WhatsApp payment-link generator, **Recent
+      Bookings** (code, guest name, phone, check-in, rooms, amount, status) and
+      **Recent Leads & RFPs**. All three forms — Contact, Corporate,
+      BanquetDetail — POST to `/api/enquiries` and land in that second card.
+      Drafted in `docs/client-comms/message-g-where-bookings-show-SEND.txt`.
+
+      > **She wrote "admin panel me?" and she means `adminweb.quadishotels.com`.**
+      > It is not that panel and cannot become it. Grep for `adminweb`,
+      > `115.124.108.190` or `theserverindia` across `backend/src` and `src`
+      > returns **zero hits** — there is no integration, no sync, no export.
+      > Her guests' bookings land in the Postgres on her EC2 box and stop there.
+      > **This is the §5 two-systems question, and the client has now walked
+      > into it herself.** Settle it in the reply; do not let it slide again.
+
+- [x] **DEPLOYED 3 Aug — the client can change her own admin PIN, and the
+      sign-in no longer hands out a permanent credential.**
+      Asked for directly. It touches the admin panel, which §2.4 restricts —
+      the judgement was that this *hardens a surface that is already live and
+      already in her hands*, rather than building new function into it, and it
+      stays useful whichever way the PMS question lands.
+
+      **The bug this fixes is worth stating plainly: `/api/admin/auth` used to
+      return `ADMIN_PASSWORD` itself as the bearer token.** `requireAdmin`
+      compared that string directly, so the token *was* the permanent admin
+      secret — no expiry, valid until someone rotated SSM and redeployed. One
+      intercepted response, or one read of `sessionStorage`, was total and
+      permanent access. It is now a `signSession(...)` HMAC token with
+      `role: 'admin'` and a **12-hour** TTL (a front-desk shift).
+
+      - `admin_credentials` — one row, `pin_hash` only, scrypt via the existing
+        `hashPassword`. **Deliberately not in `site_content`**: `GET /api/content`
+        is public and unauthenticated (verified 200 on production), so a hash
+        parked there would be world-readable, and `PUT /api/admin/content`
+        writes arbitrary keys so it could be overwritten from inside the panel.
+      - `ADMIN_PIN` is now **bootstrap only** — used when no row exists. The
+        stored PIN wins the moment she sets one. The login response carries
+        `mustChangePin`, and the dashboard opens the change form on sight of it,
+        because the current PIN was sent over WhatsApp and is not a secret.
+      - `POST /api/admin/change-pin` re-checks the current PIN even though the
+        caller already holds a valid session — an unattended open dashboard must
+        not be enough to lock the owner out of her own live site.
+      - Weak PINs rejected: non-6-digit, all-same-digit, and straight runs both
+        ways. Those are the first three guesses anyone makes.
+      - `ADMIN_PASSWORD` still works as **break-glass**, so a forgotten PIN
+        never locks her out. No expiry, which is why it is the fallback.
+
+      > **The escalation this could have been, and the test that pins it.**
+      > `verifySession()` validates *guest* logins too. A `requireAdmin` that
+      > accepted "any valid session" would have promoted **every registered
+      > guest** to full admin — re-pricing rooms and reading every guest's
+      > phone number. The guard turns solely on `role === 'admin'`, which
+      > `routes/auth.ts` never sets.
+      >
+      > `requireAdmin` short-circuits under `NODE_ENV=test`, so the guard was
+      > **completely untested** and this would have shipped unseen.
+      > `__tests__/adminPin.test.ts` flips the env and drives the middleware
+      > directly: guest session rejected, forged claim rejected, expired token
+      > rejected, break-glass accepted.
+
+      Verified before shipping: 126 tests pass (was 109), both typechecks
+      clean, production build clean.
+
+      **Shipped to the box 3 Aug** — `build-artifact.sh && push.sh`, artifact
+      `quadis-ebc78b6-dirty.tar.gz`, SSM command
+      `ca5f9ddf-0c63-4ea0-a732-c7e05eef4302`, install `Success`. Deployed from
+      a dirty tree: this work is **on production but not committed**, so the
+      `-dirty` tag is the only version marker that exists for it. `push.sh`
+      re-applied TLS and its own HTTPS check passed, so the certbot trap in
+      §3b did not bite.
+
+      Verified on production after the deploy, not assumed:
+
+      | Check | Result |
+      |---|---|
+      | `POST /api/admin/auth`, wrong PIN | 401 `Invalid Admin PIN` |
+      | `POST /api/admin/change-pin`, no token | 401 |
+      | `GET /api/admin/dashboard`, garbage token | 401 |
+      | `admin_credentials` table | **exists, zero rows** — see below |
+      | `/` and `/api/properties` | 200, 9 properties |
+      | `/admin` in a browser | login card renders, console clean |
+      | Wrong PIN in the browser | `Invalid Admin PIN` renders, no React crash |
+
+      > **How the table is known to exist without opening psql.** `/auth` awaits
+      > `db.getAdminPinHash()` — which selects from `admin_credentials` —
+      > *before* it compares the PIN. A missing table would throw there and
+      > surface as a 500, not a clean 401. Getting `401 Invalid Admin PIN` back
+      > proves the select ran and returned no rows: the table was created by
+      > `schema.sql` on boot, and the panel is still in **bootstrap mode**.
+
+      **Bootstrap mode is the part that is not finished.** Zero rows means she
+      is still on the `ADMIN_PIN` from SSM — the one sent over WhatsApp. The
+      change-PIN form exists and is one sign-in away, but *she* has to use it.
+      Until she does, the WhatsApp PIN is the live credential.
+
+      **Not verified: everything behind the login.** The dashboard render, the
+      `mustChangePin` banner and the change-PIN form itself were not exercised,
+      because doing so means typing the live admin PIN into the live panel.
+      That check is the client's to make, or needs an explicit decision to sign
+      in. §2.5 is therefore only **half** satisfied here — say so rather than
+      logging this as a clean browser pass.
+
+- [ ] **Three gaps the admin panel has, all exposed by her question.** None is a
+      bug today and all three become one within weeks:
+      1. **Only the last 15 of each are visible.**
+         `backend/src/routes/admin.ts:45-46` calls `getAllBookings(15)` and
+         `enquiries.slice(0, 15)`. No pagination, no date filter, no search, no
+         CSV export. `getAllBookings` itself defaults to 50 — the 15 is the
+         dashboard's own choice. The 16th booking does not disappear from the
+         database, it disappears from *her view of it*, silently.
+      2. **Registered users appear nowhere.** She specifically confirmed signup
+         works; `admin.ts` has no users route and `AdminDashboard.tsx` has no
+         users panel. If "forms ki details" includes accounts, today's honest
+         answer is "nowhere". Decide whether she needs it before promising it.
+      3. **`/admin` is not linked from anywhere in the site.** Deliberate or
+         not, it means the panel is undiscoverable without being told the URL —
+         so the URL has to be *told*, and the PIN handled separately from it.
+
+- [x] **DEPLOYED 3 Aug — `/api/health` now probes the storage it is actually
+      using, instead of saying `healthy` about nothing.**
+      It returned a static object, while `db/index.ts` picks storage on one
+      condition — if `DATABASE_URL` is absent the entire app runs **in memory**:
+      it still serves the 9 seeded properties, still accepts bookings, still
+      issues booking codes, and loses every row on restart. `install.sh`
+      hard-fails when `/quadis/db-password` is missing, so a normal deploy
+      cannot reach that state — but nothing *detected* it if one ever did.
+      Textbook §7: green everywhere, gone in fact.
+
+      `db.ping()` runs `SELECT 1` and reports `storage` and `database`. The
+      endpoint returns **503 `degraded`** in two cases, which are not the same
+      failure:
+      1. Postgres configured but not answering.
+      2. **Running in memory while `NODE_ENV=production`** — the dangerous one,
+         because *nothing errors*. In-memory off production is ordinary (it is
+         how dev and the tests run), so the production check is what makes it a
+         fault rather than a mode.
+
+      > **This gates deploys, deliberately.** `install.sh:246` and
+      > `cutover.sh:101/222/240` curl this with `-f`, so a 503 now fails the
+      > install instead of printing "api ok" over a box that has no database.
+      > That is the point of the change; it is also the thing most likely to
+      > surprise whoever runs the next deploy.
+      >
+      > `install.sh`'s failure branch was updated with it. It used to print
+      > **"API did not answer"** for any non-2xx, which after this change would
+      > be an outright lie when the API answered `503 degraded` — sending the
+      > next person after a dead process when the process is fine and its
+      > database is not. It now prints the health body when there is one.
+
+      Verified: 132 tests pass (was 126), typecheck clean, `bash -n` on
+      `install.sh`. `__tests__/health.test.ts` covers all four states, and the
+      pre-existing `e2e_acceptance` 5.1 still passes unchanged.
+
+      **Shipped 3 Aug**, SSM command `2db7d48e-985a-48f9-957c-174af06b94ed`,
+      install `Success`. Verified on production:
+
+      | Check | Result |
+      |---|---|
+      | `/api/health` | **200 `storage: postgres`, `database: ok`** — a real `SELECT 1`, not an assertion |
+      | install-time gate | passed, and now means something: it could not have passed without the database |
+      | `/api/properties` | 9 |
+      | `/api/admin/auth`, wrong PIN | 401 — the PIN work survived the redeploy |
+      | Browser, `/hotels` | cards render, `₹3,000 / night`, ratings `4.4`/`4.6` as decimals, console clean — full §6 pass |
+
+- [ ] **WhatsApp alerts are built, wired, and silently doing nothing.** Found
+      3 Aug while answering "where do bookings show". `NotificationService`
+      sends an owner alert on every confirmed booking (`webhooks.ts:112`), an
+      owner alert on every enquiry (`enquiries.ts:65`, plus two in `AIService`)
+      and a receipt to the guest (`webhooks.ts:111`). All three need
+      `META_WHATSAPP_TOKEN` and `META_PHONE_NUMBER_ID`; **neither is in her
+      SSM** — the parameter list has `owner-whatsapp-phone` and nothing else.
+      Absent them every send returns `isSimulated: true`, logs, and no-ops.
+      **So nobody is notified of anything today**; she finds out by opening
+      `/admin` and looking. This is the cheapest answer by far to "I want to
+      see bookings without logging into another panel" — it is a credentials
+      task, not a build. Do it before promising her any `adminweb` integration.
+
+- [ ] **A post-live change list is inbound.** *"Baki kuch cheeje thi jo glt hui
+      thi vo aapne bola tha hum live hone k bd change kr lenge to vo me apko ab
+      bta dungi"* — 3 Aug. Not yet received as of this writing. She also asked
+      *"kb tk free hoge"*, which is about our availability, not the site.
+      **Everything on that list now ships to a live site in front of real
+      guests** — §3b's warning, not §2.5's.
 
 - [x] **DONE 30 Jul — all 74 of her indexed URLs now resolve, 0 broken.**
       Mapping lives in `src/data/legacyRoutes.ts`, which is the single source of
@@ -917,9 +1231,19 @@ directly instead. §5 "The hosting panel".
 
 ## 5. Blocked on the client
 
-Messages are drafted in `docs/client-comms/`. Send
-`message-existing-admin-panel.txt` first — it is the one that can invalidate
-work already done.
+Messages are drafted in `docs/client-comms/`.
+
+✅ **`message-g-where-bookings-show-SEND.txt` was SENT 3 Aug.** It answered
+where bookings and form details show, and — the important part — it **asked the
+two-systems question** that `message-existing-admin-panel.txt` had been waiting
+since 27 Jul to ask. That older draft is spent as an opener; do not send it now.
+
+**We are therefore no longer blocked on ourselves here. We are waiting on her
+answer to one question: does booking and availability live in the new panel or
+in `adminweb`?** Everything in the rest of §5 is downstream of that answer.
+Chase it — it is the single decision that says whether the booking engine,
+CheckoutModal, RazorpayService and the hold engine are load-bearing or dead
+code (§2 rule 4).
 
 ### They already have an admin panel — discovered 27 Jul
 
@@ -971,7 +1295,44 @@ Plesk for Windows**, not the Linux shared hosting `docs/dns-cutover.md` assumes.
 The existing stack cannot host the Node backend — long term this is
 replace-or-run-alongside, never merge.
 
-### The hosting panel — the single go-live blocker, state as of 31 Jul
+#### 3 Aug — she asked the two-systems question herself. Do not waste it.
+
+*"forms details and booking details kaha show hungi **admin panel me?**"* — her
+words, 3 Aug, after signing off the live site (§4). She is not asking where we
+put a feature. She is asking, without knowing it, which of two systems is the
+one her staff will work in.
+
+The factual answer, verified 3 Aug and not assumed:
+
+| | Her existing panel | The new site |
+|---|---|---|
+| Where | `adminweb.quadishotels.com` on `115.124.108.190`, Windows/IIS/ASP.NET/Plesk | `https://www.quadishotels.com/admin`, Node on her EC2 box |
+| Storage | its own database on the old host | Postgres on `13.234.85.127`, loopback-only |
+| Holds | their real historic inventory, coupons, users | `bookings`, `enquiries`, `users`, `room_night_holds`, `chat_logs` |
+| Connection between them | **none** | **none** |
+
+`grep -rniE "adminweb|115\.124\.108\.190|theserverindia"` over `backend/src` and
+`src` returns **nothing**. There is no integration, no sync job, no export, and
+no plan for one. A guest booking on the new site is invisible to `adminweb`, and
+an availability change keyed into `adminweb` is invisible to the new site.
+
+**That is the double-booking mechanism, stated plainly, and it is live now.**
+While `booking.quadishotels.com` was dead the risk was theoretical — nobody was
+taking online bookings but us. It stopped being theoretical on 1 Aug, because
+staff keying a walk-in into `adminweb` are now editing inventory that our site
+is simultaneously selling.
+
+It has to be one system or the other, and she is the only one who can say which.
+Asking as part of answering her own question costs nothing; raising it cold in a
+month costs a guest their room.
+
+### The hosting panel — ✅ resolved 1 Aug, the A record moved. History below
+
+> **Everything in this subsection is history.** The record moved on 1 Aug and
+> the site is live (§3b). Kept for one reason: the route it describes — going
+> to the host directly instead of through the old designer — is what broke a
+> four-day stall, and that shape will recur. Read the present tense below as
+> "as of 31 Jul".
 
 The app is built, deployed and healthy on her own account (§3b). **The only
 thing left is one A record**, and it is behind a control panel we cannot reach.
