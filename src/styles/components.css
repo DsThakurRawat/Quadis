@@ -1030,6 +1030,68 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   text-overflow: ellipsis;
 }
 
+/*
+ * The tour engine on a phone — client, 5 Aug 2026, item 5, whose screenshots
+ * are all of this page. Two faults, both a desktop layout asked to run at
+ * 360px:
+ *
+ * 1. The stage is a 16/9 box with a 400px floor, so on a phone it is a 400px
+ *    band about 312px wide — and the walkthrough overlay (heading, description
+ *    and the concierge note) is taller than that on its own. Being anchored to
+ *    the bottom of the stage it grew upward, ran off the top of the card and
+ *    was sliced by the stage's overflow: hidden. That is the "Comfort
+ *    Sanctuary" heading cut through the middle in her screenshot, with the
+ *    prev/next arrows landing on top of the paragraph. Below 640px the stage
+ *    becomes a photo band with the copy stacked underneath: nothing overlaps,
+ *    nothing is clipped, and the arrows still centre on the photo because they
+ *    read the same height variable.
+ *
+ * 2. .btn is white-space: nowrap and "INSTANT PRE-BOOK WITH PREFERENCES" sets
+ *    about 300px at 13.5px uppercase with 0.08em tracking. A flex item will not
+ *    shrink below that, so the dark rate card was wider than the screen and the
+ *    button, the price and the "Or view all N photos" link were all cut off at
+ *    the edge. Letting that one button wrap is what stops the page scrolling
+ *    sideways.
+ */
+@media (max-width: 640px) {
+  .tour-stage {
+    /* One knob: the height of the photo band, which the arrows centre on. */
+    --tour-stage-img-h: 240px;
+    aspect-ratio: auto;
+    min-height: 0;
+    max-height: none;
+  }
+  .tour-stage__viewport {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: var(--tour-stage-img-h);
+  }
+  .tour-stage__overlay {
+    position: static;
+    background: var(--bg-darkest);
+    padding: var(--s-5);
+  }
+  .tour-stage__title { font-size: clamp(1.4rem, 6vw, 1.9rem); }
+  .tour-stage__desc { font-size: 0.95rem; margin-bottom: var(--s-4); }
+  .tour-concierge-box { align-items: flex-start; padding: 0.75rem 0.9rem; }
+  .tour-nav-arrow { top: calc(var(--tour-stage-img-h) / 2); }
+  .tour-nav-arrow.left { left: 0.75rem; }
+  .tour-nav-arrow.right { right: 0.75rem; }
+  .tour-counter { top: 0.75rem; right: 0.75rem; }
+
+  .tour-customizer { padding: var(--s-5); }
+  .tour-booking-bar { padding: var(--s-5); gap: var(--s-4); }
+  .tour-booking-bar__actions { width: 100%; align-items: stretch; }
+  .tour-booking-bar__actions .btn { white-space: normal; width: 100%; }
+  .tour-booking-bar__gallery-link { text-align: center; }
+
+  /* The strip is a scroller, not a row that has to fit — it just needs to be
+     obvious that it scrolls, and to land on a whole thumbnail when it stops. */
+  .tour-thumbs { scroll-snap-type: x proximity; gap: 0.75rem; }
+  .tour-thumb { flex-basis: 140px; scroll-snap-align: start; }
+}
+
 /* ===================== Great Sleep & Showers Guarantee Section ===================== */
 .stay-promise-section {
   padding: 96px 0;
@@ -1117,8 +1179,21 @@ textarea.field__input { min-height: 120px; resize: vertical; line-height: 1.6; }
   letter-spacing: 0.03em;
 }
 
-/* ===================== Upcoming Hotels Showcase ===================== */
+/*
+ * Spacing utilities. §9 — there is no Tailwind here, so a `mb-12` in the JSX
+ * resolves to nothing at all unless it is written down. Values come from the
+ * --s-* scale in tokens.css rather than the Tailwind numbers they are named
+ * after; only the ones a page actually depends on are defined.
+ *
+ * .mb-12 is the About page's "UPCOMING INITIATIVE" intro paragraph, which sat
+ * flush against the two image cards below it because the class it carried did
+ * not exist. Client, 5 Aug 2026, item 4: "about page: give a little space below
+ * the content."
+ */
 .mt-8 { margin-top: 32px; }
+.mb-12 { margin-bottom: var(--s-7); }
+
+/* ===================== Upcoming Hotels Showcase ===================== */
 .upcoming-grid {
   display: flex;
   overflow-x: auto;

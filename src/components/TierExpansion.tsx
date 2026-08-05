@@ -5,7 +5,9 @@ import { tierCentralImage, tierSelectImage, tierExperienceImage } from '../data/
 /**
  * The three brand tiers, presented as a stated future roadmap rather than as a
  * current, filterable attribute of the nine live properties — all of which are
- * Quadis Central today. Copy is the client's own wording (change order item 14).
+ * Quadis Central today. Copy is the client's own wording (change order item 14),
+ * shortened at her request on 5 Aug 2026 from the descriptive sentences this
+ * block launched with to the positioning labels the trade uses.
  *
  * The client's reference for this block is another group's "Experiences" page;
  * the layout is borrowed, the branding is not.
@@ -19,17 +21,17 @@ interface Tier {
 const TIERS: Tier[] = [
   {
     name: 'Quadis Central',
-    description: 'Normal standard hotels.',
+    description: 'Value / Mid-scale',
     image: tierCentralImage,
   },
   {
     name: 'Quadis Select',
-    description: 'Premium corporate stays or family stays with additional facilities.',
+    description: 'Premium / Upscale',
     image: tierSelectImage,
   },
   {
     name: 'Quadis Experience',
-    description: 'Resorts or luxury experience hotels for leisure travellers.',
+    description: 'Lifestyle / Destination-led',
     image: tierExperienceImage,
   },
 ]

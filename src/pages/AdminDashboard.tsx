@@ -17,6 +17,32 @@ interface GlanceMetrics {
 // the source of truth for both rather than a second, narrower copy here.
 type PropertyItem = EditablePropertyItem
 
+/**
+ * Digits only, capped at six — applied to every PIN box on this page.
+ *
+ * The client was locked out of /admin on 4 Aug 2026 ("Ye invalid show kr raha
+ * h", 4:36 pm, with a photo of this login card showing `Invalid Admin PIN`).
+ * The masked field in that photo holds **seven** dots, not six — counted off
+ * the original at four thresholds, seven evenly-spaced blobs at a regular
+ * ~7px pitch. So whatever was submitted was seven characters long, and a
+ * six-digit PIN can never match it: POST /api/admin/auth compares the string
+ * it is given against ADMIN_PIN, or scrypt-verifies it against the stored
+ * hash, with no normalisation on either side (backend/src/routes/admin.ts).
+ *
+ * The likely seventh character is a trailing space, because the PIN was sent
+ * to her over WhatsApp and pasting out of WhatsApp brings whitespace with it.
+ * The old field took it silently: `maxLength={10}`, no `inputMode`, no filter,
+ * and — because there was no `autoComplete` — Chrome was also free to autofill
+ * a saved password over the top of what she typed. She then got the same flat
+ * "Invalid Admin PIN" that a genuinely wrong PIN gets, with nothing to tell
+ * the two apart.
+ *
+ * Stripping here rather than trimming server-side is deliberate: the server
+ * still accepts exactly one string and nothing looser, so this makes the panel
+ * honest about what it is sending without widening what is accepted.
+ */
+const normalisePin = (raw: string): string => raw.replace(/\D/g, '').slice(0, 6)
+
 export default function AdminDashboard() {
   const [token, setToken] = useState<string | null>(() => sessionStorage.getItem('quadis_admin_token'))
   const [pinInput, setPinInput] = useState('')
@@ -105,6 +131,22 @@ export default function AdminDashboard() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setAuthError('')
+
+    // Caught here rather than sent, because the server cannot tell her why.
+    // A malformed PIN and a wrong PIN both come back as 401 "Invalid Admin
+    // PIN", which is exactly the dead end she hit on 4 Aug 2026 — and every
+    // attempt spends one of the ten the rate limiter allows in 15 minutes
+    // (backend/src/app.ts), so a stray character can also lock her out for a
+    // quarter of an hour on top of failing.
+    if (pinInput.length !== 6) {
+      setAuthError(
+        pinInput.length === 0
+          ? 'Apna 6-digit PIN daaliye.'
+          : `PIN 6 digit ka hai — abhi ${pinInput.length} digit hai.`
+      )
+      return
+    }
+
     try {
       const res = await fetch(getApiUrl('admin/auth'), {
         method: 'POST',
@@ -113,6 +155,19 @@ export default function AdminDashboard() {
       })
       const json = await res.json().catch(() => null)
       if (!res.ok || !json?.success || !json?.token) {
+        // 401 from here means the six digits were well-formed and still not
+        // accepted. There are only two ways that happens, and she cannot see
+        // either of them from this screen, so name both: the PIN was changed
+        // from this dashboard (the stored PIN wins over the one we sent on
+        // WhatsApp the moment she sets one), or it is simply the wrong PIN.
+        if (res.status === 401) {
+          setAuthError(
+            'Invalid Admin PIN — agar aapne dashboard se apna PIN change kiya tha, ' +
+            'to WhatsApp wala purana PIN ab kaam nahi karega. Naya PIN daaliye, ' +
+            'ya hume batayein.'
+          )
+          return
+        }
         setAuthError(json?.error || 'Invalid PIN code.')
         return
       }
@@ -245,9 +300,18 @@ export default function AdminDashboard() {
           <form onSubmit={handleLogin} className="flex flex-col gap-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <input
               type="password"
-              placeholder="Enter Admin PIN"
+              // inputMode: a numeric keypad on her phone instead of a full
+              // alphanumeric keyboard, where a letter or a space is one slip away.
+              inputMode="numeric"
+              // autoComplete off, and a name the password manager will not
+              // recognise: an unnamed lone password field invites Chrome to
+              // autofill a saved credential over the top of what she typed,
+              // which looks identical to typing the wrong PIN.
+              autoComplete="off"
+              name="quadis-admin-pin"
+              placeholder="Enter 6-digit Admin PIN"
               value={pinInput}
-              onChange={(e) => setPinInput(e.target.value)}
+              onChange={(e) => setPinInput(normalisePin(e.target.value))}
               style={{
                 padding: '0.75rem 1rem',
                 borderRadius: '8px',
@@ -258,8 +322,13 @@ export default function AdminDashboard() {
                 textAlign: 'center',
                 letterSpacing: '0.2em',
               }}
-              maxLength={10}
+              maxLength={6}
             />
+            {/* She could not see how many characters the field held — the whole
+                lockout turned on that. Six dots is now countable at a glance. */}
+            <div style={{ color: pinInput.length === 6 ? '#6ee7b7' : '#78716c', fontSize: '0.75rem', textAlign: 'center' }}>
+              {pinInput.length} / 6 digits
+            </div>
             {authError && <div style={{ color: '#f87171', fontSize: '0.85rem', textAlign: 'center' }}>{authError}</div>}
             <Button as="button" type="submit" variant="primary" style={{ width: '100%', padding: '0.75rem' }}>
               ACCESS SWITCHBOARD
@@ -329,19 +398,19 @@ export default function AdminDashboard() {
               <input
                 type="password" inputMode="numeric" autoComplete="current-password"
                 placeholder="Current PIN" value={currentPinInput}
-                onChange={(e) => setCurrentPinInput(e.target.value)}
+                onChange={(e) => setCurrentPinInput(normalisePin(e.target.value))}
                 style={{ padding: '0.6rem', borderRadius: '6px', border: '1px solid #292524', background: '#0c0a09', color: '#fff' }}
               />
               <input
                 type="password" inputMode="numeric" autoComplete="new-password"
                 placeholder="New PIN" value={newPinInput}
-                onChange={(e) => setNewPinInput(e.target.value)}
+                onChange={(e) => setNewPinInput(normalisePin(e.target.value))}
                 style={{ padding: '0.6rem', borderRadius: '6px', border: '1px solid #292524', background: '#0c0a09', color: '#fff' }}
               />
               <input
                 type="password" inputMode="numeric" autoComplete="new-password"
                 placeholder="Confirm new PIN" value={confirmPinInput}
-                onChange={(e) => setConfirmPinInput(e.target.value)}
+                onChange={(e) => setConfirmPinInput(normalisePin(e.target.value))}
                 style={{ padding: '0.6rem', borderRadius: '6px', border: '1px solid #292524', background: '#0c0a09', color: '#fff' }}
               />
             </div>
@@ -572,25 +641,90 @@ export default function AdminDashboard() {
             <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0 0 1rem' }}>🔔 Recent Leads & RFPs ({recentEnquiries.length})</h3>
             <div style={{ maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {recentEnquiries.map((e) => (
-                <div key={e.id} style={{ background: '#292524', padding: '0.75rem', borderRadius: '6px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong style={{ color: '#fff' }}>[{e.enquiry_type}]</strong> {e.guest_name} ({e.guest_phone})
-                    <div style={{ color: '#a8a29e', fontSize: '0.75rem', marginTop: '0.2rem' }}>
-                      {e.message || 'No message provided'} • {e.event_date ? `Date: ${e.event_date}` : ''}
+                <div key={e.id} style={{ background: '#292524', padding: '0.75rem', borderRadius: '6px', fontSize: '0.85rem' }}>
+                  {/* Header row wraps rather than sitting side by side: on her
+                      phone a long corporate name used to squeeze the status
+                      badge into a two-character column. */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <div style={{ minWidth: 0, flex: '1 1 12rem' }}>
+                      <strong style={{ color: '#fff', wordBreak: 'break-word' }}>{e.guest_name}</strong>
+                      <div style={{ color: '#a8a29e', fontSize: '0.7rem', letterSpacing: '0.08em', marginTop: '0.1rem' }}>
+                        {e.enquiry_type}
+                        {e.created_at ? ` • ${new Date(e.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+                      </div>
                     </div>
+                    <span
+                      style={{
+                        padding: '0.25rem 0.6rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        flexShrink: 0,
+                        background: e.status === 'CONVERTED' ? '#047857' : e.status === 'LINK_SENT' ? '#2563eb' : '#d97706',
+                        color: '#fff',
+                      }}
+                    >
+                      {e.status}
+                    </span>
                   </div>
-                  <span
-                    style={{
-                      padding: '0.25rem 0.6rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      fontWeight: '700',
-                      background: e.status === 'CONVERTED' ? '#047857' : e.status === 'LINK_SENT' ? '#2563eb' : '#d97706',
-                      color: '#fff',
-                    }}
-                  >
-                    {e.status}
-                  </span>
+
+                  {/*
+                    Contact details, 5 Aug 2026: "Booking me srf name he pta
+                    chlega… email number baki kuch pta nahi chlega kya".
+                    She could see the name and phone and nothing else, so a
+                    lead she could not phone was a lead she could not answer.
+
+                    The email was never missing from the data — all three forms
+                    collect it (Contact.tsx validates it as required),
+                    POST /api/enquiries persists it to enquiries.guest_email,
+                    and the dashboard payload has carried it the whole time.
+                    It was only ever dropped on the way to the screen.
+
+                    mailto: and tel: so one tap on her phone opens the mail app
+                    or dials, which is what "reply to a lead" actually means
+                    when she works from a handset. Buttons rather than bare
+                    text: a 44px-ish target, and they wrap instead of
+                    overflowing on a narrow screen.
+                  */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                    {e.guest_phone && (
+                      <a
+                        href={`tel:${String(e.guest_phone).replace(/[^\d+]/g, '')}`}
+                        style={{ background: '#1c1917', border: '1px solid #44403c', color: '#fcd34d', padding: '0.35rem 0.6rem', borderRadius: '5px', fontSize: '0.8rem', textDecoration: 'none', wordBreak: 'break-all' }}
+                      >
+                        📞 {e.guest_phone}
+                      </a>
+                    )}
+                    {e.guest_email ? (
+                      <a
+                        href={`mailto:${e.guest_email}`}
+                        style={{ background: '#1c1917', border: '1px solid #44403c', color: '#7dd3fc', padding: '0.35rem 0.6rem', borderRadius: '5px', fontSize: '0.8rem', textDecoration: 'none', wordBreak: 'break-all' }}
+                      >
+                        ✉️ {e.guest_email}
+                      </a>
+                    ) : (
+                      // Said out loud rather than left blank, so an absent
+                      // email reads as "this lead did not give one" and not as
+                      // the panel hiding it from her again.
+                      <span style={{ color: '#78716c', fontSize: '0.8rem', padding: '0.35rem 0' }}>
+                        ✉️ Email nahi diya gaya
+                      </span>
+                    )}
+                  </div>
+
+                  {/* The rest of what the form captured and this card used to
+                      throw away: how many guests, and the date they asked for. */}
+                  {(e.guest_count || e.event_date) && (
+                    <div style={{ color: '#d6d3d1', fontSize: '0.75rem', marginTop: '0.45rem' }}>
+                      {e.event_date ? `📅 ${e.event_date}` : ''}
+                      {e.event_date && e.guest_count ? ' • ' : ''}
+                      {e.guest_count ? `👥 ${e.guest_count} guests` : ''}
+                    </div>
+                  )}
+
+                  <div style={{ color: '#a8a29e', fontSize: '0.75rem', marginTop: '0.35rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {e.message || 'No message provided'}
+                  </div>
                 </div>
               ))}
             </div>

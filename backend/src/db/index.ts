@@ -2,7 +2,7 @@ import { Pool, types as pgTypes } from 'pg'
 import { randomBytes } from 'crypto'
 import { PropertyRecord, RoomTypeRecord, BookingRecord, EnquiryRecord, ChatLogRecord, MealPlan, UserRecord, PropertyImageRecord } from '../types'
 import { seedProperties, seedRoomTypes } from '../data/seed'
-import { computeStayBreakdown, mealOffsetFor, chargeableGuestsFor, policyFor } from '../lib/pricing'
+import { computeStayBreakdown, mealOffsetFor, baseRoomRateFor, chargeableGuestsFor, policyFor } from '../lib/pricing'
 import { nightsBetween, todayIso } from '../lib/nights'
 
 /**
@@ -499,10 +499,20 @@ export class DatabaseEngine {
           adultFromAge: policy.adultFromAge,
         })
 
+        // The meal uplift is a percentage of this room's base rate, so the base
+        // rate is passed explicitly rather than left to be inferred from the
+        // row. The joined row does carry base_price and mealOffsetFor would find
+        // it, but that is a property of this one query's SELECT list — being
+        // explicit means a future change to the join cannot silently drop the
+        // quote back onto the legacy flat columns.
         const breakdown = computeStayBreakdown({
           basePrice: Number(room.base_price),
           roomOffset: Number(room.price_offset),
-          mealOffset: mealOffsetFor(payload.mealPlan, room),
+          mealOffset: mealOffsetFor(
+            payload.mealPlan,
+            room,
+            baseRoomRateFor(room.base_price, room.price_offset)
+          ),
           weekendSurchargePercent: Number(room.weekend_surcharge_percent) || 0,
           checkIn: payload.checkIn,
           checkOut: payload.checkOut,
@@ -615,10 +625,18 @@ export class DatabaseEngine {
       adultFromAge: policy.adultFromAge,
     })
 
+    // Same percentage, same base rate. This branch needs the explicit argument:
+    // the in-memory store holds bare room rows with no property price on them,
+    // so without it the quote would fall back to the stored rupee columns and
+    // this path could drift from the Postgres one.
     const breakdown = computeStayBreakdown({
       basePrice: prop.base_price,
       roomOffset: room.price_offset,
-      mealOffset: mealOffsetFor(payload.mealPlan, room),
+      mealOffset: mealOffsetFor(
+        payload.mealPlan,
+        room,
+        baseRoomRateFor(prop.base_price, room.price_offset)
+      ),
       weekendSurchargePercent: prop.weekend_surcharge_percent,
       checkIn: payload.checkIn,
       checkOut: payload.checkOut,
@@ -922,7 +940,22 @@ export class DatabaseEngine {
     'tier_label',
   ] as const
 
-  /** Columns an admin may change on a room category. */
+  /**
+   * Columns an admin may change on a room category.
+   *
+   * breakfast_offset and all_meals_offset were on this list until 5 Aug 2026 and
+   * are deliberately off it now. Meal plans became a group-wide percentage of
+   * the base room rate that day, so those columns no longer decide what a guest
+   * pays — they are a derived cache, rewritten from the percentage by the schema
+   * migration on every boot.
+   *
+   * Accepting a write to them would open a window between the edit and the next
+   * deploy in which the concierge quotes the typed figure while checkout charges
+   * the percentage. Dropping them here closes it: the request still succeeds,
+   * because the route schema still tolerates the fields, but the value is
+   * ignored rather than stored and later contradicted. To change what breakfast
+   * costs, change the percentage in lib/pricing.ts or the room's price_offset.
+   */
   private static readonly ROOM_EDITABLE = [
     'name',
     'description',
@@ -930,8 +963,6 @@ export class DatabaseEngine {
     'bed_type',
     'max_guests',
     'price_offset',
-    'breakfast_offset',
-    'all_meals_offset',
     'total_units',
     'is_available',
   ] as const

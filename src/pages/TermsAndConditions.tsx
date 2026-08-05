@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { Reveal } from '../components/blocks.tsx'
+import { useContent } from '../data/content.ts'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 /**
  * Ported from the client's existing site, read off
@@ -22,13 +24,11 @@ import Seo from '../components/Seo.tsx'
  * still a change to her legal text and she has to confirm it — see AGENTS.md.
  */
 export default function TermsAndConditions() {
+  const { t } = useContent()
   return (
     <>
-      <Seo
-        title="Terms & Conditions"
-        description="Terms and conditions for reservations and stays at Quadis Hotels."
-        canonicalPath="/terms-and-conditions"
-      />
+      {/* Centralised into src/data/seo.ts with the other 24 routes, 5 Aug 2026. */}
+      <Seo {...pageSeo('/terms-and-conditions')} />
       <div className="page-head bg-cream">
         <div className="container center-col">
           <h1 className="h1 h1--single-line">Terms &amp; Conditions</h1>
@@ -51,8 +51,13 @@ export default function TermsAndConditions() {
             </p>
 
             <h2 className="h3">Check-in &amp; check-out</h2>
+            {/* Her ported text hardcoded 12:00 PM, which matched neither the
+                2:00 PM the property pages used to show nor the 11:00 AM she
+                confirmed on 5 Aug 2026 — three different check-in times on one
+                site. Read from the same content keys the Stay Policy panel
+                uses so the legal page cannot drift from the booking flow. */}
             <p>
-              Standard check-in time is 12:00 PM and check-out time is 11:00 AM. Early check-in or late check-out requests are subject to availability and may attract additional charges at the discretion of the management.
+              Standard check-in time is {t('policy.checkIn')} and check-out time is {t('policy.checkOut')}. Early check-in or late check-out requests are subject to availability and may attract additional charges at the discretion of the management.
             </p>
 
             <h2 className="h3">Guest conduct</h2>

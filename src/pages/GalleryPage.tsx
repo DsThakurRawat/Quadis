@@ -14,6 +14,7 @@ import { FilterPills } from '../components/ui.tsx'
 import { PhotoHero, SectionHeader, Reveal } from '../components/blocks.tsx'
 import { IconArrowLeft, IconArrowRight, IconX } from '../components/icons.tsx'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 type GalleryTab = 'All' | 'Deluxe Rooms' | 'Superior Rooms' | 'Royal Suites' | 'Facades & Lobbies' | 'Dining & Banquets'
 const TABS: readonly GalleryTab[] = [
@@ -53,10 +54,11 @@ export default function GalleryPage() {
 
   return (
     <>
-      <Seo
-        title="Photo Gallery"
-        description="Rooms, lobbies, banquet halls and dining spaces photographed across all nine Quadis properties in Delhi NCR."
-      />
+      {/* The old description hardcoded "nine properties"; the replacement in
+          src/data/seo.ts derives the count from PROPERTY_COUNT, and the hero
+          doubles as the link-preview image so a shared /gallery URL previews
+          with a photograph rather than the home-page fallback. */}
+      <Seo {...pageSeo('/gallery')} image={heroImg} />
       <PhotoHero image={heroImg} title={t('gallery.hero.title')} sub={`A visual journey across our ${PROPERTY_COUNT} considered properties, refined suites, and grand banquets.`} height={galleryBannerImage ? 'banner' : 'short'} />
 
       <section className="section bg-cream gallery-page">

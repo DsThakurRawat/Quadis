@@ -258,3 +258,74 @@ UPDATE properties SET child_free_under_age = 8 WHERE child_free_under_age = 18;
 -- properties.extra_adult_charge column. Harmless if present; dropped so the
 -- schema has exactly one definition of the policy.
 ALTER TABLE properties DROP COLUMN IF EXISTS extra_adult_charge;
+
+-- The client's listing audit (5 Aug 2026) restated the Google rating on eight
+-- of the nine properties, two of them by more than half a star, and found
+-- Cladis 15 pointing at the wrong GMB listing entirely.
+--
+-- seedProperties carries the corrected figures, but seedPostgres is
+-- INSERT ... ON CONFLICT (id) DO NOTHING, so it cannot touch a row that already
+-- exists: without these statements every live database would go on quoting the
+-- old numbers no matter how many times we redeploy.
+--
+-- Each one is scoped to the value it replaces, following the
+-- child_free_under_age correction above. That makes them idempotent, and it
+-- means a rating the client has since set herself from the dashboard is left
+-- alone rather than being reverted on the next boot.
+UPDATE properties SET rating = 4.5 WHERE slug = 'hotel-quadis-sector-51-noida'   AND rating = 4.6;
+UPDATE properties SET rating = 4.0 WHERE slug = 'hotel-downtown-sector-15-noida' AND rating = 4.4;
+UPDATE properties SET rating = 3.8 WHERE slug = 'hotel-cladis-sector-15-noida'   AND rating = 4.4;
+UPDATE properties SET rating = 4.5 WHERE slug = 'hotel-cladis-sector-19-noida'   AND rating = 4.3;
+UPDATE properties SET rating = 4.4 WHERE slug = 'hotel-downtown-sector-51-noida' AND rating = 4.5;
+UPDATE properties SET rating = 4.5 WHERE slug = 'hotel-downtown-east-of-kailash' AND rating = 4.6;
+UPDATE properties SET rating = 3.8 WHERE slug = 'hotel-amby-inn-lajpat-nagar-ii' AND rating = 4.5;
+UPDATE properties SET rating = 4.3 WHERE slug = 'hotel-amar-inn'                 AND rating = 4.4;
+
+UPDATE properties
+   SET map_link = 'https://share.google/1Gbjxirb5YQWy6h6D'
+ WHERE slug = 'hotel-cladis-sector-15-noida'
+   AND map_link = 'https://share.google/nHWsuom2pwTNGRgfY';
+
+-- Meal plans moved from flat rupees to a percentage of the base room rate on
+-- the client's instruction, 5 Aug 2026: "EP: No additional charge / CP
+-- (Breakfast): +25% / MAP (All Meals Included): +50% ... applied automatically
+-- across all hotels based on the base room rate."
+--
+-- The percentages themselves are NOT stored. They live in
+-- backend/src/lib/pricing.ts (mirrored in src/lib/pricing.ts) and are applied
+-- at quote time, which is what makes them track a base_price the admin changes
+-- later. These two columns stay as the rupee equivalent, recomputed here, for
+-- the two consumers that still read them directly: the concierge's "breakfast
+-- adds ₹x" answer, and the in-memory store's room rows, which carry no property
+-- price for the pricing library to work from.
+--
+-- The base room rate is the property's base_price plus this category's
+-- price_offset — the same definition baseRoomRateFor() uses — so Downtown EOK's
+-- Super Deluxe is measured against 3,000 + 1,000 = ₹4,000 and gets ₹1,000 of
+-- breakfast, not ₹350.
+--
+-- Deliberately NOT scoped to the old seeded figures, which is where the
+-- corrections above and this one part company.
+--
+-- Those scope themselves to the value they replace so that a rating the client
+-- has since set herself is not reverted on the next boot. That is right when the
+-- column is authoritative. This column is not: after 5 Aug 2026 the percentage
+-- decides what the guest is charged, so a hand-edited supplement of ₹500 does
+-- not buy anyone a ₹500 breakfast — it just leaves a number in the database that
+-- disagrees with the ₹750 actually billed, and the concierge reads this column
+-- when it answers "what does breakfast cost". Recomputing every row on every
+-- boot is what makes that disagreement impossible.
+--
+-- Still idempotent: the second run computes the same figures as the first.
+--
+-- Bookings are untouched. bookings.total_amount is frozen at the moment the
+-- hold is taken, so nothing already sold is repriced by this — only what a new
+-- quote costs from here on.
+UPDATE room_types rt
+   SET breakfast_offset = ROUND((p.base_price + rt.price_offset) * 0.25),
+       all_meals_offset = ROUND((p.base_price + rt.price_offset) * 0.50)
+  FROM properties p
+ WHERE p.id = rt.property_id
+   AND (rt.breakfast_offset, rt.all_meals_offset)
+       IS DISTINCT FROM (ROUND((p.base_price + rt.price_offset) * 0.25),
+                         ROUND((p.base_price + rt.price_offset) * 0.50));

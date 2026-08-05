@@ -8,6 +8,7 @@ import { useForm, SuccessPanel, FormError, isEmail, isPhone, required } from '..
 import { submitEnquiry } from '../data/enquiries.ts'
 import { useContent } from '../data/content.ts'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 
 interface Benefit { title: string; body: string }
@@ -48,10 +49,8 @@ export default function Corporate() {
 
   return (
     <>
-      <Seo
-        title="Corporate Hotel Booking in Delhi NCR"
-        description="Negotiated corporate rates, priority availability and consolidated GST-compliant billing across every Quadis property in Delhi NCR."
-      />
+      {/* Copy unchanged, only relocated to src/data/seo.ts. */}
+      <Seo {...pageSeo('/corporate-hotel-booking')} image={heroImg} />
       <PhotoHero image={heroImg} overline={t('corporate.hero.overline')} title={t('corporate.hero.title')} height="banner" />
 
       <section className="section bg-cream">

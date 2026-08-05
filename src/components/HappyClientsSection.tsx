@@ -9,38 +9,32 @@ import { IconArrowLeft, IconArrowRight } from './icons.tsx'
  * Real reviews only — every quote and name below was supplied by the client
  * (change order item 13).
  *
- * `meta` and `rating` are optional and deliberately absent on the batch that
- * arrived without a property or star count attached. A card simply omits what
- * it does not know rather than guessing which of the nine properties a guest
- * stayed at, or what they scored it.
+ * A card carries the quote and the guest's name and nothing else. The per-card
+ * "Stayed at <hotel>" line and the "5.0 ★" badge were removed on 5 Aug 2026 at
+ * the client's request — item 3 of her written feedback, `Remove "ratings &
+ * stayed at hotels name"`. Only a third of the supplied reviews came with
+ * either field, so the carousel was also showing two different kinds of card
+ * depending on which review happened to be in view. The aggregate
+ * "★ 4.5 Rating | 95% Repeat Guests" pill in the header is a separate element
+ * and stays.
  */
 interface GuestReview {
   quote: string
   name: string
-  /** e.g. "Stayed at Quadis Sector 51 Noida". Omitted when not supplied. */
-  meta?: string
-  /** e.g. "5.0 ★". Omitted when not supplied. */
-  rating?: string
 }
 
 const VERIFIED_GUEST_REVIEWS: GuestReview[] = [
   {
     quote: 'Good room sizes and very well maintained bathroom. Very welcoming staff and professional service quality with nice behaviour of room service operator.',
     name: 'Ramesh Kumar',
-    meta: 'Stayed at Quadis Sector 51 Noida',
-    rating: '5.0 ★',
   },
   {
     quote: 'Excellent location, well connected to all important places. Clean, comfortable property with very nice and helpful staff. Overall, a very comfortable stay.',
     name: 'Sanjeev Talwar',
-    meta: 'Stayed at Quadis Sector 15 Noida',
-    rating: '4.8 ★',
   },
   {
     quote: "I appreciate the environmentally friendly practices of the hotel. It's good to see them taking steps towards sustainability and providing clean linen daily.",
     name: 'Miss Shubdha',
-    meta: 'Stayed at Quadis Sector 51 Noida',
-    rating: '5.0 ★',
   },
   {
     quote: 'Rooms are luxurious and location is easy located near to good market and metro station. Atmosphere inside has a positive vibe and hotel staff is friendly as well as professional in the conduct. Will highly recommend to all to visit this property especially if you are visiting Lajpat Nagar once. It has great value for money in comparison to the rates offered and services being provided.',
@@ -137,11 +131,7 @@ function GuestReviewSlider() {
           <div key={review.key} className="guest-review-card">
             <p className="guest-review-quote">&ldquo;{review.quote}&rdquo;</p>
             <div className="guest-review-footer">
-              <div>
-                <h4 className="guest-review-name">{review.name}</h4>
-                {review.meta && <p className="guest-review-meta">{review.meta}</p>}
-              </div>
-              {review.rating && <span className="guest-review-rating">{review.rating}</span>}
+              <h4 className="guest-review-name">{review.name}</h4>
             </div>
           </div>
         ))}

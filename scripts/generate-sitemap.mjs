@@ -44,32 +44,73 @@ if (!hotelSlugs.length) throw new Error('generate-sitemap: no hotel slugs found'
 if (!banquetSlugs.length) throw new Error('generate-sitemap: no banquet slugs found')
 
 /**
- * Static routes worth indexing, with crawl priority. /login, /register,
- * /account and /admin are deliberately absent — they carry `noindex` from the
- * Seo component and have nothing a searcher wants.
+ * Static routes worth indexing, with crawl priority — read out of
+ * src/data/seo.ts rather than restated here.
+ *
+ * WHY, 5 Aug 2026: this used to be a hand-maintained list sitting next to a
+ * separate hand-maintained list of page metadata in the page components. Two
+ * lists describing the same set of URLs is two lists that drift, and the drift
+ * is invisible in both directions — a route can be given a title and
+ * description and never be submitted to Google, or be submitted with nothing
+ * but the index.html default to show for itself. Now there is one list. A route
+ * added to STATIC_PAGE_SEO with a `sitemapPriority` appears here on the next
+ * build; one with `sitemapPriority: null` (/login, /register, /account, and the
+ * 404) is deliberately withheld, matching the Disallow rules in robots.txt.
+ *
+ * Parsed as text for the same reason hotels.ts is: importing it would pull in
+ * React and src/config/api.ts, which reads `import.meta.env` at module scope
+ * and throws outside Vite.
  */
-const STATIC_ROUTES = [
-  ['/', '1.0'],
-  ['/hotels', '0.9'],
-  ['/banquets', '0.8'],
-  ['/restaurant', '0.7'],
-  ['/restaurant/outdoor-catering-service', '0.6'],
-  ['/corporate-hotel-booking', '0.7'],
-  ['/about-us', '0.5'],
-  ['/gallery', '0.5'],
-  ['/virtual-tour', '0.5'],
-  ['/contact', '0.6'],
-  /*
-   * The policy pages carry low priority but must be listed. Razorpay requires
-   * them reachable before it approves a merchant account, and the client's
-   * existing site has /privacy-policy and /terms-and-conditions indexed today —
-   * we move onto the same domain, so dropping them from the sitemap would
-   * retire two URLs that already rank.
-   */
-  ['/privacy-policy', '0.3'],
-  ['/terms-and-conditions', '0.3'],
-  ['/cancellation-policy', '0.3'],
-]
+const seoSrc = readFileSync(join(root, 'src/data/seo.ts'), 'utf8')
+
+function staticRoutesFromSeo() {
+  const start = seoSrc.indexOf('const STATIC_PAGE_SEO')
+  if (start === -1) throw new Error('generate-sitemap: STATIC_PAGE_SEO not found in seo.ts')
+  const end = seoSrc.indexOf('\n} satisfies', start)
+  if (end === -1) throw new Error('generate-sitemap: could not find the end of STATIC_PAGE_SEO')
+  const block = seoSrc.slice(start, end)
+
+  // Entry keys are the only thing indented by exactly two spaces and opening a
+  // brace, so this cannot pick up a path mentioned inside a doc comment.
+  const entries = [...block.matchAll(/^ {2}'(\/[^']*)': \{$/gm)]
+  if (!entries.length) throw new Error('generate-sitemap: no route entries parsed out of STATIC_PAGE_SEO')
+
+  const routes = []
+  for (let i = 0; i < entries.length; i++) {
+    const path = entries[i][1]
+    const from = entries[i].index
+    const to = i + 1 < entries.length ? entries[i + 1].index : block.length
+    const body = block.slice(from, to)
+
+    const priority = body.match(/sitemapPriority:\s*'([\d.]+)'/)
+    const withheld = /sitemapPriority:\s*null/.test(body)
+
+    // A new entry that forgot the field altogether is a bug, not a default:
+    // silently omitting it from the sitemap is exactly the drift this is here
+    // to prevent, and silently including it would submit /login.
+    if (!priority && !withheld) {
+      throw new Error(`generate-sitemap: '${path}' in seo.ts has no sitemapPriority (use null to withhold it)`)
+    }
+    if (priority) routes.push([path, priority[1]])
+  }
+  return routes
+}
+
+const STATIC_ROUTES = staticRoutesFromSeo()
+
+/*
+ * Sanity floor. The three policy pages carry low priority but must be listed:
+ * Razorpay requires them reachable before it approves a merchant account, and
+ * the client's existing site has /privacy-policy and /terms-and-conditions
+ * indexed today — we move onto the same domain, so dropping them from the
+ * sitemap would retire two URLs that already rank. If the parse above ever
+ * silently matches fewer entries than there are real pages, this catches it.
+ */
+for (const required of ['/', '/hotels', '/banquets', '/privacy-policy', '/terms-and-conditions']) {
+  if (!STATIC_ROUTES.some(([path]) => path === required)) {
+    throw new Error(`generate-sitemap: ${required} is missing from the parsed routes`)
+  }
+}
 
 const urls = [
   ...STATIC_ROUTES,

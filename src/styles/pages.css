@@ -24,10 +24,18 @@
  * 2.702:1 (corporate) and 3:1 (gallery), so any hardcoded aspect-ratio would
  * crop one of them. This crops neither, and needs no edit for the next one.
  *
- * The heading then overlays absolutely. min-height only matters on very narrow
- * phones, where the banner's true height leaves too little room for the text.
+ * The heading then overlays absolutely.
+ *
+ * The floor belongs to the placeholder, not to the band. A real banner sets the
+ * band's height itself; only the no-photo fallback needs a minimum, because
+ * HeroMedia renders a bare <div> there and `height: auto` on a div is zero.
+ * Carrying the floor on the section instead letterboxed every banner shorter
+ * than 160px — on a phone the client's 2.702:1 artwork is ~133px tall, so a
+ * grey strip appeared under it and the heading sat half on the artwork and half
+ * on the strip. That is her 5 Aug 2026 item 11, "Banner should be mobile
+ * friendly"; the type scale further down finishes the job.
  */
-.photo-hero--banner { display: block; position: relative; min-height: 160px; }
+.photo-hero--banner { display: block; position: relative; }
 .photo-hero--banner .hero-media {
   position: relative;
   inset: auto;
@@ -35,6 +43,7 @@
   object-fit: contain;
   display: block;
 }
+.photo-hero--banner .hero-media--ph { min-height: 160px; }
 .photo-hero--banner .photo-hero__content {
   position: absolute;
   inset: 0;
@@ -45,7 +54,14 @@
 .photo-hero__sub { color: var(--text-on-dark-2); max-width: 52ch; }
 
 .mini-hero { position: relative; min-height: 240px; display: flex; align-items: center; overflow: hidden; }
-.mini-hero__content { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 12px; }
+/*
+ * Centred, like every other hero on the site. /hotels is the only page using
+ * this band, and it was the one the client circled on 5 Aug 2026 (item 10,
+ * "Both Text should be in middle"): the overline and "Our Hotels" sat hard
+ * against the left edge of a very wide photograph while /dining, /corporate and
+ * /about all centre theirs through .photo-hero__content.
+ */
+.mini-hero__content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
 
 @media (max-width: 768px){
   .home-hero { height: auto; min-height: auto; padding-block: 68px 32px; }
@@ -54,6 +70,35 @@
      and the background video — absolutely positioned, so it contributes no
      height — would show as a thin strip. Give it back a floor. */
   .home-hero--bar-only { min-height: 460px; padding-block: 56px 36px; }
+
+  /*
+   * Banner heroes on a phone — client, 5 Aug 2026, item 11, "Banner should be
+   * mobile friendly".
+   *
+   * The banner variant deliberately shows the client's artwork whole instead of
+   * cropping it, so on a 360px phone the band is only ~133px tall while .h1 is
+   * still asking for 44px against a 16ch measure. "Corporate Hotel Booking" and
+   * "Dining by Quadis" therefore ran off the bottom of the artwork and onto the
+   * letterbox strip below it. Scale the overlay to fit her composition rather
+   * than cropping her composition to fit the type: 6.4vw is ~23px at 360px,
+   * which puts a two-line heading and its overline comfortably inside a 2.7:1
+   * band, and the clamp stops growing at the 768px edge of this query.
+   */
+  .photo-hero--banner .photo-hero__content { gap: var(--s-1); }
+  .photo-hero--banner .photo-hero__title { font-size: clamp(20px, 6.4vw, 46px); }
+  .photo-hero--banner .overline { font-size: 10px; letter-spacing: .16em; }
+
+  /*
+   * A banner carrying a `sub` as well (only /gallery does) has more copy than a
+   * 3:1 strip can hold at any size still worth reading. That one stops
+   * overlaying and stacks under the artwork on its own band, so the artwork
+   * stays uncropped and the copy stays inside the section either way.
+   */
+  .photo-hero--banner:has(.photo-hero__sub) .photo-hero__content {
+    position: static;
+    background: var(--bg-dark);
+    padding-block: var(--s-5);
+  }
 }
 
 /* ============================ Stats / intro ============================ */
@@ -193,7 +238,17 @@
 .amenities { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .amenity { display: flex; align-items: center; gap: 12px; padding: 16px; background: #fff; border: 1px solid var(--border-card); border-radius: var(--radius); font-size: 14px; }
 .amenity svg { color: var(--gold-deep); flex: none; }
-@media (max-width: 560px){ .amenities { grid-template-columns: 1fr 1fr; } }
+/* Two-up on a phone, but the tile has to be allowed to be narrower than its
+   longest label or the grid track widens to fit "Air Conditioning" and takes
+   the page with it: 1fr is minmax(auto, 1fr), and `auto` will not go below the
+   content's min-content width. Trimmed padding and 13px keep the word on one
+   line at 360px; min-width: 0 means it wraps rather than pushing at 320px.
+   Part of the client's 5 Aug 2026 item 5 sweep for horizontal overflow. */
+@media (max-width: 560px){
+  .amenities { grid-template-columns: 1fr 1fr; }
+  .amenity { min-width: 0; padding: 14px 12px; font-size: 13px; }
+  .amenity span { min-width: 0; }
+}
 
 .map-embed { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-card); aspect-ratio: 16/8; }
 .map-embed iframe { width: 100%; height: 100%; border: 0; }
@@ -205,6 +260,11 @@
 .book-card__price { font-size: 15px; color: var(--text-muted); margin-bottom: 4px; }
 .book-card__price strong { font-family: var(--font-display); font-size: 26px; color: var(--text-primary); }
 .book-card__row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+/* Same automatic-minimum trap as the booking bar (see .bbar__field in
+   chrome.css): a 1fr track will not shrink below the min-content width a native
+   date input reports, so on a phone the two date cells pushed the whole card
+   past the right edge of the viewport. Client, 5 Aug 2026, item 5. */
+.book-card__row .field, .book-card__row .field__input { min-width: 0; }
 .book-card__total { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 0; border-top: 1px solid var(--border-card-2); margin-top: 6px; font-size: 13.5px; color: var(--text-muted); }
 .book-card__total strong { font-family: var(--font-display); font-size: 20px; color: var(--text-primary); }
 .book-card__cta { width: 100%; }
@@ -241,10 +301,33 @@
      Children wrap onto its own row. */
   .book-card__row--three { grid-template-columns: 1fr 1fr; }
 }
-@media (max-width: 900px){ .detail-grid, .detail-grid--simple { grid-template-columns: 1fr; } .book-card { position: static; } }
+@media (max-width: 900px){
+  .detail-grid, .detail-grid--simple { grid-template-columns: 1fr; }
+  .book-card { position: static; }
+
+  /*
+   * Stay Policy moves to directly under the room list — client, 5 Aug 2026,
+   * item 7: "On all hotel landing pages, please place this section immediately
+   * just below the Room Categories section in the mobile view." 900px is where
+   * the two-column detail layout has already collapsed, so this is exactly the
+   * "mobile view" she is describing.
+   *
+   * Done with flex order rather than by moving the markup, so the desktop
+   * layout, the DOM order and the tab order all stay as they are. .detail-main
+   * is already a flex column. Everything defaults to order 0, so the policy
+   * block only has to jump the one section between it and the rooms, and the
+   * two blocks that follow the rooms have to stay behind it — hence the sibling
+   * selector, which needs no extra class on either of them.
+   */
+  .detail-main > .detail-block--policy { order: 1; }
+  .detail-main > #choose-room ~ .detail-block { order: 2; }
+}
 
 /* ============================ Rooms Grid & Cards ============================ */
-.rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 16px; }
+/* min() so the track can fall below its 280px ideal on a narrow phone. A bare
+   minmax(280px, 1fr) is a floor the container cannot undercut, so at 320px —
+   272px of content box — every card overran the viewport by 8px. */
+.rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 24px; margin-top: 16px; }
 .room-card { background: #fff; border: 1px solid var(--border-card); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
 .room-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
 .room-card--selected { border: 2px solid var(--gold); box-shadow: 0 16px 36px rgba(200,162,74,.18); }
@@ -610,10 +693,12 @@
 @media (min-width: 768px) { .guest-reviews-grid { grid-template-columns: repeat(3, 1fr); } }
 .guest-review-card { background: #fff; color: var(--text-dark); border-radius: var(--radius-lg); padding: 24px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); }
 .guest-review-quote { color: var(--text-muted); font-size: 14px; line-height: 1.6; font-style: italic; margin-bottom: 24px; }
-.guest-review-footer { border-top: 1px solid var(--border-light); padding-top: 16px; display: flex; align-items: center; justify-content: space-between; }
+/* The footer is a name and nothing else since 5 Aug 2026 — the client asked for
+   the per-card star badge and the "Stayed at <hotel>" line to go (item 3), so
+   .guest-review-meta and .guest-review-rating went with them, along with the
+   space-between that only existed to push the badge to the right. */
+.guest-review-footer { border-top: 1px solid var(--border-light); padding-top: 16px; }
 .guest-review-name { font-weight: 700; font-size: 14px; color: var(--text-dark); }
-.guest-review-meta { color: var(--text-muted-2); font-size: 11px; margin-top: 2px; }
-.guest-review-rating { background: var(--warning-bg); color: var(--gold-deepest); font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: var(--radius-sm); }
 
 /* ---- Testimonial slider controls (change order item 13) ---- */
 .guest-reviews { position: relative; }

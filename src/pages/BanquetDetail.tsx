@@ -10,6 +10,7 @@ import { submitEnquiry } from '../data/enquiries.ts'
 
 import NotFound from './NotFound.tsx'
 import Seo from '../components/Seo.tsx'
+import { banquetSeo } from '../data/seo.ts'
 
 const OCCASIONS = ['Weddings', 'Receptions', 'Corporate', 'Birthdays']
 
@@ -42,11 +43,13 @@ export default function BanquetDetail() {
 
   return (
     <>
-      <Seo
-        title={`${venue.name} — ${venue.area}, ${venue.city}`}
-        description={`${venue.name} in ${venue.area}, ${venue.city}. ${venue.hallArea} hall seating up to ${venue.capacity} guests, with ${venue.catering.toLowerCase()} catering and ${venue.parking.toLowerCase()}.`}
-        image={images[0]}
-      />
+      {/* Templated from the BANQUETS record, so a venue added or a capacity
+          corrected in src/data/hotels.ts updates this page's snippet with no
+          edit here. It also pins canonicalPath to /banquets/<slug>, which the
+          inline version did not — that page relied on useLocation(), so any
+          tracking query string arriving from an ad would have self-canonicalised
+          into a second URL. */}
+      <Seo {...banquetSeo(venue, images[0])} />
       <section className="section bg-cream">
         <div className="container">
           <h1 className="h2" style={{ marginBottom: 6 }}>{venue.name}</h1>

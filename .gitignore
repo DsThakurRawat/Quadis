@@ -81,6 +81,16 @@ scripts/archive/
 /*.pdf
 /*.docx
 
+# The 5 Aug 2026 feedback drop. Every pattern above is anchored to the repo
+# root, so a client PDF one directory down slips straight past them — which is
+# how this bit us before. This folder additionally holds a WhatsApp export
+# containing personal, non-work conversation alongside the site feedback, so it
+# is not a filing question: it must not enter the history at all.
+#
+# The three bank logos that came with it ARE committed, as derived site assets
+# under public/logos/banks/ — see the note in src/data/logos.ts.
+/feedback/
+
 # Agents
 ..agents/
 

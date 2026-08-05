@@ -197,8 +197,19 @@
      keeps the desktop row and the DOM/tab order sensible.
 
      The generic .bbar__field rule must come first: the date and destination
-     fields carry both classes at equal specificity, so source order decides. */
-  .bbar__field { order: 4; }
+     fields carry both classes at equal specificity, so source order decides.
+
+     min-width: 0 is what stops the bar running off the side of the phone
+     (client, 5 Aug 2026, item 5 — "Check Out", "Children 0–17 yrs" and
+     "SEARCH STAYS" all clipped mid-word). A 1fr track is minmax(auto, 1fr) and
+     `auto` refuses to go below the item's min-content width; a native
+     input[type=date] reports ~150px of that for its dd/mm/yyyy spinners and
+     calendar button, so two date cells plus the gap and the bar's padding
+     demanded more than a 360px viewport has, and the surplus pushed the whole
+     card sideways. Releasing the automatic minimum lets the tracks divide the
+     width they actually have. */
+  .bbar__field { order: 4; min-width: 0; }
+  .bbar__input { min-width: 0; }
   .bbar__date--in  { order: 1; }
   .bbar__date--out { order: 2; }
   .bbar__dest      { order: 3; grid-column: 1 / -1; }
@@ -207,8 +218,12 @@
 
 @media (max-width: 640px){
   /* iOS zooms any input under 16px on focus, which leaves the page scrolled
-     sideways and the bar half off-screen. */
-  .bbar__input { font-size: 16px; padding: 12px; }
+     sideways and the bar half off-screen. So the font size is fixed and the
+     side padding is what gives: a date cell is ~134px wide on a 360px phone and
+     "mm/dd/yyyy" plus the calendar button needs about 112px of it, which 12px
+     of padding a side does not leave. 8px does, and the last character of the
+     date stops being cut off. */
+  .bbar__input { font-size: 16px; padding: 12px 8px; }
   .bbar__search { height: 52px; }
   /* 44px minimum touch target — 34px was below the accessible floor. */
   .stepper button { width: 44px; height: 44px; }

@@ -15,6 +15,7 @@ import {
   type HotspotPin,
 } from '../data/virtualTourData.ts'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 type TourMode = 'walkthrough' | 'discovery' | 'customizer'
 
@@ -144,10 +145,9 @@ export default function VirtualTour() {
 
   return (
     <>
-      <Seo
-        title="Virtual Tour"
-        description="Walk through Quadis rooms and public spaces before you book, with a 360-degree tour of our Delhi NCR properties."
-      />
+      {/* "Virtual Tour" alone competes with every other hotel's virtual tour
+          page. The replacement in src/data/seo.ts names the cities. */}
+      <Seo {...pageSeo('/virtual-tour')} />
       <PhotoHero
         image={currentStop.getImage()}
         title={t('tour.hero.title')}
@@ -417,7 +417,14 @@ export default function VirtualTour() {
                   <strong className="tour-booking-bar__price">{inr(totalCustomPrice)} <span>/ night</span></strong>
                 </div>
                 <div className="tour-booking-bar__actions">
-                  <Button to="/hotels" variant="primary">INSTANT PRE-BOOK WITH PREFERENCES</Button>
+                  {/* gold, not primary. .btn--primary is `background: var(--bg-dark)`
+                      and .tour-booking-bar is `background: var(--dark)`, so the
+                      only call-to-action on the customizer rendered as bare text
+                      with no visible fill — on desktop as well as mobile. Gold is
+                      the accent this bar already uses for its rate label and its
+                      gallery link, so this uses the existing token rather than
+                      introducing a colour. */}
+                  <Button to="/hotels" variant="gold">INSTANT PRE-BOOK WITH PREFERENCES</Button>
                   <Link to="/gallery" className="tour-booking-bar__gallery-link">Or view all {GALLERY_COUNT} photos in Gallery &rarr;</Link>
                 </div>
               </div>

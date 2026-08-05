@@ -26,6 +26,7 @@ import HappyClientsSection from '../components/HappyClientsSection.tsx'
 import { PARTNER_LOGOS } from '../data/logos.ts'
 import { CITY_FILTERS } from '../data/hotels.ts'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 export default function Home() {
   const { t } = useContent()
   const [filter, setFilter] = useState<CityFilter>('All')
@@ -38,10 +39,10 @@ export default function Home() {
 
   return (
     <>
-      <Seo
-        title="Hotels in Noida & New Delhi"
-        description="Nine Quadis hotels across Noida and New Delhi — calm rooms, prime locations and warm service. Book direct for the best rate."
-      />
+      {/* Title and description are the client's own words, supplied verbatim in
+          her feedback PDF (page 1, 5 Aug 2026). They live in src/data/seo.ts —
+          do not reword them there without asking her. */}
+      <Seo {...pageSeo('/')} />
       {/* 1. Master Welcome Hero: video + search bar, nothing else.
           The client asked (July 2026) for the overline and headline to come off
           the video and for the search bar to sit inside the frame rather than

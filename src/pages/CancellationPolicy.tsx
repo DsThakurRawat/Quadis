@@ -1,15 +1,16 @@
 import { Reveal } from '../components/blocks.tsx'
 import { useContent } from '../data/content.ts'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 export default function CancellationPolicy() {
   const { t } = useContent()
   return (
     <>
-      <Seo
-        title="Cancellation & Refund Policy"
-        description="Cancellation and refund policy for Quadis Hotels bookings."
-      />
+      {/* The old description restated the title and told a searcher nothing.
+          The replacement names what is actually on the page. canonicalPath is
+          now pinned too, matching the other two legal pages. */}
+      <Seo {...pageSeo('/cancellation-policy')} />
       <div className="page-head bg-cream">
         <div className="container center-col">
           <h1 className="h1 h1--single-line">{t('cancellation.title')}</h1>

@@ -12,6 +12,7 @@ import { useContent } from '../data/content.ts'
 import { HeroMedia, Photo } from '../components/media.tsx'
 import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.tsx'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 interface Value { title: string; body: string }
 const VALUES: Value[] = [
@@ -32,10 +33,9 @@ export default function About() {
 
   return (
     <>
-      <Seo
-        title="About Us"
-        description="Quadis Hotels has grown from a single property into nine across Delhi NCR, built on considered rooms and genuinely attentive service."
-      />
+      {/* "About Us" as a title ranked for nothing; the replacement in
+          src/data/seo.ts names the group, the region and the founding year. */}
+      <Seo {...pageSeo('/about-us')} image={heroImg} />
       <PhotoHero image={heroImg} title={t('about.hero.title')} sub={t('about.hero.sub')} height="short" />
 
       {/* Chapter 1: Story & Philosophy */}

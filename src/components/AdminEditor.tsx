@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { DEFAULT_CONTENT, refreshContent } from '../data/content.ts'
 import { getApiUrl } from '../config/api'
+import { MEAL_PLAN_UPLIFT_PERCENT, baseRoomRateFor, mealUpliftFor } from '../lib/pricing.ts'
+import type { MealPlan } from '../types.ts'
 
 /**
  * The editing half of the admin panel.
  *
  * Three things a hotel manager should be able to change without a developer:
  *  1. the property record — name, address, contact, nightly rate, rating, live/paused
- *  2. each room category — its rate, meal supplements, bed count, inventory
+ *  2. each room category — its rate, bed count, inventory (meal plans are
+ *     group-wide percentages since 5 Aug 2026, so they are shown, not edited)
  *  3. the marketing copy blocks registered in data/content.ts
  *
  * Editing is deliberately explicit: a form per record with its own Save. There
@@ -193,11 +196,17 @@ function PropertyForm({ item, authedFetch, onSaved }: {
           they are what a guest is charged, so they are labelled in plain words
           rather than in the field names the database uses. */}
       <div style={{ ...s.sectionTitle, marginBottom: '.5rem' }}>OCCUPANCY &amp; EXTRA GUESTS</div>
+      {/* Rewritten 5 Aug 2026. This paragraph still described the pre-27-Jul
+          model — "a child adds nothing, leave the age at 18 so no child is ever
+          charged" — which the client replaced with three age bands on 27 Jul,
+          and which the three fields directly beneath it already implement. A
+          manager reading it would have set the policy backwards while believing
+          the form agreed with them. */}
       <p style={{ ...s.hint, margin: '0 0 .6rem' }}>
         Every rate covers <strong>2 adults per room</strong>. A 3rd <strong>adult</strong> adds
-        this percentage to the room rate for each night. A <strong>child</strong> adds nothing —
-        leave the age at 18 so no child is ever charged, or lower it to start charging
-        older children as adults.
+        the triple-occupancy percentage to the room rate for each night. Children go in
+        three bands: free below the first age, charged the child percentage up to the
+        second, and charged as an adult from it.
       </p>
       <div style={s.grid}>
         <NumField label="Triple occupancy uplift (%)" value={draft.extra_adult_percent} onChange={set('extra_adult_percent')} step="1" />
@@ -227,8 +236,8 @@ function PropertyForm({ item, authedFetch, onSaved }: {
 
 /* ---------- Room category ---------- */
 
-function RoomForm({ room, propertyName, authedFetch, onSaved }: {
-  room: EditableRoom; propertyName: string; authedFetch: AuthedFetch; onSaved: () => void
+function RoomForm({ room, propertyName, propertyBasePrice, authedFetch, onSaved }: {
+  room: EditableRoom; propertyName: string; propertyBasePrice: number; authedFetch: AuthedFetch; onSaved: () => void
 }) {
   const [draft, setDraft] = useState<EditableRoom>(room)
   const [status, setStatus] = useSaveState()
@@ -237,6 +246,10 @@ function RoomForm({ room, propertyName, authedFetch, onSaved }: {
 
   const set = <K extends keyof EditableRoom>(k: K) => (v: EditableRoom[K]) =>
     setDraft((d) => ({ ...d, [k]: v }))
+
+  // Tracks the draft, not the saved row, so editing "Rate above base" updates
+  // the meal figures below as you type rather than after a save.
+  const mealBase = baseRoomRateFor(propertyBasePrice, draft.price_offset)
 
   const save = async () => {
     setStatus({ kind: 'saving' })
@@ -250,8 +263,13 @@ function RoomForm({ room, propertyName, authedFetch, onSaved }: {
           bed_type: draft.bed_type ?? '',
           max_guests: Number(draft.max_guests ?? 2),
           price_offset: Number(draft.price_offset),
-          breakfast_offset: Number(draft.breakfast_offset ?? 0),
-          all_meals_offset: Number(draft.all_meals_offset ?? 0),
+          // breakfast_offset / all_meals_offset are deliberately NOT sent.
+          //
+          // Meal plans went percentage-based on 5 Aug 2026 (EP 0 / CP 25 /
+          // MAP 50 of the base room rate), so those columns no longer decide
+          // what a guest pays. Posting them back would let a stale draft
+          // overwrite the migrated values with whatever this form last held —
+          // a write that looks successful and changes nothing a guest sees.
           total_units: Number(draft.total_units),
           is_available: !!draft.is_available,
         }),
@@ -279,10 +297,34 @@ function RoomForm({ room, propertyName, authedFetch, onSaved }: {
         <TextField label="Bed type" value={draft.bed_type} onChange={set('bed_type')} />
         <NumField label="Sleeps (max)" value={draft.max_guests} onChange={set('max_guests')} min="1" />
         <NumField label="Rate above base (₹)" value={draft.price_offset} onChange={set('price_offset')} />
-        <NumField label="Breakfast supplement (₹)" value={draft.breakfast_offset} onChange={set('breakfast_offset')} />
-        <NumField label="All-meals supplement (₹)" value={draft.all_meals_offset} onChange={set('all_meals_offset')} />
         <NumField label="Rooms of this type" value={draft.total_units} onChange={set('total_units')} />
       </div>
+
+      {/* Meal plans are shown, not edited.
+
+          They were two rupee inputs until 5 Aug 2026, when the client moved the
+          group onto percentages: "This percentage should be applied
+          automatically across all hotels based on the base room rate." Leaving
+          the inputs in place would have been worse than removing them — they
+          would still accept a number and still save, while the guest was
+          quoted the percentage. The figures below are derived live from the
+          rate above, so a manager can see what breakfast actually costs at
+          this property without doing the arithmetic. */}
+      <p style={{ ...s.hint, margin: '.75rem 0 0' }}>
+        <strong>Meal plans</strong> — set group-wide, from this room&rsquo;s ₹
+        {mealBase.toLocaleString('en-IN')} rate:{' '}
+        {(Object.keys(MEAL_PLAN_UPLIFT_PERCENT) as MealPlan[]).map((plan, i) => (
+          <span key={plan}>
+            {i > 0 && ' · '}
+            {plan} {MEAL_PLAN_UPLIFT_PERCENT[plan]}%{' '}
+            <strong>
+              {mealUpliftFor(plan, mealBase) === 0
+                ? 'no charge'
+                : `+₹${mealUpliftFor(plan, mealBase).toLocaleString('en-IN')}`}
+            </strong>
+          </span>
+        ))}
+      </p>
 
       <label style={{ ...s.label, marginTop: '.75rem' }}>
         Description shown to guests
@@ -552,6 +594,7 @@ export default function AdminEditor({ properties, authedFetch, onSaved }: {
                 key={room.id}
                 room={room}
                 propertyName={item.property.name}
+                propertyBasePrice={Number(item.property.base_price ?? 0)}
                 authedFetch={authedFetch}
                 onSaved={onSaved}
               />

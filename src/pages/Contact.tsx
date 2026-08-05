@@ -6,6 +6,7 @@ import { IconPhone, IconMail, IconPin } from '../components/icons.tsx'
 import type { ContactPayload, ContactType } from '../types.ts'
 import { submitEnquiry, enquiryTypeFor } from '../data/enquiries.ts'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 
 const TYPES: ContactType[] = ['General', 'Booking', 'Banquet', 'Corporate', 'Feedback']
@@ -29,10 +30,10 @@ export default function Contact() {
 
   return (
     <>
-      <Seo
-        title="Contact Us"
-        description="Reach the Quadis Hotels reservations desk for bookings, banquet enquiries and corporate rates across Noida and New Delhi."
-      />
+      {/* "Contact Us" as a title ranks for nothing. The replacement in
+          src/data/seo.ts puts the reservations number in the description, taken
+          from QUADIS_PHONE so it cannot go stale against the footer. */}
+      <Seo {...pageSeo('/contact')} />
       <section className="section bg-cream">
         <div className="container">
           <SectionHeader overline="CONTACT US" title="We'd love to hear from you" />

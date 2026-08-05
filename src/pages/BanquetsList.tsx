@@ -7,15 +7,18 @@ import { Button } from '../components/ui.tsx'
 import { Photo } from '../components/media.tsx'
 import { IconPin } from '../components/icons.tsx'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 export default function BanquetsList() {
   const { t } = useContent()
   return (
     <>
-      <Seo
-        title="Banquet Halls in Delhi NCR"
-        description="Pillarless banquet halls in Noida and Lajpat Nagar for weddings, receptions and corporate events, with in-house catering and valet parking."
-      />
+      {/* The old description said "Noida and Lajpat Nagar" and "valet parking",
+          both of which stopped being true when Cladis was removed and the
+          client restated capacities (5 Aug 2026): there is a third hall in East
+          of Kailash, and Sector 51 is on-site parking, not valet. The copy in
+          src/data/seo.ts counts BANQUETS instead of hardcoding three. */}
+      <Seo {...pageSeo('/banquets')} />
       <PhotoHero image={banquetHero[0]} overline={t('banquets.hero.overline')} title={t('banquets.hero.title')} height="short" />
 
       <section className="section bg-cream">

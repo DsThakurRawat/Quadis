@@ -2,7 +2,13 @@ import Groq from 'groq-sdk'
 import { GoogleGenAI } from '@google/genai'
 import { db } from '../db'
 import { notificationService } from './NotificationService'
-import { policyFor } from '../lib/pricing'
+import {
+  policyFor,
+  MEAL_PLAN_UPLIFT_PERCENT,
+  GST_PERCENT_STANDARD,
+  GST_PERCENT_LUXURY,
+  GST_LUXURY_THRESHOLD_PER_ROOM_NIGHT,
+} from '../lib/pricing'
 
 export interface ChatTurnResult {
   reply: string
@@ -202,7 +208,7 @@ TOOLS AT YOUR DISPOSAL:
 POLICIES (answer these without tools):
 • Check-in 2:00 PM | Check-out 11:00 AM. Early/late subject to availability.
 ${occupancyRules}
-• GST: 12% under ₹7,500/night; 18% at ₹7,500+ (SAC 996311)
+• GST: ${GST_PERCENT_STANDARD}% under ₹${GST_LUXURY_THRESHOLD_PER_ROOM_NIGHT.toLocaleString('en-IN')}/night; ${GST_PERCENT_LUXURY}% at ₹${GST_LUXURY_THRESHOLD_PER_ROOM_NIGHT.toLocaleString('en-IN')}+ (SAC 996311)
 • Cancellation: free up to 24 hours before check-in
 • Payment: UPI/card/net banking via secure checkout, or cash at the property
 • Pets: not allowed in standard rooms
@@ -756,7 +762,10 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
     }
 
     if (lower.includes('gst') || lower.includes('invoice') || lower.includes('tax')) {
-      reply = `GST is *12%* under ₹7,500/night, *18%* at ₹7,500+. Invoice is issued against your booking code.`
+      // The rate the concierge quotes has to be the rate the invoice charges,
+      // so both come from the pricing library rather than from a literal here.
+      // Client, 5 Aug 2026: "our gst is 5%, so please replace 12% with 5%".
+      reply = `GST is *${GST_PERCENT_STANDARD}%* under ₹${GST_LUXURY_THRESHOLD_PER_ROOM_NIGHT.toLocaleString('en-IN')}/night, *${GST_PERCENT_LUXURY}%* at ₹${GST_LUXURY_THRESHOLD_PER_ROOM_NIGHT.toLocaleString('en-IN')}+. Invoice is issued against your booking code.`
       return { reply, toolsInvoked, handoffTriggered }
     }
 
@@ -818,8 +827,15 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
       }
     }
 
-    // Meals. breakfast_offset and all_meals_offset are real per-room columns,
-    // so this is answerable from data rather than deferred.
+    // Meals. Percentage-based across the whole group since 5 Aug 2026, so the
+    // headline is a single fact the concierge can state outright rather than a
+    // per-room lookup: breakfast is 25% of the room rate everywhere.
+    //
+    // The rupee range is still read from the room rows, because "25%" alone is
+    // not what a guest asking "how much is breakfast" wants to hear. Those
+    // columns are recomputed from the same percentage by the schema migration on
+    // every boot, so the range quoted here cannot drift from the amount the
+    // checkout actually adds.
     if (lower.includes('breakfast') || lower.includes('meal') || lower.includes('food') ||
         lower.includes('dinner') || lower.includes('lunch')) {
       const withRooms = await db.getPropertiesWithRooms()
@@ -829,9 +845,11 @@ REPLY FORMAT — match it to the question, do not pick one style and reuse it:
         const rng = (xs: number[]) => (Math.min(...xs) === Math.max(...xs)
           ? `₹${Math.min(...xs).toLocaleString('en-IN')}`
           : `₹${Math.min(...xs).toLocaleString('en-IN')}–₹${Math.max(...xs).toLocaleString('en-IN')}`)
-        reply = `Rooms are room-only. Breakfast adds *${rng(bf)}* per night` +
-          (am.length ? `, all meals *${rng(am)}*` : '') + `.\n\n` +
-          `Exact rate varies by room — pick dates on the site to see it.`
+        const bfPct = MEAL_PLAN_UPLIFT_PERCENT['With Breakfast']
+        const amPct = MEAL_PLAN_UPLIFT_PERCENT['All Meals Included']
+        reply = `Rooms are room-only as standard. Breakfast adds *${bfPct}%* to the room rate (${rng(bf)} per night)` +
+          (am.length ? `, all meals *${amPct}%* (${rng(am)})` : '') + `.\n\n` +
+          `It's the same percentage at every hotel, so the rupee amount follows the room — pick dates on the site to see yours.`
         return { reply, toolsInvoked, handoffTriggered }
       }
     }

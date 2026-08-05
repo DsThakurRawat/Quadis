@@ -1,5 +1,6 @@
 import { Reveal } from '../components/blocks.tsx'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 /**
  * Ported from the client's existing site, read off
@@ -17,11 +18,11 @@ import Seo from '../components/Seo.tsx'
 export default function PrivacyPolicy() {
   return (
     <>
-      <Seo
-        title="Privacy Policy"
-        description="How Quadis Hotels collects, uses and protects your personal information."
-        canonicalPath="/privacy-policy"
-      />
+      {/* canonicalPath is still pinned — it now comes from the registry entry,
+          because /privacy-policy is one of the URLs already in Google's index
+          off the client's existing site and must not self-canonicalise onto a
+          query-string variant. */}
+      <Seo {...pageSeo('/privacy-policy')} />
       <div className="page-head bg-cream">
         <div className="container center-col">
           <h1 className="h1 h1--single-line">Privacy Policy</h1>

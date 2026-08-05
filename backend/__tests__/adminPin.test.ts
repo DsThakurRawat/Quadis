@@ -84,20 +84,31 @@ describe('Admin PIN — the client can change it herself', () => {
       expect(db.memoryAdminPinHash).toBeNull()
     })
 
-    it.each([
+    // A plain loop rather than it.each().
+    //
+    // tsconfig.json excludes **/*.test.ts, so `npx tsc --noEmit` never sees this
+    // file and ts-jest compiles it outside the program — where the jest globals
+    // resolve to a narrower type that has `it` but not `it.each`, and the suite
+    // fails to compile rather than failing a test. It passed on the machine that
+    // wrote it only because ts-jest had a warm cache for the file.
+    const WEAK_PINS: Array<[string, string]> = [
       ['000000', 'same digit six times'],
       ['123456', 'ascending run'],
       ['987654', 'descending run'],
       ['1234', 'too short'],
       ['abcdef', 'not digits'],
-    ])('rejects %s (%s)', async (pin) => {
-      const res = await request(app)
-        .post('/api/admin/change-pin')
-        .send({ currentPin: BOOTSTRAP_PIN, newPin: pin })
+    ]
 
-      expect(res.status).toBe(400)
-      expect(db.memoryAdminPinHash).toBeNull()
-    })
+    for (const [pin, why] of WEAK_PINS) {
+      it(`rejects ${pin} (${why})`, async () => {
+        const res = await request(app)
+          .post('/api/admin/change-pin')
+          .send({ currentPin: BOOTSTRAP_PIN, newPin: pin })
+
+        expect(res.status).toBe(400)
+        expect(db.memoryAdminPinHash).toBeNull()
+      })
+    }
   })
 
   /**
@@ -170,6 +181,105 @@ describe('Admin PIN — the client can change it herself', () => {
       const { res, next } = run()
       expect(next).not.toHaveBeenCalled()
       expect(res.statusCode).toBe(401)
+    })
+  })
+
+  /**
+   * The 4 Aug 2026 lockout — "Ye invalid show kr raha h", 4:36 pm, with a
+   * photo of the /admin login card reading `Invalid Admin PIN`.
+   *
+   * The masked field in that photo holds SEVEN dots, not six (counted off the
+   * original at four thresholds: seven evenly-spaced blobs, regular ~7px
+   * pitch). These pin down what the server does with input of that shape, and
+   * why the fix had to go in the field rather than in here.
+   */
+  describe('the 4 Aug 2026 lockout', () => {
+    /**
+     * A fresh app per test, because /api/admin/auth carries a
+     * 10-attempts-per-15-minutes limiter (app.ts) whose counter lives on the
+     * app instance — the block above has already spent most of the shared
+     * budget, and without this these assertions start reading 429 instead of
+     * the 401/200 they are about.
+     *
+     * That limit is part of the client-facing story too: ten fumbled attempts
+     * and she is locked out of her own panel for a quarter of an hour, with a
+     * message that is not the one she screenshotted. It is the right limit for
+     * a six-digit PIN; it is also why the panel must stop a malformed PIN
+     * before it is spent.
+     */
+    let freshApp: ReturnType<typeof createApp>
+    beforeEach(() => { freshApp = createApp() })
+
+    it('rejects the right PIN with one extra character — the shape her screenshot shows', async () => {
+      // Seven characters against a six-digit PIN. A paste out of WhatsApp
+      // brings the trailing space with it and the old field, maxLength={10}
+      // with no filter, took it silently.
+      for (const submitted of [`${BOOTSTRAP_PIN} `, ` ${BOOTSTRAP_PIN}`, `${BOOTSTRAP_PIN}\n`, `${BOOTSTRAP_PIN}7`]) {
+        const res = await request(freshApp).post('/api/admin/auth').send({ pin: submitted })
+        expect(res.status).toBe(401)
+        expect(res.body.error).toBe('Invalid Admin PIN')
+      }
+    })
+
+    it('gives a malformed PIN the exact same 401 as a wrong one, which is why the panel must catch it', async () => {
+      // The dead end itself: from the browser these two are indistinguishable,
+      // so nothing on the login screen could tell her she had typed 7 digits.
+      // AdminDashboard.tsx now blocks a non-6-digit submission locally.
+      const malformed = await request(freshApp).post('/api/admin/auth').send({ pin: `${BOOTSTRAP_PIN} ` })
+      const wrong = await request(freshApp).post('/api/admin/auth').send({ pin: '135790' })
+
+      expect(malformed.status).toBe(wrong.status)
+      expect(malformed.body.error).toBe(wrong.body.error)
+    })
+
+    it('accepts the exact six digits — there is no always-fail defect in the compare', async () => {
+      // Guards the other half of the diagnosis. If the bootstrap compare were
+      // broken (a stray newline on ADMIN_PIN out of SSM, say), no PIN would
+      // ever work and the input fix would be treating the wrong thing.
+      const res = await request(freshApp).post('/api/admin/auth').send({ pin: BOOTSTRAP_PIN })
+      expect(res.status).toBe(200)
+    })
+
+    it('accepts the exact six digits through the stored-hash path too', async () => {
+      await request(freshApp)
+        .post('/api/admin/change-pin')
+        .send({ currentPin: BOOTSTRAP_PIN, newPin: '739154' })
+
+      const res = await request(freshApp).post('/api/admin/auth').send({ pin: '739154' })
+      expect(res.status).toBe(200)
+      expect(res.body.mustChangePin).toBe(false)
+
+      // ...and the same one extra character fails on that path as well, so the
+      // fix holds whichever mode production is actually in.
+      const withSpace = await request(freshApp).post('/api/admin/auth').send({ pin: '739154 ' })
+      expect(withSpace.status).toBe(401)
+    })
+
+    it('stops honouring ADMIN_PIN once she has set her own — the other way this lockout happens', async () => {
+      // She was still in bootstrap mode at the 3 Aug deploy (admin_credentials
+      // verified as existing with zero rows). If she has used the change-PIN
+      // form since, the PIN we sent on WhatsApp is dead and only she knows the
+      // replacement. Nothing about that is a bug; it needs a different answer
+      // to her, which is what the mode= line on the rejection is for.
+      await request(freshApp)
+        .post('/api/admin/change-pin')
+        .send({ currentPin: BOOTSTRAP_PIN, newPin: '739154' })
+
+      const res = await request(freshApp).post('/api/admin/auth').send({ pin: BOOTSTRAP_PIN })
+      expect(res.status).toBe(401)
+    })
+
+    it('does not let ADMIN_PASSWORD in through the PIN box — break-glass is not a browser route', async () => {
+      // Worth pinning so nobody "helps" a locked-out owner by widening this.
+      // The break-glass token is accepted by requireAdmin, not by /auth, so
+      // recovery is a curl or an operator, never a second thing to type here.
+      const res = await request(freshApp).post('/api/admin/auth').send({ pin: 'test-admin-token' })
+      expect(res.status).toBe(401)
+    })
+
+    it('never echoes the submitted PIN back to the caller', async () => {
+      const res = await request(freshApp).post('/api/admin/auth').send({ pin: `${BOOTSTRAP_PIN} ` })
+      expect(JSON.stringify(res.body)).not.toContain(BOOTSTRAP_PIN)
     })
   })
 })

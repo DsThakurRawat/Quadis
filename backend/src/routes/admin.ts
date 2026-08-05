@@ -57,6 +57,22 @@ adminAuthRouter.post('/auth', async (req: Request, res: Response) => {
   const ok = usingBootstrap ? pin === bootstrapPin : await verifyPassword(pin, storedHash)
 
   if (!ok) {
+    // The client was locked out on 4 Aug 2026 and this endpoint had said
+    // nothing at all about it — the box logged no failed sign-in, so telling
+    // "she is on the WhatsApp PIN and mistyped it" from "she changed her PIN
+    // from the dashboard and forgot it" meant opening psql on production.
+    // Those need completely different answers to her, so the difference has to
+    // be in the journal.
+    //
+    // Length of the REJECTED attempt only, never the value, and never anything
+    // about the accepted one: what is printed here is the caller's own input,
+    // so it tells an attacker nothing they did not just type. A `stored` line
+    // for an attempt of the right length is the signature of a forgotten
+    // self-set PIN; `bootstrap` with a wrong length is a paste or a typo.
+    console.warn(
+      `Admin sign-in rejected — mode=${usingBootstrap ? 'bootstrap' : 'stored'} ` +
+      `submitted_length=${pin.length} (expected 6)`
+    )
     return res.status(401).json({ success: false, error: 'Invalid Admin PIN' })
   }
 
@@ -209,6 +225,14 @@ const roomPatchSchema = z
     bed_type: z.string().trim().max(64),
     max_guests: z.number().int().min(1).max(20),
     price_offset: money,
+    // Accepted, then ignored by the DB layer — they are no longer in
+    // ROOM_EDITABLE. Meal plans went group-wide percentage on 5 Aug 2026
+    // (EP 0 / CP 25 / MAP 50) and the admin form stopped sending these.
+    //
+    // They stay listed ONLY because this schema is .strict(): dropping them
+    // turns a harmless no-op into a 400 for any manager whose browser is still
+    // running the previous bundle. Remove them once no stale tab can be live —
+    // a deploy or two from now, not in the same release that stops sending them.
     breakfast_offset: money,
     all_meals_offset: money,
     total_units: z.number().int().min(0).max(500),

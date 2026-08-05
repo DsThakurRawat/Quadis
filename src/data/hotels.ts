@@ -1,5 +1,35 @@
 import type { Hotel, BanquetVenue, City, HotelRoom, UpcomingHotel, CityFilter } from '../types.ts'
+import { MEAL_PLAN_UPLIFT_PERCENT, baseRoomRateFor, mealUpliftFor } from '../lib/pricing.ts'
 
+/**
+ * The three meal plans, priced as a percentage of one room's base rate.
+ *
+ * Client, 5 Aug 2026 — EP no charge, CP +25%, MAP +50%, "applied automatically
+ * across all hotels based on the base room rate". The percentages themselves
+ * live in src/lib/pricing.ts next to the rest of the rate rules, so this file
+ * holds no pricing literals of its own; it only decides what to apply them to.
+ *
+ * `baseRoomRate` is the property's own nightly price plus that category's
+ * offset — see baseRoomRateFor(). Passing it in per hotel is what makes the
+ * uplift track the property: Cladis 15's ₹1,800 Deluxe gets +₹450 of breakfast,
+ * Amar Inn's ₹3,000 Deluxe gets +₹750, and both are the same 25%.
+ *
+ * The rupee figures these replace (₹300/₹800, ₹350/₹900, ₹450/₹1,200) are gone
+ * from this file entirely rather than kept as a fallback — a stale flat number
+ * behind a percentage is the bug the client reported.
+ */
+const mealOptionsFor = (baseRoomRate: number): HotelRoom['mealOptions'] =>
+  (Object.keys(MEAL_PLAN_UPLIFT_PERCENT) as (keyof typeof MEAL_PLAN_UPLIFT_PERCENT)[]).map((plan) => ({
+    plan,
+    priceOffset: mealUpliftFor(plan, baseRoomRate),
+  }))
+
+/**
+ * Category templates. `mealOptions` here is a placeholder priced off a ₹0 base,
+ * so every entry is ₹0: the real figures cannot be known until a hotel is in
+ * hand, and getHotelRooms() below recomputes them for the property being shown.
+ * Nothing should read `mealOptions` off these constants directly.
+ */
 export const DEFAULT_ROOMS: HotelRoom[] = [
   {
     id: 'deluxe-room',
@@ -9,11 +39,7 @@ export const DEFAULT_ROOMS: HotelRoom[] = [
     bed: 'King / Twin Beds',
     maxGuests: 2,
     basePriceOffset: 0,
-    mealOptions: [
-      { plan: 'Room Only', priceOffset: 0 },
-      { plan: 'With Breakfast', priceOffset: 300 },
-      { plan: 'All Meals Included', priceOffset: 800 },
-    ],
+    mealOptions: mealOptionsFor(0),
   },
   {
     id: 'superior-room',
@@ -23,11 +49,7 @@ export const DEFAULT_ROOMS: HotelRoom[] = [
     bed: 'King Bed + Balcony',
     maxGuests: 3,
     basePriceOffset: 400,
-    mealOptions: [
-      { plan: 'Room Only', priceOffset: 0 },
-      { plan: 'With Breakfast', priceOffset: 350 },
-      { plan: 'All Meals Included', priceOffset: 900 },
-    ],
+    mealOptions: mealOptionsFor(0),
   },
   {
     id: 'royal-suite',
@@ -37,23 +59,8 @@ export const DEFAULT_ROOMS: HotelRoom[] = [
     bed: 'Master Suite + Living Room',
     maxGuests: 4,
     basePriceOffset: 1200,
-    mealOptions: [
-      { plan: 'Room Only', priceOffset: 0 },
-      { plan: 'With Breakfast', priceOffset: 450 },
-      { plan: 'All Meals Included', priceOffset: 1200 },
-    ],
+    mealOptions: mealOptionsFor(0),
   },
-]
-
-const MEALS_STANDARD: HotelRoom['mealOptions'] = [
-  { plan: 'Room Only', priceOffset: 0 },
-  { plan: 'With Breakfast', priceOffset: 300 },
-  { plan: 'All Meals Included', priceOffset: 800 },
-]
-const MEALS_UPGRADED: HotelRoom['mealOptions'] = [
-  { plan: 'Room Only', priceOffset: 0 },
-  { plan: 'With Breakfast', priceOffset: 350 },
-  { plan: 'All Meals Included', priceOffset: 900 },
 ]
 
 /**
@@ -80,9 +87,9 @@ const SUPER: HotelRoom = {
   bed: 'King Bed',
   maxGuests: 3,
   basePriceOffset: 1000,
-  mealOptions: MEALS_UPGRADED,
+  mealOptions: mealOptionsFor(0),
 }
-const DELUXE: HotelRoom = { ...DEFAULT_ROOMS[0]!, mealOptions: MEALS_STANDARD }
+const DELUXE: HotelRoom = { ...DEFAULT_ROOMS[0]! }
 const ROYAL: HotelRoom = { ...DEFAULT_ROOMS[2]!, basePriceOffset: 2000 }
 
 /**
@@ -104,23 +111,41 @@ const ROOMS_BY_SLUG: Record<string, HotelRoom[]> = {
   'hotel-amar-inn': [DELUXE, SUPER, ROYAL],
 }
 
+/**
+ * The categories a property sells, with their meal plans priced for THAT
+ * property.
+ *
+ * The meal supplement is re-derived here rather than read off the template,
+ * because from 5 Aug 2026 it is a percentage of the base room rate and the
+ * templates are shared across all nine hotels — a single stored rupee figure
+ * cannot be right for a ₹1,500 Deluxe and a ₹3,000 one at the same time.
+ *
+ * It is recomputed for `hotel.rooms` too, not just for the static templates:
+ * those arrive from the API, whose room rows still carry the legacy flat
+ * breakfast_offset / all_meals_offset columns. Overriding them here is what
+ * guarantees the price on the page matches what the server will charge, since
+ * the server derives the same percentage from the same base rate.
+ */
 export const getHotelRooms = (hotel: Hotel): HotelRoom[] =>
-  hotel.rooms ?? ROOMS_BY_SLUG[hotel.slug] ?? DEFAULT_ROOMS
+  (hotel.rooms ?? ROOMS_BY_SLUG[hotel.slug] ?? DEFAULT_ROOMS).map((room) => ({
+    ...room,
+    mealOptions: mealOptionsFor(baseRoomRateFor(hotel.price, room.basePriceOffset)),
+  }))
 
 import { getApiUrl } from '../config/api'
 
 import { useState, useEffect } from 'react'
 
 export const STATIC_HOTELS: Hotel[] = [
-  { slug: 'hotel-quadis-sector-51-noida', coords: { lat: 28.5833, lng: 77.3712 }, transit: { metro: { name: 'Sector 52 Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '32 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '24 km' }, landmark: { name: 'Sector 51 Market', note: 'dining & retail' } }, name: 'Hotel Quadis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', price: 1500, rating: 4.6 },
+  { slug: 'hotel-quadis-sector-51-noida', coords: { lat: 28.5833, lng: 77.3712 }, transit: { metro: { name: 'Sector 52 Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '32 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '24 km' }, landmark: { name: 'Sector 51 Market', note: 'dining & retail' } }, name: 'Hotel Quadis Sector 51', area: 'Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', price: 1500, rating: 4.5 },
   { slug: 'hotel-quadis-central-sector-27-noida', coords: { lat: 28.5778, lng: 77.3243 }, transit: { metro: { name: 'Sector 18 Metro', value: '10 min walk' }, airport: { name: 'IGI Airport T3', value: '28 km · 45 min' }, rail: { name: 'Nizamuddin Railway Station', value: '15 km' }, landmark: { name: 'Atta Market', note: 'dining & retail' } }, name: 'Hotel Quadis Central', area: 'Sector 27', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida, Uttar Pradesh 201301', price: 2500, rating: 4.5 },
-  { slug: 'hotel-downtown-sector-15-noida', coords: { lat: 28.5847, lng: 77.3129 }, transit: { metro: { name: 'Sector 15 Metro', value: '2 min walk' }, airport: { name: 'IGI Airport T3', value: '26 km · 40 min' }, rail: { name: 'Nizamuddin Railway Station', value: '13 km' }, landmark: { name: 'Sector 15 Indian Oil', note: 'Metro Pillar 33' } }, name: 'Hotel Downtown Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 2000, rating: 4.4 },
-  { slug: 'hotel-cladis-sector-15-noida', coords: { lat: 28.5855, lng: 77.311 }, transit: { metro: { name: 'Sector 15 Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '26 km · 40 min' }, rail: { name: 'Nizamuddin Railway Station', value: '13 km' }, landmark: { name: 'Naya Bans Village', note: 'neighbourhood' } }, name: 'Hotel Cladis Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'New Ashok Nagar Rd, opposite metro pillar no. 36, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 1800, rating: 4.4 },
-  { slug: 'hotel-cladis-sector-19-noida', coords: { lat: 28.583, lng: 77.321 }, transit: { metro: { name: 'Sector 16 Metro', value: '8 min walk' }, airport: { name: 'IGI Airport T3', value: '27 km · 45 min' }, rail: { name: 'Nizamuddin Railway Station', value: '14 km' }, landmark: { name: 'Indo Gulf Hospital', note: 'landmark' } }, name: 'Hotel Cladis Sector 19 Noida', area: 'Sector 19', city: 'Noida', address: 'A-369, A Block, Pocket A, Sector 19, Noida, Uttar Pradesh 201301', price: 2000, rating: 4.3 },
-  { slug: 'hotel-downtown-sector-51-noida', coords: { lat: 28.5815, lng: 77.375 }, transit: { metro: { name: 'Sector 52 Metro', value: '10 min walk' }, airport: { name: 'IGI Airport T3', value: '33 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '25 km' }, landmark: { name: 'Kendriya Vihar', note: 'neighbourhood' } }, name: 'Hotel Downtown Sector 51 Noida', area: 'Sector 51', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', price: 2500, rating: 4.5 },
-  { slug: 'hotel-downtown-east-of-kailash', coords: { lat: 28.555, lng: 77.245 }, transit: { metro: { name: 'Kailash Colony Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '18 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '4 km' }, landmark: { name: 'ISKCON Temple', note: 'landmark' } }, name: 'Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', price: 3000, rating: 4.6 },
-  { slug: 'hotel-amby-inn-lajpat-nagar-ii', coords: { lat: 28.57, lng: 77.24 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '3 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Central Market', note: 'dining & retail' } }, name: 'Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', price: 2500, rating: 4.5 },
-  { slug: 'hotel-amar-inn', coords: { lat: 28.571, lng: 77.2415 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Jal Vihar', note: 'neighbourhood' } }, name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', price: 3000, rating: 4.4 },
+  { slug: 'hotel-downtown-sector-15-noida', coords: { lat: 28.5847, lng: 77.3129 }, transit: { metro: { name: 'Sector 15 Metro', value: '2 min walk' }, airport: { name: 'IGI Airport T3', value: '26 km · 40 min' }, rail: { name: 'Nizamuddin Railway Station', value: '13 km' }, landmark: { name: 'Sector 15 Indian Oil', note: 'Metro Pillar 33' } }, name: 'Hotel Downtown Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 2000, rating: 4.0 },
+  { slug: 'hotel-cladis-sector-15-noida', coords: { lat: 28.5855, lng: 77.311 }, transit: { metro: { name: 'Sector 15 Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '26 km · 40 min' }, rail: { name: 'Nizamuddin Railway Station', value: '13 km' }, landmark: { name: 'Naya Bans Village', note: 'neighbourhood' } }, name: 'Hotel Cladis Sector 15 Noida', area: 'Sector 15', city: 'Noida', address: 'New Ashok Nagar Rd, opposite metro pillar no. 36, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', price: 1800, rating: 3.8 },
+  { slug: 'hotel-cladis-sector-19-noida', coords: { lat: 28.583, lng: 77.321 }, transit: { metro: { name: 'Sector 16 Metro', value: '8 min walk' }, airport: { name: 'IGI Airport T3', value: '27 km · 45 min' }, rail: { name: 'Nizamuddin Railway Station', value: '14 km' }, landmark: { name: 'Indo Gulf Hospital', note: 'landmark' } }, name: 'Hotel Cladis Sector 19 Noida', area: 'Sector 19', city: 'Noida', address: 'A-369, A Block, Pocket A, Sector 19, Noida, Uttar Pradesh 201301', price: 2000, rating: 4.5 },
+  { slug: 'hotel-downtown-sector-51-noida', coords: { lat: 28.5815, lng: 77.375 }, transit: { metro: { name: 'Sector 52 Metro', value: '10 min walk' }, airport: { name: 'IGI Airport T3', value: '33 km · 55 min' }, rail: { name: 'New Delhi Railway Station', value: '25 km' }, landmark: { name: 'Kendriya Vihar', note: 'neighbourhood' } }, name: 'Hotel Downtown Sector 51 Noida', area: 'Sector 51', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', price: 2500, rating: 4.4 },
+  { slug: 'hotel-downtown-east-of-kailash', coords: { lat: 28.555, lng: 77.245 }, transit: { metro: { name: 'Kailash Colony Metro', value: '5 min walk' }, airport: { name: 'IGI Airport T3', value: '18 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '4 km' }, landmark: { name: 'ISKCON Temple', note: 'landmark' } }, name: 'Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', price: 3000, rating: 4.5 },
+  { slug: 'hotel-amby-inn-lajpat-nagar-ii', coords: { lat: 28.57, lng: 77.24 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '3 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Central Market', note: 'dining & retail' } }, name: 'Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', price: 2500, rating: 3.8 },
+  { slug: 'hotel-amar-inn', coords: { lat: 28.571, lng: 77.2415 }, transit: { metro: { name: 'Lajpat Nagar Metro', value: '4 min walk' }, airport: { name: 'IGI Airport T3', value: '19 km · 35 min' }, rail: { name: 'Nizamuddin Railway Station', value: '5 km' }, landmark: { name: 'Jal Vihar', note: 'neighbourhood' } }, name: 'Hotel Amar Inn', area: 'Lajpat Nagar', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', price: 3000, rating: 4.3 },
 ]
 
 /**
@@ -254,7 +279,15 @@ export const UPCOMING_HOTELS: UpcomingHotel[] = [
 export const CITIES: City[] = ['Noida', 'New Delhi']
 export const CITY_FILTERS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi']
 
-// Banquet venues — §4/§6.4. Capacities are representative venue specs.
+// Banquet venues — §4/§6.4.
+//
+// Capacities are the client's own figures (feedback, 5 Aug 2026), not the
+// representative specs this list shipped with: Downtown Sector 51 seats 40,
+// Downtown EOK 80 and Amby Inn 65. They are an order of magnitude below the
+// placeholders they replace, which is the point — the old numbers were
+// quoting halls the group does not have. `hallArea` is deliberately left
+// alone: the client restated capacity only, and a floor area invented to match
+// the new headcount would be the same guess that produced the old numbers.
 // Cladis was removed on the client's instruction, 28 Jul 2026: "cladis me
 // banquet hall nahi h" — the property has no banquet hall, so the venue never
 // existed. The Banquet Halls photo set they sent the same morning contains
@@ -262,9 +295,9 @@ export const CITY_FILTERS: readonly CityFilter[] = ['All', 'Noida', 'New Delhi']
 // grid, the header dropdown and the /banquets/:slug routes, so removing the
 // entry retires the page everywhere at once.
 export const BANQUETS: BanquetVenue[] = [
-  { slug: 'banquets-at-hotel-amby-inn', name: 'Banquets at Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', capacity: 350, hallArea: '4,200 sq ft', catering: 'Veg & Non-veg', parking: 'Valet available' },
-  { slug: 'banquets-at-hotel-downtown-eok', name: 'Banquets at Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', capacity: 300, hallArea: '3,600 sq ft', catering: 'Veg & Non-veg', parking: 'Valet available' },
-  { slug: 'banquets-at-hotel-downtown-sector-51', name: 'Banquets at Hotel Downtown Sector 51', area: 'Sector 51', city: 'Noida', capacity: 450, hallArea: '5,200 sq ft', catering: 'Veg & Non-veg', parking: 'On-site parking' },
+  { slug: 'banquets-at-hotel-amby-inn', name: 'Banquets at Hotel Amby Inn', area: 'Lajpat Nagar', city: 'New Delhi', capacity: 65, hallArea: '4,200 sq ft', catering: 'Veg & Non-veg', parking: 'Valet available' },
+  { slug: 'banquets-at-hotel-downtown-eok', name: 'Banquets at Hotel Downtown EOK', area: 'East of Kailash', city: 'New Delhi', capacity: 80, hallArea: '3,600 sq ft', catering: 'Veg & Non-veg', parking: 'Valet available' },
+  { slug: 'banquets-at-hotel-downtown-sector-51', name: 'Banquets at Hotel Downtown Sector 51', area: 'Sector 51', city: 'Noida', capacity: 40, hallArea: '5,200 sq ft', catering: 'Veg & Non-veg', parking: 'On-site parking' },
 ]
 
 // ₹1,899 / night  (Indian comma grouping)

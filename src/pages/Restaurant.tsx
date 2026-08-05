@@ -4,8 +4,10 @@ import { PhotoHero, SectionHeader, CtaBand, Reveal } from '../components/blocks.
 import { Button } from '../components/ui.tsx'
 import { Photo } from '../components/media.tsx'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
-interface Offering { title: string; blurb: string; img?: string | undefined; to: string; cta: string }
+/** `href` for destinations off this site, `to` for routes within it. */
+interface Offering { title: string; blurb: string; img?: string | undefined; to?: string; href?: string; cta: string }
 
 export default function Restaurant() {
   const { t } = useContent()
@@ -19,8 +21,11 @@ export default function Restaurant() {
       // rImgs[1] first: rImgs[0] is hero.webp, which the PhotoHero above already
       // shows, so this card was repeating the image directly above it.
       img: rImgs[1] ?? rImgs[0],
-      // Was 'VIEW MENU' pointing at this same page — there is no menu to show.
-      to: '/contact',
+      // Was 'VIEW MENU' pointing at this same page — there is no menu to show,
+      // then /contact. The in-house restaurant is Story of Grains and it runs
+      // its own site, so the client asked for this to hand off to it directly
+      // (feedback, 5 Aug 2026) rather than route the enquiry through us.
+      href: 'https://storyofgrains.com/',
       cta: 'ENQUIRE ABOUT DINING',
     },
     {
@@ -34,10 +39,10 @@ export default function Restaurant() {
 
   return (
     <>
-      <Seo
-        title="Restaurant & In-House Dining"
-        description="Multi-cuisine in-house kitchens serving breakfast spreads, room dining and customised event menus across Quadis Hotels."
-      />
+      {/* Copy moved verbatim into src/data/seo.ts (5 Aug 2026), where all 25
+          routes now live — her SEO person's complaint was that there was no one
+          place to read or edit them. */}
+      <Seo {...pageSeo('/restaurant')} image={restaurantBannerImage ?? rImgs[0]} />
       {/* The client's own landing-page banner when present, photography otherwise.
           "banner" height contains it instead of cropping — see 3ac1877. */}
       <PhotoHero
@@ -62,7 +67,9 @@ export default function Restaurant() {
                 <div className="offer-card__body">
                   <h3 className="h3">{o.title}</h3>
                   <p className="prose__p">{o.blurb}</p>
-                  <Button to={o.to} variant="ghost" className="hcard__cta">{o.cta}</Button>
+                  {o.href
+                    ? <Button href={o.href} target="_blank" rel="noopener noreferrer" variant="ghost" className="hcard__cta">{o.cta}</Button>
+                    : <Button to={o.to} variant="ghost" className="hcard__cta">{o.cta}</Button>}
                 </div>
               </article>
             ))}
@@ -70,7 +77,14 @@ export default function Restaurant() {
         </div>
       </section>
 
-      <CtaBand title={t('restaurant.cta.title')} cta="ENQUIRE ON WHATSAPP" to="/restaurant/outdoor-catering-service" />
+      {/* A button labelled "Enquire on WhatsApp" that opened another page on
+          this site was the complaint; it now opens the thread it names, on the
+          central reservations number. */}
+      <CtaBand
+        title={t('restaurant.cta.title')}
+        cta="ENQUIRE ON WHATSAPP"
+        href="https://wa.me/919217373532?text=Hi%20Quadis%2C%20I%27d%20like%20to%20enquire%20about%20dining."
+      />
     </>
   )
 }

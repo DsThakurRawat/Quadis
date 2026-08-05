@@ -1,14 +1,15 @@
 import { Button } from '../components/ui.tsx'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 export default function NotFound() {
   return (
     <>
-      <Seo
-        title="Page Not Found"
-        description="The page you are looking for does not exist. Browse our hotels across Noida and New Delhi instead."
-        noIndex
-      />
+      {/* The '/404' registry entry deliberately carries no canonicalPath: this
+          component also renders in place of an unknown /hotels/:slug or
+          /banquets/:slug, so the canonical has to be whatever URL was actually
+          missed rather than a fixed one. noIndex comes from the registry. */}
+      <Seo {...pageSeo('/404')} />
       <section className="section bg-cream">
         <div className="container center-col stack" style={{ gap: 24, minHeight: '46vh', justifyContent: 'center' }}>
           <span className="overline">404</span>

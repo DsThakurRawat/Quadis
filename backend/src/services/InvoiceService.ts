@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit'
 import { BookingRecord, PropertyRecord, RoomTypeRecord } from '../types'
+import { gstRatePercentFor } from '../lib/pricing'
 
 /**
  * The billing entity printed on every GST invoice.
@@ -51,9 +52,17 @@ export class InvoiceService {
         const totalAmount = Number(booking.total_amount)
         const ratePerRoomNight = totalAmount / (nights * booking.rooms_count)
 
-        // Indian GST SAC 996311 Slab rule: < ₹7,500 = 12% (6%+6%), >= ₹7,500 = 18% (9%+9%)
-        const isLuxurySlab = ratePerRoomNight >= 7500
-        const gstRatePercent = isLuxurySlab ? 18 : 12
+        // Indian GST SAC 996311 slab rule: under ₹7,500 a night = 5% (2.5%+2.5%),
+        // ₹7,500 and over = 18% (9%+9%). The lower slab was 12% until the client
+        // corrected it on 5 Aug 2026 — "our gst is 5%, so please replace 12% with
+        // 5%" — which matches the September 2025 rate revision. The rates live in
+        // ../lib/pricing so the checkout summary and this invoice cannot disagree;
+        // see the note there.
+        //
+        // CGST and SGST are each half the slab, so a 5% invoice prints 2.5% + 2.5%.
+        // That is a fraction rather than the whole number 12% gave, which is why
+        // halfRate is formatted rather than assumed to be an integer.
+        const gstRatePercent = gstRatePercentFor(ratePerRoomNight)
         const halfRate = gstRatePercent / 2
 
         const taxableBase = Math.round((totalAmount / (1 + gstRatePercent / 100)) * 100) / 100

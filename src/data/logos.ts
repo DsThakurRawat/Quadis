@@ -24,6 +24,24 @@ export interface Logo {
  * there was no coverage to point at.
  */
 
+/*
+ * Bank marks for the "Offers for You" cards live in public/logos/banks/ and are
+ * referenced directly from OffersForYou.tsx rather than listed here — they are
+ * one-per-offer, so a shared array would only ever be looked up by name.
+ *
+ * They are derived assets, not the files the client sent. The originals are in
+ * feedback/ (hdfc.webp, loogoicic.webp, upi-logo-04.webp, sbilogo.webp) and are
+ * inconsistent: HDFC arrives as a tight 500x80 crop, UPI as a 500x500 card with
+ * the mark floating in the middle AND a stock vendor's watermark in the corner.
+ * Each is cropped to its content and resized to a common 64px height so the row
+ * reads as one set; the UPI watermark is cropped away first.
+ *
+ * SBI IS PREPARED BUT NOT USED. She sent the artwork with the other three, but
+ * there is no SBI offer on the page and she did not describe one — a bank logo
+ * on a site implying a partnership that has not been stated is not something to
+ * infer. public/logos/banks/sbi.webp is ready the moment she sends the terms.
+ */
+
 export const PARTNER_LOGOS: Logo[] = [
   { name: 'Aditya Birla', src: '/logos/partners/aditya-birla.png' },
   { name: 'Hitachi', src: '/logos/partners/hitachi.png' },

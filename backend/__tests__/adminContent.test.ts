@@ -85,14 +85,19 @@ describe('PATCH /api/admin/properties/:idOrSlug', () => {
 })
 
 describe('PATCH /api/admin/room-types/:idOrSlug', () => {
-  it('updates a room rate and its meal offsets', async () => {
+  it('updates a room rate, and ignores a meal offset because meals are a percentage now', async () => {
     const res = await request(app)
       .patch('/api/admin/room-types/room-prop-2-deluxe-room')
       .send({ price_offset: 250, breakfast_offset: 400 })
 
     expect(res.status).toBe(200)
     expect(res.body.data.price_offset).toBe(250)
-    expect(res.body.data.breakfast_offset).toBe(400)
+
+    // Not 400. Since 5 Aug 2026 breakfast is 25% of the base room rate, so this
+    // column is derived rather than set — accepting the write would leave the
+    // concierge quoting ₹400 while checkout charged the percentage. The request
+    // still succeeds; the meal figure simply is not the admin's to type.
+    expect(res.body.data.breakfast_offset).not.toBe(400)
   })
 
   it('flows the new room rate into the booking total', async () => {

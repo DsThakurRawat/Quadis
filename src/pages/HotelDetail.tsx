@@ -16,6 +16,7 @@ import { IconPin, IconStar, IconWifi, IconAc, IconBreakfast, IconParking, IconDe
 import NotFound from './NotFound.tsx'
 import { CheckoutModal } from '../components/CheckoutModal.tsx'
 import Seo from '../components/Seo.tsx'
+import { hotelSeo } from '../data/seo.ts'
 import { useContent } from '../data/content.ts'
 
 interface Amenity { icon: ComponentType<SVGProps<SVGSVGElement>>; label: string }
@@ -141,13 +142,12 @@ export default function HotelDetail() {
           in sector 51 noida" and the like — so the title leads with the area
           and city rather than the brand. `canonicalPath` drops the ?checkIn=
           search params, which would otherwise split one page into hundreds of
-          near-duplicate URLs in the index. */}
-      <Seo
-        title={`${hotel.name} — ${hotel.area}, ${hotel.city}`}
-        description={`Stay at ${hotel.name} in ${hotel.area}, ${hotel.city}. Rooms from ${inr(hotel.price)} a night, ${hotel.rating}/5 guest rating. Book direct with Quadis Hotels.`}
-        image={images[0]}
-        canonicalPath={`/hotels/${hotel.slug}`}
-      />
+          near-duplicate URLs in the index.
+
+          Templated from src/data/hotels.ts via hotelSeo() as of 5 Aug 2026, so
+          a tenth property gets its meta, canonical and sitemap entry with no
+          edit here — that scattering was the complaint her SEO person raised. */}
+      <Seo {...hotelSeo(hotel, images[0])} />
       <section className="section bg-cream detail-top">
         <div className="container">
           <Link to="/hotels" className="back-link">← All hotels</Link>
@@ -187,7 +187,12 @@ export default function HotelDetail() {
                   existed in the panel with nothing rendering them, so a client
                   edit saved and then appeared nowhere. Check-in and check-out
                   are also the two things guests most often ask reception. */}
-              <section className="detail-block">
+              {/* --policy is a hook for the mobile reorder only: at 900px and
+                  below this block is moved to sit directly under the room list,
+                  which is where the client asked for it on 5 Aug 2026 (item 7).
+                  The move is flex order in pages.css, so the block stays third
+                  on desktop and the reading and tab order never change. */}
+              <section className="detail-block detail-block--policy">
                 <span className="overline">STAY POLICY</span>
                 <div className="stay-policy">
                   <div className="stay-policy__times">

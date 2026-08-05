@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { BookingRecord, MealPlan } from '../types'
 import { inr } from '../data/hotels'
+import { gstRatePercentFor } from '../lib/pricing'
 import { getApiUrl } from '../config/api'
 import { getToken } from '../data/auth'
 
@@ -90,14 +91,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [booking, setBooking] = useState<BookingRecord | null>(null)
 
 
-  // Calculate nights & GST slab
+  // Nights, and the GST slab that follows from the per-room-night rate.
+  //
+  // The rate itself comes from src/lib/pricing.ts — 5% under ₹7,500 a night,
+  // 18% at or above it, per the client on 5 Aug 2026 ("our gst is 5%, so please
+  // replace 12% with 5%"). It is not written out here because the same slab has
+  // to be applied by the backend when it renders the tax invoice, and a literal
+  // in this file is a literal that can drift away from the one on the PDF.
   const nights = Math.max(
     1,
     Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24))
   )
   const ratePerRoomNight = totalAmount / (nights * roomsCount)
-  const isLuxurySlab = ratePerRoomNight >= 7500
-  const gstRatePercent = isLuxurySlab ? 18 : 12
+  const gstRatePercent = gstRatePercentFor(ratePerRoomNight)
   const taxableBase = Math.round((totalAmount / (1 + gstRatePercent / 100)) * 100) / 100
   const gstAmount = Math.round((totalAmount - taxableBase) * 100) / 100
 

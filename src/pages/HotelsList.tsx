@@ -12,6 +12,7 @@ import UpcomingHotels from '../components/UpcomingHotels.tsx'
 import TierExpansion from '../components/TierExpansion.tsx'
 import NcrLocatorMap from '../components/NcrLocatorMap.tsx'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 const isCityFilter = (v: string | null): v is CityFilter => !!v && (CITY_FILTERS as readonly string[]).includes(v)
 
@@ -61,10 +62,10 @@ export default function HotelsList() {
 
   return (
     <>
-      <Seo
-        title="Our Hotels in Noida & New Delhi"
-        description="Browse every Quadis property in Noida and New Delhi. Compare rooms, rates and locations, and book direct."
-      />
+      {/* pageSeo pins canonicalPath to /hotels, so the ?city= filter variants
+          this page writes into the URL do not present to a crawler as three
+          separate indexable pages carrying identical copy. */}
+      <Seo {...pageSeo('/hotels')} />
       <section className="mini-hero scrim">
         <HeroMedia src={hotelsHero[0]} />
         <div className="container mini-hero__content">

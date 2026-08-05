@@ -2,6 +2,7 @@ import { cateringImages, restaurantImages } from '../data/images.ts'
 import Gallery from '../components/Gallery.tsx'
 import { Button } from '../components/ui.tsx'
 import Seo from '../components/Seo.tsx'
+import { pageSeo } from '../data/seo.ts'
 
 const CUISINE = ['North Indian', 'Mughlai', 'Chinese', 'Continental', 'Live Chaat & Grills', 'Desserts & Bakery']
 
@@ -11,10 +12,9 @@ export default function CateringDetail() {
 
   return (
     <>
-      <Seo
-        title="Outdoor Catering Service in Delhi NCR"
-        description="Customised outdoor catering from the Quadis kitchens — multi-cuisine menus for weddings, corporate events and private gatherings across Delhi NCR."
-      />
+      {/* Copy unchanged, only relocated to src/data/seo.ts — it was already
+          specific to this page and the brief was coverage, not churn. */}
+      <Seo {...pageSeo('/restaurant/outdoor-catering-service')} image={images[0]} />
       <section className="section bg-cream">
         <div className="container">
           <h1 className="h2" style={{ marginBottom: 6 }}>Outdoor Catering Service</h1>

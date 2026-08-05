@@ -68,10 +68,13 @@ export const DEFAULT_CONTENT: Record<string, ContentField> = {
     value:
       'Quadis Services Private Limited is one of the leading hospitality brands in Delhi NCR, offering premium hotel stays, elegant banquet halls, and quality restaurant services.',
   },
+  // 11:00 AM, not the 2:00 PM this shipped with: the client corrected it on
+  // 5 Aug 2026. Check-in and check-out are deliberately the same hour — the
+  // group runs a same-day changeover, so this is not a typo for 1:00 PM.
   'policy.checkIn': {
     section: 'Policies',
     label: 'Check-in time',
-    value: '2:00 PM',
+    value: '11:00 AM',
   },
   'policy.checkOut': {
     section: 'Policies',

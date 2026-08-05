@@ -1,17 +1,35 @@
 import { PropertyRecord, RoomTypeRecord } from '../types'
+import { baseRoomRateFor, mealUpliftFor } from '../lib/pricing'
 
+/**
+ * `rating` is the property's Google Business Profile score, transcribed from
+ * the client's own listing audit (feedback, 5 Aug 2026) — not an editorial
+ * number. Eight of the nine moved, two of them down by more than half a star
+ * (Cladis 15 and Amby Inn, both 3.8), so this is the figure to trust when the
+ * frontend's STATIC_HOTELS disagrees. `map_link` is likewise the GMB share
+ * link; Cladis 15's pointed at the wrong listing until the same audit.
+ */
 export const seedProperties: PropertyRecord[] = [
-  { id: 'prop-2', slug: 'hotel-quadis-sector-51-noida', lat: 28.5833, lng: 77.3712, name: 'Hotel Quadis Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/X3cBuD2gbz27Jf5Ct', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1500, rating: 4.6, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-2', slug: 'hotel-quadis-sector-51-noida', lat: 28.5833, lng: 77.3712, name: 'Hotel Quadis Sector 51', city: 'Noida', address: 'H-22, Hoshiarpur Village, Sector 51, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/X3cBuD2gbz27Jf5Ct', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1500, rating: 4.5, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
   { id: 'prop-3', slug: 'hotel-quadis-central-sector-27-noida', lat: 28.5778, lng: 77.3243, name: 'Hotel Quadis Central', city: 'Noida', address: 'D-192, E Block, Pocket E, Sector 27, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/VGqI5StPFPeLyZIMO', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2500, rating: 4.5, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
-  { id: 'prop-4', slug: 'hotel-downtown-sector-15-noida', lat: 28.5847, lng: 77.3129, name: 'Hotel Downtown Sector 15 Noida', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/oTnXw9glnDyZei1tL', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2000, rating: 4.4, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
-  { id: 'prop-5', slug: 'hotel-cladis-sector-15-noida', lat: 28.5855, lng: 77.311, name: 'Hotel Cladis Sector 15 Noida', city: 'Noida', address: 'New Ashok Nagar Rd, opposite metro pillar no. 36, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/nHWsuom2pwTNGRgfY', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1800, rating: 4.4, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
-  { id: 'prop-6', slug: 'hotel-cladis-sector-19-noida', lat: 28.583, lng: 77.321, name: 'Hotel Cladis Sector 19 Noida', city: 'Noida', address: 'A-369, A Block, Pocket A, Sector 19, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/2YthY0ZjkrW3jnT3n', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2000, rating: 4.3, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
-  { id: 'prop-7', slug: 'hotel-downtown-sector-51-noida', lat: 28.5815, lng: 77.375, name: 'Hotel Downtown Sector 51 Noida', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', map_link: 'https://share.google/Mwl1FiCVC8ucqXrd', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2500, rating: 4.5, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
-  { id: 'prop-8', slug: 'hotel-downtown-east-of-kailash', lat: 28.555, lng: 77.245, name: 'Hotel Downtown EOK', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', map_link: 'https://share.google/3RsBzxkp8xV1e0AuY', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 3000, rating: 4.6, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
-  { id: 'prop-9', slug: 'hotel-amby-inn-lajpat-nagar-ii', lat: 28.57, lng: 77.24, name: 'Hotel Amby Inn', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', map_link: 'https://share.google/pSTT03I5OWszpSj5c', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2500, rating: 4.5, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
-  { id: 'prop-10', slug: 'hotel-amar-inn', lat: 28.571, lng: 77.2415, name: 'Hotel Amar Inn', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', map_link: 'https://share.google/IQLx35cfOmLf93S2o', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 3000, rating: 4.4, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-4', slug: 'hotel-downtown-sector-15-noida', lat: 28.5847, lng: 77.3129, name: 'Hotel Downtown Sector 15 Noida', city: 'Noida', address: 'Metro pillar no. 33, Opposite, New Ashok Nagar Rd, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/oTnXw9glnDyZei1tL', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2000, rating: 4.0, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-5', slug: 'hotel-cladis-sector-15-noida', lat: 28.5855, lng: 77.311, name: 'Hotel Cladis Sector 15 Noida', city: 'Noida', address: 'New Ashok Nagar Rd, opposite metro pillar no. 36, Naya Bans, Naya Bans Village, Sector 15, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/1Gbjxirb5YQWy6h6D', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 1800, rating: 3.8, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-6', slug: 'hotel-cladis-sector-19-noida', lat: 28.583, lng: 77.321, name: 'Hotel Cladis Sector 19 Noida', city: 'Noida', address: 'A-369, A Block, Pocket A, Sector 19, Noida, Uttar Pradesh 201301', map_link: 'https://share.google/2YthY0ZjkrW3jnT3n', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2000, rating: 4.5, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-7', slug: 'hotel-downtown-sector-51-noida', lat: 28.5815, lng: 77.375, name: 'Hotel Downtown Sector 51 Noida', city: 'Noida', address: 'House No : C-155, Sector 51, Noida, Uttar Pradesh 201304', map_link: 'https://share.google/Mwl1FiCVC8ucqXrd', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2500, rating: 4.4, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-8', slug: 'hotel-downtown-east-of-kailash', lat: 28.555, lng: 77.245, name: 'Hotel Downtown EOK', city: 'New Delhi', address: 'B-14, B Block, East of Kailash, New Delhi, Delhi 110065', map_link: 'https://share.google/3RsBzxkp8xV1e0AuY', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 3000, rating: 4.5, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-9', slug: 'hotel-amby-inn-lajpat-nagar-ii', lat: 28.57, lng: 77.24, name: 'Hotel Amby Inn', city: 'New Delhi', address: 'M13, Vinoba Puri, Block M, Lajpat Nagar II, Lajpat Nagar, New Delhi, Delhi 110024', map_link: 'https://share.google/pSTT03I5OWszpSj5c', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 2500, rating: 3.8, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
+  { id: 'prop-10', slug: 'hotel-amar-inn', lat: 28.571, lng: 77.2415, name: 'Hotel Amar Inn', city: 'New Delhi', address: 'K-102, Road, near Central Market, Block K, Lajpat Nagar II, Jal Vihar, New Delhi, Delhi 110024', map_link: 'https://share.google/IQLx35cfOmLf93S2o', phone: '+91 92173 73532', whatsapp: '+91 92173 73532', email: 'stay@quadishotels.com', base_price: 3000, rating: 4.3, is_active: true, weekend_surcharge_percent: 0, extra_adult_percent: 30, child_free_under_age: 8, child_percent: 20, adult_from_age: 13, tier: 'central', tier_label: 'Quadis Central' },
 ]
 
+/**
+ * A category before it is attached to a property.
+ *
+ * `breakfast_offset` and `all_meals_offset` are zero on every template and are
+ * filled in per property by roomsFor(). They stopped being a property of the
+ * category on 5 Aug 2026, when the client moved meal plans onto a percentage of
+ * the base room rate: the same Deluxe template seeds a ₹1,500 room at Quadis 51
+ * and a ₹3,000 one at Amar Inn, and 25% of those is not the same number.
+ */
 type RoomTemplate = Omit<RoomTypeRecord, 'id' | 'property_id'>
 
 const DELUXE: RoomTemplate = {
@@ -22,8 +40,8 @@ const DELUXE: RoomTemplate = {
   bed_type: 'King / Twin Beds',
   max_guests: 2,
   price_offset: 0,
-  breakfast_offset: 300,
-  all_meals_offset: 800,
+  breakfast_offset: 0,
+  all_meals_offset: 0,
   total_units: 5,
   available_units: 5,
   is_available: true,
@@ -37,8 +55,8 @@ const ROYAL: RoomTemplate = {
   bed_type: 'Master Suite + Living Room',
   max_guests: 4,
   price_offset: 2000,
-  breakfast_offset: 450,
-  all_meals_offset: 1200,
+  breakfast_offset: 0,
+  all_meals_offset: 0,
   total_units: 1,
   available_units: 1,
   is_available: true,
@@ -52,8 +70,8 @@ const SUPER: RoomTemplate = {
   bed_type: 'King Bed',
   max_guests: 3,
   price_offset: 1000,
-  breakfast_offset: 350,
-  all_meals_offset: 900,
+  breakfast_offset: 0,
+  all_meals_offset: 0,
   total_units: 4,
   available_units: 4,
   is_available: true,
@@ -101,16 +119,33 @@ const KEYS_BY_SLUG: Record<string, RoomPlan> = {
  * a hotel sells exactly the categories it has keys for. Must stay in step with
  * ROOMS_BY_SLUG in the frontend's src/data/hotels.ts.
  */
-const roomsFor = (plan: RoomPlan): RoomTemplate[] => {
-  const units = (t: RoomTemplate, n: number): RoomTemplate => ({
-    ...t,
-    total_units: n,
-    available_units: n,
-  })
+const roomsFor = (plan: RoomPlan, basePrice: number): RoomTemplate[] => {
+  /**
+   * Key count and meal supplements, both of which depend on the property.
+   *
+   * The meal columns are written as the percentage of this room's base rate
+   * (property base_price + the category's price_offset) that the client set on
+   * 5 Aug 2026 — CP 25%, MAP 50%. They are stored rather than left at zero
+   * because the columns are still read directly by the concierge when it quotes
+   * "breakfast adds ₹x", and by the in-memory development store, which holds
+   * bare room rows with no property price on them for mealOffsetFor() to work
+   * from. Deriving them from the same helper the pricing library uses is what
+   * keeps the stored rupees and the live percentage the same number.
+   */
+  const forProperty = (t: RoomTemplate, n: number): RoomTemplate => {
+    const baseRate = baseRoomRateFor(basePrice, t.price_offset)
+    return {
+      ...t,
+      total_units: n,
+      available_units: n,
+      breakfast_offset: mealUpliftFor('With Breakfast', baseRate),
+      all_meals_offset: mealUpliftFor('All Meals Included', baseRate),
+    }
+  }
   return [
-    units(DELUXE, plan.deluxe),
-    units(SUPER, plan.super),
-    ...(plan.royal ? [units(ROYAL, plan.royal)] : []),
+    forProperty(DELUXE, plan.deluxe),
+    forProperty(SUPER, plan.super),
+    ...(plan.royal ? [forProperty(ROYAL, plan.royal)] : []),
   ]
 }
 
@@ -118,7 +153,7 @@ const roomsFor = (plan: RoomPlan): RoomTemplate[] => {
 const DEFAULT_PLAN: RoomPlan = { deluxe: 5, super: 3 }
 
 export const seedRoomTypes: RoomTypeRecord[] = seedProperties.flatMap((prop) =>
-  roomsFor(KEYS_BY_SLUG[prop.slug] ?? DEFAULT_PLAN).map((t) => ({
+  roomsFor(KEYS_BY_SLUG[prop.slug] ?? DEFAULT_PLAN, prop.base_price).map((t) => ({
     ...t,
     id: `room-${prop.id}-${t.slug}`,
     property_id: prop.id,
